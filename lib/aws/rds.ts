@@ -42,8 +42,8 @@ export class DataBaseConstruct {
 
     const db_name = "hyperswitch";
 
-    const db_security_group = new SecurityGroup(scope, "Hyperswitch-SG", {
-      securityGroupName: "Hyperswitch-SG",
+    const db_security_group = new SecurityGroup(scope, "Hyperswitch-db-SG", {
+      securityGroupName: "Hyperswitch-db-SG",
       vpc: vpc,
     });
 
@@ -68,7 +68,7 @@ export class DataBaseConstruct {
 
     const db_cluster = new DatabaseCluster(
       scope,
-      "hyperswitch-hyperswitch-cluster",
+      "hyperswitch-db-cluster",
       {
         writer: ClusterInstance.provisioned("Writer Instance", {
           instanceType: InstanceType.of(
