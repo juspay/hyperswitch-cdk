@@ -18,7 +18,7 @@ type AccountRegion = {
 const config: Config = {
   stack: {
     name: "hyperswitch",
-    region: "us-east-1",
+    region:  app.node.tryGetContext('Please Enter AWS region') || "us-east-1",
   },
   vpc: {
     name: "hypers-vpc",

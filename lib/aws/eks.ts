@@ -133,25 +133,42 @@ export class EksStack {
       },
     });
 
-    console.log("elasticache host", elasticache.cluster.attrRedisEndpointAddress);
     cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
-      repository: "https://jagan-jaya.github.io/hyperswitch-helm",
+      repository: "https://juspay.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: 'hypers-v1',
       values: {
         clusterName: cluster.clusterName,
+        application: {
+          server: {
+            secrets: {
+              kms_admin_api_key: "test_admin",
+              kms_jwt_secret: "test_admin",
+              admin_api_key: scope.node.tryGetContext('Please Enter Admin API key') || "test_admin",
+              jwt_secret: "test_admin",
+              recon_admin_api_key: "test_admin"
+            },
+            locker: {
+              host: "locker-host"
+            },
+            basilisk: {
+              host: "basilisk-host"
+            }
+          }
+        },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        cluster: {
-          ip: "172.20.1.1",
-        },
         redis: {
-          host: "redis",
+          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          replicaCount: 1
         },
         db: {
           host: rds.db_cluster.clusterEndpoint.hostname,
+          name: "hyperswitch",
+          user_name: "db_user",
+          password: rds.password,
         },
       },
     });
@@ -160,7 +177,13 @@ export class EksStack {
       chart: "loki-stack",
       repository: "https://grafana.github.io/helm-charts/",
       namespace: "hyperswitch",
-      values: {},
+      release: 'hypers-lb-v1',
+      values: {
+        grafana: {
+          enabled: true,
+          adminPassword: "admin"
+        }
+      },
     });
 
     // Output the cluster name and endpoint

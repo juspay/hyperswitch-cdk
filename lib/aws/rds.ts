@@ -1,4 +1,4 @@
-import { RemovalPolicy, StackProps } from "aws-cdk-lib";
+import { RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
 import { Duration } from '@aws-cdk/core';
 import {
   ISecurityGroup,
@@ -29,6 +29,7 @@ import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
 export class DataBaseConstruct {
   sg: SecurityGroup;
   db_cluster: DatabaseCluster;
+  password: string;
 
   constructor(
     scope: Construct,
@@ -55,14 +56,15 @@ export class DataBaseConstruct {
     let secret= new Secret(scope, "hypers-db-master-user-secret", {
             secretName: secretName,
             description: "Database master user credentials",
-            generateSecretString: {
-              secretStringTemplate: JSON.stringify({ username: "db_user" }),
-              generateStringKey: "password",
-              passwordLength: 16,
-              excludePunctuation: true,
-            },
+            secretObjectValue: {
+              dbname: SecretValue.unsafePlainText(db_name),
+              username: SecretValue.unsafePlainText("db_user"),
+              password: SecretValue.unsafePlainText(rds_config.password)
+            }
           });
 
+    
+    this.password = rds_config.password;
 
     const db_cluster = new DatabaseCluster(
       scope,
