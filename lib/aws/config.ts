@@ -51,6 +51,7 @@ export type ExtraSubnetConfig = {
 
 export type RDSConfig = {
   port: number;
+  password: string,
   writer_instance_class: ec2.InstanceClass;
   writer_instance_size: ec2.InstanceSize;
   reader_instance_class: ec2.InstanceClass;
