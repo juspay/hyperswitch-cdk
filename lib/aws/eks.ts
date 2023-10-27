@@ -10,10 +10,10 @@ import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
 
 export class EksStack {
-  sg: ec2.SecurityGroup;
+  sg: ec2.ISecurityGroup;
   constructor(scope: Construct, config: Config, vpc: ec2.Vpc, rds: DataBaseConstruct, elasticache: ElasticacheStack ) {
     // Create the EKS cluster
-    const cluster = new eks.Cluster(scope, "HSCluster", {
+    const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
       defaultCapacity: 0,
       vpc: vpc,
@@ -105,7 +105,7 @@ export class EksStack {
       allowAllOutbound: false,
     });
 
-    this.sg = lbSecurityGroup;
+    this.sg = cluster.clusterSecurityGroup;
 
     // Add inbound rule for all traffic
     lbSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic());
@@ -133,6 +133,19 @@ export class EksStack {
       },
     });
 
+    cluster.addHelmChart("LokiController", {
+      chart: "loki-stack",
+      repository: "https://grafana.github.io/helm-charts/",
+      namespace: "hyperswitch",
+      release: 'loki',
+      values: {
+        grafana: {
+          enabled: true,
+          adminPassword: "admin"
+        }
+      },
+    });
+
     cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
       repository: "https://juspay.github.io/hyperswitch-helm",
@@ -143,6 +156,9 @@ export class EksStack {
         application: {
           server: {
             secrets: {
+              podAnnotations: {
+                traffic_sidecar_istio_io_excludeOutboundIPRanges: "10.23.6.12/32"
+              },
               kms_admin_api_key: "test_admin",
               kms_jwt_secret: "test_admin",
               admin_api_key: config.creds.admin_api_key ,
@@ -170,19 +186,6 @@ export class EksStack {
           user_name: "db_user",
           password: rds.password,
         },
-      },
-    });
-
-    cluster.addHelmChart("LokiController", {
-      chart: "loki-stack",
-      repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
-      release: 'hypers-lb-v1',
-      values: {
-        grafana: {
-          enabled: true,
-          adminPassword: "admin"
-        }
       },
     });
 

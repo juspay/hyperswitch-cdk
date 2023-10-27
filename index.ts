@@ -35,8 +35,8 @@ const config: Config = {
   },
   extra_subnets: [],
   creds: {
-    db_pass: "dbpassword",
-    admin_api_key: "test_admin",
+    db_pass: "dbpassword", //Change this db_password
+    admin_api_key: "test_admin", //Change this admin_api_key
   }
 };
 
