@@ -8,7 +8,7 @@ export class ElasticacheStack {
     cluster: elasticache.CfnCacheCluster;
     sg: ec2.SecurityGroup;
     constructor(scope: Construct, config: Config, vpc: ec2.Vpc) {
-        const elasticache_security_group = new SecurityGroup(scope, "Hyperswitch-SG", {
+        const elasticache_security_group = new SecurityGroup(scope, "Hyperswitch-elasticache-SG", {
             securityGroupName: "Hyperswitch-elasticache-SG",
             vpc: vpc,
           });
