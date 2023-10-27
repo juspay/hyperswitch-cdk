@@ -18,7 +18,7 @@ type AccountRegion = {
 const config: Config = {
   stack: {
     name: "hyperswitch",
-    region:  app.node.tryGetContext('Please Enter AWS region') || "us-east-1",
+    region: "us-east-1",
   },
   vpc: {
     name: "hypers-vpc",
@@ -34,6 +34,10 @@ const config: Config = {
     },
   },
   extra_subnets: [],
+  creds: {
+    db_pass: "dbpassword",
+    admin_api_key: "test_admin",
+  }
 };
 
 const allowedList: AccountRegion[] = require("./allowed.json");
@@ -44,7 +48,6 @@ const currentAccount: AccountRegion = {
 };
 
 function assertAccountIsAllowed(current: AccountRegion, allowed: AccountRegion[]): void {
-  console.log("current", current);
   const isAllowed = allowed.some(value => value.account === current.account && value.region === current.region);
 
   if (!isAllowed) {
@@ -52,7 +55,14 @@ function assertAccountIsAllowed(current: AccountRegion, allowed: AccountRegion[]
   }
 }
 
-assertAccountIsAllowed(currentAccount, allowedList);
+if (!process.env.CDK_DEFAULT_ACCOUNT) {
+  throw Error("please do `export CDK_DEFAULT_ACCOUNT=<your account>`");
+}
+if (!process.env.CDK_DEFAULT_REGION) {
+  throw Error("please do `export CDK_DEFAULT_REGION=<your region>`");
+}
+console.log("current", currentAccount);
+// assertAccountIsAllowed(currentAccount, allowedList);
 
 class NewStack {
   private stack: Construct;

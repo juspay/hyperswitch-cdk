@@ -145,7 +145,7 @@ export class EksStack {
             secrets: {
               kms_admin_api_key: "test_admin",
               kms_jwt_secret: "test_admin",
-              admin_api_key: scope.node.tryGetContext('Please Enter Admin API key') || "test_admin",
+              admin_api_key: config.creds.admin_api_key ,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin"
             },
