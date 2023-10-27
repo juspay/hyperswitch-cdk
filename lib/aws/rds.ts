@@ -1,4 +1,5 @@
 import { RemovalPolicy, StackProps } from "aws-cdk-lib";
+import { Duration } from '@aws-cdk/core';
 import {
   ISecurityGroup,
   InstanceClass,
@@ -130,15 +131,16 @@ export class DataBaseConstruct {
 
     const initializeDBFunction = new Function(scope, 'InitializeDBFunction', {
       runtime: Runtime.PYTHON_3_9,
-      handler: 'index.handler',
+      handler: 'index.db_handler',
       // code: Code.fromAsset('./dependencies/lambda_package/rds_lambda.py'),
-      code: Code.fromAsset('./dependencies/lambda_package.zip'),
+      code: Code.fromAsset('./dependencies/migration_runner/migration_runner.zip'),
       environment: {
           DB_SECRET_ARN: secret.secretArn,
           SCHEMA_BUCKET: schemaBucket.bucketName,
-          SCHEMA_FILE_KEY: './dependencies/schema.sql',
+          SCHEMA_FILE_KEY: 'schema.sql',
       },
       role: lambdaRole,
+      timeout: Duration.minutes(15),
     });
 
   }
