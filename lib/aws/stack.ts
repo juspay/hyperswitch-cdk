@@ -32,6 +32,6 @@ export class AWSStack extends cdk.Stack {
     }catch(e){
       console.log(e);
     }
-    // elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379)); //Enable this post added security group to elasticache
+    elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
   }
 }
