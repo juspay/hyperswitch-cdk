@@ -1,0 +1,27 @@
+{
+  "name": "hyperswitch-cdk",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-ec2": "^1.204.0",
+    "@aws-cdk/aws-iam": "^1.204.0",
+    "@aws-cdk/aws-lambda": "^1.204.0",
+    "@aws-cdk/aws-logs": "^1.204.0",
+    "@aws-cdk/aws-rds": "^1.204.0",
+    "@aws-cdk/aws-s3": "^1.204.0",
+    "@aws-cdk/aws-secretsmanager": "^1.204.0",
+    "@aws-cdk/aws-ssm": "^1.204.0",
+    "@aws-cdk/core": "^1.204.0",
+    "@aws-cdk/custom-resources": "^1.204.0",
+    "aws-cdk": "^2.96.2",
+    "aws-cdk-lib": "^2.96.2",
+    "constructs": "^10.2.70",
+    "node-fetch": "^3.3.2"
+  }
+}
