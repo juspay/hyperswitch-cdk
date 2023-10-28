@@ -133,18 +133,18 @@ export class EksStack {
       },
     });
 
-    cluster.addHelmChart("LokiController", {
-      chart: "loki-stack",
-      repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
-      release: 'loki',
-      values: {
-        grafana: {
-          enabled: true,
-          adminPassword: "admin"
-        }
-      },
-    });
+    // cluster.addHelmChart("LokiController", {
+    //   chart: "loki-stack",
+    //   repository: "https://grafana.github.io/helm-charts/",
+    //   namespace: "hyperswitch",
+    //   release: 'loki',
+    //   values: {
+    //     grafana: {
+    //       enabled: true,
+    //       adminPassword: "admin"
+    //     }
+    //   },
+    // });
 
     cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
