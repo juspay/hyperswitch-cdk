@@ -35,7 +35,6 @@ This project was created using `bun init` in bun v1.0.2. [Bun](https://bun.sh) i
 
 - [ ] How should we have the subnet distribution?
   1. Similar to how we currently have in production
-  2. We should create a HLD with the primary architecture in mind. [diagram](https://www.figma.com/file/4Izk569Fqq5yf8vf5RwyGW/HyperSwitch---PCI-DSS-Architecture-Diagrams?type=design&node-id=387-61&mode=design)
 
 ### Subnet design
 
