@@ -141,6 +141,7 @@ export class DataBaseConstruct {
           SCHEMA_BUCKET: schemaBucket.bucketName,
           SCHEMA_FILE_KEY: 'schema.sql',
       },
+      timeout: Duration.minutes(15),
       role: lambdaRole
     });
 
@@ -148,6 +149,7 @@ export class DataBaseConstruct {
       handler: initializeDBFunction,
       timeout: Duration.minutes(15),
       invocationType: triggers.InvocationType.EVENT,
+      executeAfter: [db_cluster]
     });
   }
 
