@@ -142,10 +142,10 @@ export class DataBaseConstruct {
           SCHEMA_BUCKET: schemaBucket.bucketName,
           SCHEMA_FILE_KEY: 'schema.sql',
       },
-      role: lambdaRole,
+      role: lambdaRole
     });
 
-    new triggers.Trigger(this, 'InitializeDBTrigger', {
+    new triggers.Trigger(scope, 'InitializeDBTrigger', {
       handler: initializeDBFunction,
       timeout: Duration.minutes(15),
       invocationType: triggers.InvocationType.EVENT,
