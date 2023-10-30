@@ -25,6 +25,7 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import * as triggers from 'aws-cdk-lib/triggers';
 
 export class DataBaseConstruct {
   sg: SecurityGroup;
@@ -63,9 +64,7 @@ export class DataBaseConstruct {
             }
           });
 
-    
     this.password = rds_config.password;
-
     const db_cluster = new DatabaseCluster(
       scope,
       "hyperswitch-db-cluster",
@@ -75,6 +74,7 @@ export class DataBaseConstruct {
             rds_config.writer_instance_class,
             rds_config.writer_instance_size
           ),
+          publiclyAccessible: true,
         }),
         // readers: [
         //   ClusterInstance.provisioned("Reader Instance", {
@@ -141,10 +141,14 @@ export class DataBaseConstruct {
           SCHEMA_BUCKET: schemaBucket.bucketName,
           SCHEMA_FILE_KEY: 'schema.sql',
       },
-      role: lambdaRole,
-      timeout: Duration.minutes(15),
+      role: lambdaRole
     });
 
+    new triggers.Trigger(scope, 'InitializeDBTrigger', {
+      handler: initializeDBFunction,
+      timeout: Duration.minutes(15),
+      invocationType: triggers.InvocationType.EVENT,
+    });
   }
 
   addClient(
