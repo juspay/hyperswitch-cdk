@@ -25,6 +25,7 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import * as triggers from 'aws-cdk-lib/triggers';
 
 export class DataBaseConstruct {
   sg: SecurityGroup;
@@ -142,9 +143,13 @@ export class DataBaseConstruct {
           SCHEMA_FILE_KEY: 'schema.sql',
       },
       role: lambdaRole,
-      timeout: Duration.minutes(15),
     });
 
+    new triggers.Trigger(this, 'InitializeDBTrigger', {
+      handler: initializeDBFunction,
+      timeout: Duration.minutes(15),
+      invocationType: triggers.InvocationType.EVENT,
+    });
   }
 
   addClient(
