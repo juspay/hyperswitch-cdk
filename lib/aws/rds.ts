@@ -64,9 +64,7 @@ export class DataBaseConstruct {
             }
           });
 
-    
     this.password = rds_config.password;
-
     const db_cluster = new DatabaseCluster(
       scope,
       "hyperswitch-db-cluster",
@@ -76,6 +74,7 @@ export class DataBaseConstruct {
             rds_config.writer_instance_class,
             rds_config.writer_instance_size
           ),
+          publiclyAccessible: true,
         }),
         // readers: [
         //   ClusterInstance.provisioned("Reader Instance", {
