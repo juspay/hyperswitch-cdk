@@ -119,7 +119,7 @@ export class DataBaseConstruct {
 
     lambdaRole.addToPolicy(
       new PolicyStatement({
-          actions: ['secretsmanager:GetSecretValue', 'logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents', 's3:GetObject'],
+          actions: ['ec2:CreateNetworkInterface', 'ec2:DescribeNetworkInterfaces', 'ec2:DeleteNetworkInterface', 'ec2:AttachNetworkInterface', 'ec2:DetachNetworkInterface', 'secretsmanager:GetSecretValue', 'logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents', 's3:GetObject'],
           resources: ['*', schemaBucket.bucketArn + '/*'],
       })
     );
@@ -141,16 +141,18 @@ export class DataBaseConstruct {
           SCHEMA_BUCKET: schemaBucket.bucketName,
           SCHEMA_FILE_KEY: 'schema.sql',
       },
+      vpc: vpc,
+      securityGroups: [lambdaSecurityGroup],
       timeout: Duration.minutes(15),
       role: lambdaRole
     });
 
-    new triggers.Trigger(scope, 'InitializeDBTrigger', {
-      handler: initializeDBFunction,
-      timeout: Duration.minutes(15),
-      invocationType: triggers.InvocationType.EVENT,
-      executeAfter: [db_cluster]
-    });
+    // new triggers.Trigger(scope, 'InitializeDBTrigger', {
+    //   handler: initializeDBFunction,
+    //   timeout: Duration.minutes(15),
+    //   invocationType: triggers.InvocationType.EVENT,
+    //   executeAfter: [db_cluster]
+    // });
   }
 
   addClient(

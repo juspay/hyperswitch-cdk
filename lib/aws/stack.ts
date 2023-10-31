@@ -11,7 +11,7 @@ import { SubnetStack } from "./subnet";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
-    super(scope, config.stack.name);
+    super(scope, config.stack.name, {stackName: config.stack.name});
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);

@@ -198,5 +198,21 @@ export class EksStack {
     new cdk.CfnOutput(scope, "ClusterEndpoint", {
       value: cluster.clusterEndpoint,
     });
+    
+    new cdk.CfnOutput(scope, "redisHost", {
+      value: elasticache.cluster.attrRedisEndpointAddress,
+    });
+
+    new cdk.CfnOutput(scope, "dbHost", {
+      value: rds.db_cluster.clusterEndpoint.hostname,
+    });
+
+    new cdk.CfnOutput(scope, "dbPassword", {
+      value: rds.password,
+    });
+
+    new cdk.CfnOutput(scope, "lbSecurityGroupId", {
+      value: lbSecurityGroup.securityGroupId,
+    });
   }
 }
