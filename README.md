@@ -3,13 +3,12 @@
 To install dependencies and deploy:
 
 ```bash
-export CDK_DEFAULT_ACCOUNT="<Your AWS_ACCOUNT_ID>"
 export AWS_DEFAULT_REGION="<Your AWS_REGION>"
 export AWS_ACCESS_KEY_ID="<Your AWS_ACCESS_KEY_ID>"
 export AWS_SECRET_ACCESS_KEY="<Your AWS_SECRET_ACCESS_KEY>"
 export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
 
-sh installation.sh
+sh install.sh
 ```
 
 This project was created using `bun init` in bun v1.0.2. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

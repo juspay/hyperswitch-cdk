@@ -20,19 +20,14 @@ awk -v old="test_admin" -v new="$ADMIN_API_KEY" '{gsub(old, new); print}' index.
 
 # Deploy the EKS Cluster
 bun install
-bun cdk deploy --require-approval never
+AWS_ROLE=$(aws sts get-caller-identity --output json | jq -r .Arn | cut -d'/' -f2)
+bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_role=$AWS_ROLE
 # Wait for the EKS Cluster to be deployed
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
-cd lib/aws
 # Deploy Load balancer and Ingress
-awk '{if(NR>=136 && NR<=147) gsub("// ", ""); print}' eks.ts > eks_new.ts && mv eks_new.ts eks.ts 
-awk '{if(NR>=150 && NR<=155) gsub("// ", ""); print}' rds.ts > rds_new.ts && mv rds_new.ts rds.ts 
-cd ../..
-# Delete app-server and consumer deployments
-bun cdk deploy --require-approval never
+bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_role=$AWS_ROLE -c enableLoki=true -c triggerDbMigration=true
 echo "Waiting for the Load Balancer to be deployed"
 sleep 30
-cd lib/aws
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 echo $APP_HOST
@@ -40,6 +35,7 @@ echo $LOGS_HOST
 REDIS_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='redisHost'].OutputValue" --output text)
 DB_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='dbHost'].OutputValue" --output text)
 LB_SG=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='lbSecurityGroupId'].OutputValue" --output text)
+# Delete app-server and consumer deployments
 kubectl delete deployment hyperswitch-consumer-consumer-v1o47o0ohotfixo3 -n hyperswitch
 kubectl delete deployment hyperswitch-server-v1o52o1v2 -n hyperswitch 
 # Deploy the hyperswitch application with the load balancer host name

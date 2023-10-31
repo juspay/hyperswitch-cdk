@@ -11,7 +11,13 @@ import { DataBaseConstruct } from "./rds";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
-  constructor(scope: Construct, config: Config, vpc: ec2.Vpc, rds: DataBaseConstruct, elasticache: ElasticacheStack ) {
+  constructor(
+    scope: Construct,
+    config: Config,
+    vpc: ec2.Vpc,
+    rds: DataBaseConstruct,
+    elasticache: ElasticacheStack
+  ) {
     // Create the EKS cluster
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -23,7 +29,7 @@ export class EksStack {
     const role = iam.Role.fromRoleName(
       scope,
       "admin-role",
-      "AWSReservedSSO_AWSAdministratorAccess_ebf3e1964512148f"
+      scope.node.tryGetContext("aws_role")
     );
     cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
 
@@ -62,23 +68,27 @@ export class EksStack {
           })
         );
         nodegroupRole.attachInlinePolicy(
-          new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMInlinePolicyInfo", {
-            document: new iam.PolicyDocument({
-              statements: [
-                new iam.PolicyStatement({
-                  actions: [
-                    "elasticloadbalancing:AddTags",
-                    "elasticloadbalancing:RemoveTags",
-                  ],
-                  effect: iam.Effect.ALLOW,
-                  resources: [
-                    "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
-                    "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*",
-                  ],
-                }),
-              ],
-            }),
-          })
+          new iam.Policy(
+            scope,
+            "HSAWSLoadBalancerControllerIAMInlinePolicyInfo",
+            {
+              document: new iam.PolicyDocument({
+                statements: [
+                  new iam.PolicyStatement({
+                    actions: [
+                      "elasticloadbalancing:AddTags",
+                      "elasticloadbalancing:RemoveTags",
+                    ],
+                    effect: iam.Effect.ALLOW,
+                    resources: [
+                      "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
+                      "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*",
+                    ],
+                  }),
+                ],
+              }),
+            }
+          )
         );
       })
       .catch((error) => {
@@ -133,24 +143,26 @@ export class EksStack {
       },
     });
 
-    // cluster.addHelmChart("LokiController", {
-    //   chart: "loki-stack",
-    //   repository: "https://grafana.github.io/helm-charts/",
-    //   namespace: "hyperswitch",
-    //   release: 'loki',
-    //   values: {
-    //     grafana: {
-    //       enabled: true,
-    //       adminPassword: "admin"
-    //     }
-    //   },
-    // });
+    if (scope.node.tryGetContext("enableLoki") == "true") {
+      cluster.addHelmChart("LokiController", {
+        chart: "loki-stack",
+        repository: "https://grafana.github.io/helm-charts/",
+        namespace: "hyperswitch",
+        release: "loki",
+        values: {
+          grafana: {
+            enabled: true,
+            adminPassword: "admin",
+          },
+        },
+      });
+    }
 
     cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
       repository: "https://juspay.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
-      release: 'hypers-v1',
+      release: "hypers-v1",
       values: {
         clusterName: cluster.clusterName,
         application: {
@@ -158,28 +170,29 @@ export class EksStack {
             server_base_url: "https://sandbox.hyperswitch.io",
             secrets: {
               podAnnotations: {
-                traffic_sidecar_istio_io_excludeOutboundIPRanges: "10.23.6.12/32"
+                traffic_sidecar_istio_io_excludeOutboundIPRanges:
+                  "10.23.6.12/32",
               },
               kms_admin_api_key: "test_admin",
               kms_jwt_secret: "test_admin",
-              admin_api_key: config.creds.admin_api_key ,
+              admin_api_key: config.creds.admin_api_key,
               jwt_secret: "test_admin",
-              recon_admin_api_key: "test_admin"
+              recon_admin_api_key: "test_admin",
             },
             locker: {
-              host: "locker-host"
+              host: "locker-host",
             },
             basilisk: {
-              host: "basilisk-host"
-            }
-          }
+              host: "basilisk-host",
+            },
+          },
         },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
         redis: {
           host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          replicaCount: 1
+          replicaCount: 1,
         },
         db: {
           host: rds.db_cluster.clusterEndpoint.hostname,
@@ -198,7 +211,7 @@ export class EksStack {
     new cdk.CfnOutput(scope, "ClusterEndpoint", {
       value: cluster.clusterEndpoint,
     });
-    
+
     new cdk.CfnOutput(scope, "redisHost", {
       value: elasticache.cluster.attrRedisEndpointAddress,
     });
