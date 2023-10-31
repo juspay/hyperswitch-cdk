@@ -155,6 +155,7 @@ export class EksStack {
         clusterName: cluster.clusterName,
         application: {
           server: {
+            server_base_url: "https://sandbox.hyperswitch.io",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges: "10.23.6.12/32"
