@@ -1,15 +1,14 @@
 # hyperswitch-cdk
 
-To install dependencies:
+To install dependencies and deploy:
 
 ```bash
-bun install
-```
+export AWS_DEFAULT_REGION="<Your AWS_REGION>"
+export AWS_ACCESS_KEY_ID="<Your AWS_ACCESS_KEY_ID>"
+export AWS_SECRET_ACCESS_KEY="<Your AWS_SECRET_ACCESS_KEY>"
+export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
 
-To run:
-
-```bash
-bun run index.ts
+sh install.sh
 ```
 
 This project was created using `bun init` in bun v1.0.2. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

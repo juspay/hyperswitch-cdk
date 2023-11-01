@@ -35,15 +35,14 @@ const config: Config = {
   },
   extra_subnets: [],
   creds: {
-    db_pass: "dbpassword", //Change this db_password
-    admin_api_key: "test_admin", //Change this admin_api_key
+    db_pass: app.node.tryGetContext('db_pass') || "dbpassword", //Change this db_password
+    admin_api_key: app.node.tryGetContext('admin_api_key') || "test_admin", //Change this admin_api_key
   }
 };
 
 const allowedList: AccountRegion[] = require("./allowed.json");
 
 const currentAccount: AccountRegion = {
-  account: process.env.CDK_DEFAULT_ACCOUNT || undefined,
   region: process.env.CDK_DEFAULT_REGION || undefined,
 };
 
@@ -55,9 +54,6 @@ function assertAccountIsAllowed(current: AccountRegion, allowed: AccountRegion[]
   }
 }
 
-if (!process.env.CDK_DEFAULT_ACCOUNT) {
-  throw Error("please do `export CDK_DEFAULT_ACCOUNT=<your account>`");
-}
 if (!process.env.CDK_DEFAULT_REGION) {
   throw Error("please do `export CDK_DEFAULT_REGION=<your region>`");
 }
