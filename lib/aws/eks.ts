@@ -26,12 +26,21 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
-    const role = iam.Role.fromRoleName(
-      scope,
-      "admin-role",
-      scope.node.tryGetContext("aws_role")
-    );
-    cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
+    const aws_arn = scope.node.tryGetContext("aws_arn");
+    const is_role =
+      aws_arn.includes(":role") || aws_arn.includes(":assumed-role");
+    if (is_role) {
+      const role = iam.Role.fromRoleName(
+        scope,
+        "admin-role",
+        aws_arn.split("/")[1]
+      );
+      cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
+    }
+    else {
+      const user = iam.User.fromUserArn(scope, "User", aws_arn);
+      cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
+    }
 
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),

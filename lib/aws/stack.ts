@@ -11,6 +11,10 @@ import { SubnetStack } from "./subnet";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
+    const aws_arn = scope.node.tryGetContext("aws_arn");
+    const is_root_user = aws_arn.includes(":root");
+    if(is_root_user)
+      throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
     super(scope, config.stack.name, {stackName: config.stack.name});
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
