@@ -1,5 +1,6 @@
 import { RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
 import { Duration } from "@aws-cdk/core";
+import * as cdk from "aws-cdk-lib";
 import {
   ISecurityGroup,
   InstanceClass,
@@ -93,7 +94,8 @@ export class DataBaseConstruct {
 
     let schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
-      bucketName: "hyperswitch-schema-" + process.env.CDK_DEFAULT_REGION,
+      bucketName:
+        "hyperswitch-schema-" + Date.now() + process.env.CDK_DEFAULT_REGION,
     });
 
     const bucketDeployment = new BucketDeployment(
