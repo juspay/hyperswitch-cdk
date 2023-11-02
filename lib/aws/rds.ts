@@ -92,78 +92,77 @@ export class DataBaseConstruct {
     this.db_cluster = db_cluster;
 
     if (scope.node.tryGetContext("triggerDbMigration") == "true") {
-    let schemaBucket = new Bucket(scope, "SchemaBucket", {
-      removalPolicy: RemovalPolicy.DESTROY,
-      bucketName: "hyperswitch-schema-" + process.env.CDK_DEFAULT_REGION,
-    });
+      let schemaBucket = new Bucket(scope, "SchemaBucket", {
+        removalPolicy: RemovalPolicy.DESTROY,
+        bucketName: "hyperswitch-schema-" + process.env.CDK_DEFAULT_REGION,
+      });
 
-    const bucketDeployment = new BucketDeployment(
-      scope,
-      "DeploySchemaToBucket",
-      {
-        sources: [Source.asset("./dependencies/schema")],
-        destinationBucket: schemaBucket,
-        retainOnDelete: false,
-      }
-    );
+      const bucketDeployment = new BucketDeployment(
+        scope,
+        "DeploySchemaToBucket",
+        {
+          sources: [Source.asset("./dependencies/schema")],
+          destinationBucket: schemaBucket,
+          retainOnDelete: false,
+        }
+      );
 
-    const lambdaRole = new Role(scope, "RDSLambdaRole", {
-      assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
-    });
+      const lambdaRole = new Role(scope, "RDSLambdaRole", {
+        assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
+      });
 
-    schemaBucket.grantRead(lambdaRole, "dependencies/schema.sql");
+      schemaBucket.grantRead(lambdaRole, "dependencies/schema.sql");
 
-    lambdaRole.addToPolicy(
-      new PolicyStatement({
-        actions: [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface",
-          "secretsmanager:GetSecretValue",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "s3:GetObject",
-        ],
-        resources: ["*", schemaBucket.bucketArn + "/*"],
-      })
-    );
+      lambdaRole.addToPolicy(
+        new PolicyStatement({
+          actions: [
+            "ec2:CreateNetworkInterface",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:DeleteNetworkInterface",
+            "ec2:AttachNetworkInterface",
+            "ec2:DetachNetworkInterface",
+            "secretsmanager:GetSecretValue",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "s3:GetObject",
+          ],
+          resources: ["*", schemaBucket.bucketArn + "/*"],
+        })
+      );
 
-    const lambdaSecurityGroup = new SecurityGroup(
-      scope,
-      "LambdaSecurityGroup",
-      {
-        vpc,
-        allowAllOutbound: true,
-      }
-    );
+      const lambdaSecurityGroup = new SecurityGroup(
+        scope,
+        "LambdaSecurityGroup",
+        {
+          vpc,
+          allowAllOutbound: true,
+        }
+      );
 
-    db_security_group.addIngressRule(
-      lambdaSecurityGroup,
-      Port.tcp(rds_config.port)
-    );
+      db_security_group.addIngressRule(
+        lambdaSecurityGroup,
+        Port.tcp(rds_config.port)
+      );
 
-    const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
-      runtime: Runtime.PYTHON_3_9,
-      handler: "index.db_handler",
-      // code: Code.fromAsset('./dependencies/lambda_package/rds_lambda.py'),
-      code: Code.fromAsset(
-        "./dependencies/migration_runner/migration_runner.zip"
-      ),
-      environment: {
-        DB_SECRET_ARN: secret.secretArn,
-        SCHEMA_BUCKET: schemaBucket.bucketName,
-        SCHEMA_FILE_KEY: "schema.sql",
-      },
-      vpc: vpc,
-      securityGroups: [lambdaSecurityGroup],
-      timeout: Duration.minutes(15),
-      role: lambdaRole,
-    });
+      const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
+        runtime: Runtime.PYTHON_3_9,
+        handler: "index.db_handler",
+        // code: Code.fromAsset('./dependencies/lambda_package/rds_lambda.py'),
+        code: Code.fromAsset(
+          "./dependencies/migration_runner/migration_runner.zip"
+        ),
+        environment: {
+          DB_SECRET_ARN: secret.secretArn,
+          SCHEMA_BUCKET: schemaBucket.bucketName,
+          SCHEMA_FILE_KEY: "schema.sql",
+        },
+        vpc: vpc,
+        securityGroups: [lambdaSecurityGroup],
+        timeout: Duration.minutes(15),
+        role: lambdaRole,
+      });
 
-    if (scope.node.tryGetContext("triggerDbMigration") == "true") {
       new triggers.Trigger(scope, "InitializeDBTrigger", {
         handler: initializeDBFunction,
         timeout: Duration.minutes(15),
