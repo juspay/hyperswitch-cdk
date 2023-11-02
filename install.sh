@@ -4,9 +4,9 @@ npm install -g aws-cdk
 cdk --version
 os=$(uname)
 if [ "$os" == "Linux" ]; then
-  ./linux_deps.sh
+  sh linux_deps.sh
 elif [ "$os" == "Darwin" ]; then
-  ./mac_deps.sh
+  sh mac_deps.sh
 else
   echo "Unsupported operating system."
   exit 1
