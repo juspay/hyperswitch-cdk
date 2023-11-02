@@ -43,7 +43,6 @@ export class EksStack {
     }
 
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
-      roleName: "hs-nodegroup-role",
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
 
@@ -121,7 +120,6 @@ export class EksStack {
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
-      securityGroupName: "hs-lb-sg",
       vpc: cluster.vpc,
       allowAllOutbound: false,
     });
