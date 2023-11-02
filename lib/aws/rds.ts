@@ -160,6 +160,8 @@ export class DataBaseConstruct {
       securityGroups: [lambdaSecurityGroup],
       timeout: Duration.minutes(15),
       role: lambdaRole,
+      vpc,
+      securityGroups: [lambdaSecurityGroup]
     });
 
     if (scope.node.tryGetContext("triggerDbMigration") == "true") {
@@ -167,7 +169,6 @@ export class DataBaseConstruct {
         handler: initializeDBFunction,
         timeout: Duration.minutes(15),
         invocationType: triggers.InvocationType.EVENT,
-        executeAfter: [db_cluster],
       });
     }
   }

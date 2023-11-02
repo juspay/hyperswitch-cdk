@@ -153,6 +153,57 @@ export class EksStack {
     });
 
     if (scope.node.tryGetContext("enableLoki") == "true") {
+
+      const provider = cluster.openIdConnectProvider;
+
+      const conditions = new cdk.CfnJson(scope, 'ConditionJson', {
+        value: {
+          [`${provider.openIdConnectProviderArn}:aud`]: 'sts.amazonaws.com',
+          [`${provider.openIdConnectProviderArn}:sub`]: 'system:serviceaccount:hyperswitch:loki-grafana',
+        },
+      });
+
+      const grafanaServiceAccountRole = new iam.Role(scope, 'GrafanaServiceAccountRole', {
+        assumedBy: new iam.FederatedPrincipal(provider.openIdConnectProviderArn, {
+          "StringEquals": conditions
+        }, "sts:AssumeRoleWithWebIdentity"),
+      });
+
+      const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "AllowReadingMetricsFromCloudWatch",
+            "Effect": "Allow",
+            "Action": [
+              "cloudwatch:DescribeAlarmsForMetric",
+              "cloudwatch:DescribeAlarmHistory",
+              "cloudwatch:DescribeAlarms",
+              "cloudwatch:ListMetrics",
+              "cloudwatch:GetMetricData",
+              "cloudwatch:GetInsightRuleReport"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Sid": "AllowReadingTagsInstancesRegionsFromEC2",
+            "Effect": "Allow",
+            "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions"],
+            "Resource": "*"
+          },
+          {
+            "Sid": "AllowReadingResourcesForTags",
+            "Effect": "Allow",
+            "Action": "tag:GetResources",
+            "Resource": "*"
+          }
+        ]
+      });
+
+      grafanaServiceAccountRole.attachInlinePolicy(new iam.Policy(scope, 'GrafanaPolicy', {
+        document: grafanaPolicyDocument
+      }));
+
       cluster.addHelmChart("LokiController", {
         chart: "loki-stack",
         repository: "https://grafana.github.io/helm-charts/",
@@ -160,8 +211,14 @@ export class EksStack {
         release: "loki",
         values: {
           grafana: {
+            version: "10.0.1",
             enabled: true,
             adminPassword: "admin",
+            serviceAccount: {
+              annotations: {
+                'eks.amazonaws.com/role-arn': grafanaServiceAccountRole.roleArn,
+              }
+            },
           },
         },
       });
