@@ -1,8 +1,3 @@
-AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
-if [[ $AWS_ARN == *":root"* ]]; then
-  echo "ROOT user is not recommended. Please create new user with AdministratorAccess and use their Access Token"
-  exit 1
-fi
 # Install dependencies
 curl -fsSL https://bun.sh/install | bash
 npm install -g aws-cdk
@@ -14,6 +9,12 @@ elif [ "$os" == "Darwin" ]; then
   ./mac_deps.sh
 else
   echo "Unsupported operating system."
+  exit 1
+fi
+
+AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
+if [[ $AWS_ARN == *":root"* ]]; then
+  echo "ROOT user is not recommended. Please create new user with AdministratorAccess and use their Access Token"
   exit 1
 fi
 
