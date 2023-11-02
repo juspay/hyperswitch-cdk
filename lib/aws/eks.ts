@@ -43,6 +43,7 @@ export class EksStack {
     }
 
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
+      roleName: "hs-nodegroup-role",
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
 
@@ -120,6 +121,7 @@ export class EksStack {
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
+      securityGroupName: "hs-lb-sg",
       vpc: cluster.vpc,
       allowAllOutbound: false,
     });
@@ -184,7 +186,7 @@ export class EksStack {
               },
               kms_admin_api_key: "test_admin",
               kms_jwt_secret: "test_admin",
-              admin_api_key: config.creds.admin_api_key,
+              admin_api_key: scope.node.tryGetContext('admin_api_key') || "test_admin",
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
             },

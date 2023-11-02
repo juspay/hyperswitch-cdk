@@ -95,7 +95,10 @@ export class DataBaseConstruct {
     let schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
       bucketName:
-        "hyperswitch-schema-" + Date.now() + process.env.CDK_DEFAULT_REGION,
+        "hyperswitch-schema-" +
+        cdk.Aws.ACCOUNT_ID +
+        "-" +
+        process.env.CDK_DEFAULT_REGION,
     });
 
     const bucketDeployment = new BucketDeployment(
