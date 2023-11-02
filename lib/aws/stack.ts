@@ -22,7 +22,7 @@ export class AWSStack extends cdk.Stack {
     let rds = new DataBaseConstruct( this, // create database master user secret and store it in Secrets Manager
       {
         port: 5432,
-        password: config.creds.db_pass,
+        password: scope.node.tryGetContext('db_pass') || "dbpassword",
         writer_instance_class: ec2.InstanceClass.T3,
         writer_instance_size: ec2.InstanceSize.MEDIUM,
         reader_instance_class: ec2.InstanceClass.T3,

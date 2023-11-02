@@ -58,15 +58,9 @@ export type RDSConfig = {
   reader_instance_size: ec2.InstanceSize;
 };
 
-export type Creds = {
-  db_pass: string;
-  admin_api_key: string;
-}
-
 export type Config = {
   stack: StackConfig;
   vpc: VpcConfig;
   subnet: SubnetConfigs;
   extra_subnets: ExtraSubnetConfig[]; // TODO: remove this if not required
-  creds: Creds;
 };

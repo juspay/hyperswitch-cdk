@@ -5,7 +5,6 @@ if [[ $AWS_ARN == *":root"* ]]; then
 fi
 # Install dependencies
 curl -fsSL https://bun.sh/install | bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 npm install -g aws-cdk
 cdk --version
 os=$(uname)
@@ -19,9 +18,9 @@ else
 fi
 
 # Read the DB Password and Admin API Key
-echo "Enter DB Password (Min 8 Character Needed [A-Z][a-z][0-9]): "  
+echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "  
 read -s DB_PASS
-echo "Enter Admin API Key: "  
+echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "  
 read -s ADMIN_API_KEY
 
 # Deploy the EKS Cluster

@@ -33,11 +33,7 @@ const config: Config = {
       name: "private",
     },
   },
-  extra_subnets: [],
-  creds: {
-    db_pass: app.node.tryGetContext('db_pass') || "dbpassword", //Change this db_password
-    admin_api_key: app.node.tryGetContext('admin_api_key') || "test_admin", //Change this admin_api_key
-  }
+  extra_subnets: []
 };
 
 const allowedList: AccountRegion[] = require("./allowed.json");
