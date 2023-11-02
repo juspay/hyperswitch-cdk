@@ -91,6 +91,7 @@ export class DataBaseConstruct {
 
     this.db_cluster = db_cluster;
 
+    if (scope.node.tryGetContext("triggerDbMigration") == "true") {
     let schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
       bucketName: "hyperswitch-schema-" + process.env.CDK_DEFAULT_REGION,

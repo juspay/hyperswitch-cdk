@@ -1,3 +1,8 @@
+AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
+if [[ $AWS_ARN == *":root"* ]]; then
+  echo "Please create new user with appropiate role as ROOT user is not recommended"
+  exit 1
+fi
 # Install dependencies
 curl -fsSL https://bun.sh/install | bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
@@ -9,18 +14,16 @@ npm install -g aws-cdk
 cdk --version
 
 # Read the DB Password and Admin API Key
-echo "Enter DB Password (Min 8 Character Needed without special chars): "  
+echo "Enter DB Password (Min 8 Character Needed [A-Z][a-z][0-9]): "  
 read -s DB_PASS
 echo "Enter Admin API Key: "  
 read -s ADMIN_API_KEY
-echo $DB_PASS" "$ADMIN_API_KEY
 # Replace the DB Password and Admin API Key in the index.ts file
 awk -v old="dbpassword" -v new="$DB_PASS" '{gsub(old, new); print}' index.ts > index_new.ts && mv index_new.ts index.ts
 awk -v old="test_admin" -v new="$ADMIN_API_KEY" '{gsub(old, new); print}' index.ts > index_new.ts && mv index_new.ts index.ts
 
 # Deploy the EKS Cluster
 bun install
-AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 bun cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
 bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
