@@ -47,7 +47,7 @@ kubectl delete deployment hyperswitch-consumer-consumer-v1o47o0ohotfixo3 -n hype
 kubectl delete deployment hyperswitch-server-v1o52o1v2 -n hyperswitch 
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm
-helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.server.server_base_url=http://$APP_HOST,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch 
+helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch 
 sleep 30
 echo "App server running on "$APP_HOST
 echo "Logs server running on "$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"

@@ -94,6 +94,7 @@ export class DataBaseConstruct {
 
     let schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
       bucketName:
         "hyperswitch-schema-" +
         cdk.Aws.ACCOUNT_ID +
