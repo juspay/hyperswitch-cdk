@@ -1,6 +1,6 @@
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 if [[ $AWS_ARN == *":root"* ]]; then
-  echo "Please create new user with appropiate role as ROOT user is not recommended"
+  echo "ROOT user is not recommended. Please create new user with AdministratorAccess and use their Access Token"
   exit 1
 fi
 # Install dependencies
