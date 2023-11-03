@@ -160,8 +160,6 @@ export class DataBaseConstruct {
       securityGroups: [lambdaSecurityGroup],
       timeout: Duration.minutes(15),
       role: lambdaRole,
-      vpc,
-      securityGroups: [lambdaSecurityGroup]
     });
 
     if (scope.node.tryGetContext("triggerDbMigration") == "true") {
