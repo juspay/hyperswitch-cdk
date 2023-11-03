@@ -158,8 +158,8 @@ export class EksStack {
 
       const conditions = new cdk.CfnJson(scope, 'ConditionJson', {
         value: {
-          [`${provider.openIdConnectProviderArn}:aud`]: 'sts.amazonaws.com',
-          [`${provider.openIdConnectProviderArn}:sub`]: 'system:serviceaccount:hyperswitch:loki-grafana',
+          [`${provider.openIdConnectProviderIssuer}:aud`]: 'sts.amazonaws.com',
+          [`${provider.openIdConnectProviderIssuer}:sub`]: 'system:serviceaccount:hyperswitch:loki-grafana',
         },
       });
 
