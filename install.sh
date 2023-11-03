@@ -1,19 +1,41 @@
+#!/bin/bash
+
+# Function to install a binary only if it's not already installed
+install_if_needed() {
+  local name="$1"
+  local check_command="$2"
+  local install_script="$3"
+
+  if ! eval "$check_command" &> /dev/null; thens
+    echo "Installing $name..."
+    eval "$install_script"
+  else
+    echo "$name is already installed."
+  fi
+}
+
 # Install dependencies
-curl -fsSL https://bun.sh/install | bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
-kubectl version --client
-npm install -g aws-cdk
+install_if_needed "bun" "command -v bun" "curl -fsSL https://bun.sh/install | bash"
+install_if_needed "helm" "command -v helm" "brew install helm"
+install_if_needed "kubectl" "command -v kubectl" "brew install kubectl"
+install_if_needed "cdk" "command -v cdk" "npm install -g aws-cdk"
+
+# Validate installation by printing versions
+helm version --short
+kubectl version --client --short
 cdk --version
 
-# Read the DB Password and Admin API Key
-echo "Enter DB Password (Min 8 Character Needed without special chars): "  
-read -s DB_PASS
-echo "Enter Admin API Key: "  
-read -s ADMIN_API_KEY
-echo $DB_PASS" "$ADMIN_API_KEY
+while [[ -z "$DB_PASS" ]]; do
+    echo "Please enter the DB Passoword for the Master User (Minimum length of 8 Characters [A-Z][a-z][0-9]): "
+    read DB_PASS < /dev/tty
+done
+echo $DB_PASS
+
+while [[ -z "$ADMIN_API_KEY" ]]; do
+    echo "Please enter the Admin API Key: "
+    read ADMIN_API_KEY < /dev/tty
+done
+
 # Replace the DB Password and Admin API Key in the index.ts file
 awk -v old="dbpassword" -v new="$DB_PASS" '{gsub(old, new); print}' index.ts > index_new.ts && mv index_new.ts index.ts
 awk -v old="test_admin" -v new="$ADMIN_API_KEY" '{gsub(old, new); print}' index.ts > index_new.ts && mv index_new.ts index.ts
