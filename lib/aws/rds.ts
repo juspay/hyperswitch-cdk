@@ -173,7 +173,6 @@ export class DataBaseConstruct {
         handler: initializeDBFunction,
         timeout: Duration.minutes(15),
         invocationType: triggers.InvocationType.EVENT,
-        executeAfter: [db_cluster],
       });
     }
   }
