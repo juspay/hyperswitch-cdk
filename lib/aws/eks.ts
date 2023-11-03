@@ -16,7 +16,8 @@ export class EksStack {
     config: Config,
     vpc: ec2.Vpc,
     rds: DataBaseConstruct,
-    elasticache: ElasticacheStack
+    elasticache: ElasticacheStack,
+    admin_api_key: string
   ) {
     // Create the EKS cluster
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
@@ -241,7 +242,7 @@ export class EksStack {
               },
               kms_admin_api_key: "test_admin",
               kms_jwt_secret: "test_admin",
-              admin_api_key: scope.node.tryGetContext('admin_api_key') || "test_admin",
+              admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
             },

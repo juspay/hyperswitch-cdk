@@ -1,6 +1,5 @@
-import { RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
-import { Duration } from "@aws-cdk/core";
 import * as cdk from "aws-cdk-lib";
+import { Duration, RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
 import {
   ISecurityGroup,
   InstanceClass,
@@ -9,6 +8,7 @@ import {
   Port,
   SecurityGroup,
   Vpc,
+  SubnetType
 } from "aws-cdk-lib/aws-ec2";
 import {
   AuroraPostgresEngineVersion,
@@ -55,7 +55,7 @@ export class DataBaseConstruct {
       description: "Database master user credentials",
       secretObjectValue: {
         dbname: SecretValue.unsafePlainText(db_name),
-        username: SecretValue.unsafePlainText("db_user"),
+        username: SecretValue.unsafePlainText(rds_config.db_user),
         password: SecretValue.unsafePlainText(rds_config.password),
       },
     });
@@ -78,7 +78,7 @@ export class DataBaseConstruct {
       //   }),
       // ],
       vpc,
-      vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+      vpcSubnets: { subnetType: SubnetType.PUBLIC },
       engine,
       port: rds_config.port,
       securityGroups: [db_security_group],
@@ -168,13 +168,11 @@ export class DataBaseConstruct {
       role: lambdaRole,
     });
 
-    if (scope.node.tryGetContext("triggerDbMigration") == "true") {
-      new triggers.Trigger(scope, "InitializeDBTrigger", {
-        handler: initializeDBFunction,
-        timeout: Duration.minutes(15),
-        invocationType: triggers.InvocationType.EVENT,
-      });
-    }
+    new triggers.Trigger(scope, "InitializeDBTrigger", {
+      handler: initializeDBFunction,
+      timeout: Duration.minutes(15),
+      invocationType: triggers.InvocationType.EVENT,
+    }).executeAfter(db_cluster);
   }
 
   addClient(
