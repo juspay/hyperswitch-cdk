@@ -53,10 +53,18 @@ export type RDSConfig = {
   port: number;
   password: string;
   db_user : string;
+  db_name : string;
   writer_instance_class: ec2.InstanceClass;
   writer_instance_size: ec2.InstanceSize;
   reader_instance_class: ec2.InstanceClass;
   reader_instance_size: ec2.InstanceSize;
+};
+
+export type EC2 = {
+  id: string;
+  admin_api_key: string;
+  redis_host: string;
+  db_host : string;
 };
 
 export type Config = {
@@ -64,4 +72,6 @@ export type Config = {
   vpc: VpcConfig;
   subnet: SubnetConfigs;
   extra_subnets: ExtraSubnetConfig[]; // TODO: remove this if not required
+  hyperswitch_ec2: EC2;
+  rds: RDSConfig;
 };

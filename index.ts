@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { AWSStack } from "./lib/aws/stack";
 import { Config } from "./lib/aws/config";
+import { Configuration } from "./awsconfig";
 
 const app = new cdk.App();
 
@@ -10,51 +11,26 @@ export enum Cloud {
   GCP = "GCP",
   Azure = "Azure",
 }
+
 type AccountRegion = {
   account?: string;
   region?: string;
 };
 
-const config: Config = {
-  stack: {
-    name: "hyperswitch",
-    region: "us-east-1",
-  },
-  vpc: {
-    name: "hypers-vpc",
-    availabilityZones: [process.env.CDK_DEFAULT_REGION+"a", process.env.CDK_DEFAULT_REGION+"b"],
-    // subnetConfiguration: [],
-  },
-  subnet: {
-    public: {
-      name: "public",
-    },
-    dmz: {
-      name: "private",
-    },
-  },
-  extra_subnets: []
-};
-
-const allowedList: AccountRegion[] = require("./allowed.json");
+let config = new Configuration(app).getConfig();
 
 const currentAccount: AccountRegion = {
   region: process.env.CDK_DEFAULT_REGION || undefined,
+  account: process.env.CDK_DEFAULT_ACCOUNT || undefined,
 };
-
-function assertAccountIsAllowed(current: AccountRegion, allowed: AccountRegion[]): void {
-  const isAllowed = allowed.some(value => value.account === current.account && value.region === current.region);
-
-  if (!isAllowed) {
-    throw Error("The current account used by the CDK isn't allowed");
-  }
-}
 
 if (!process.env.CDK_DEFAULT_REGION) {
   throw Error("please do `export CDK_DEFAULT_REGION=<your region>`");
 }
+
 console.log("current", currentAccount);
-// assertAccountIsAllowed(currentAccount, allowedList);
+
+app.node.setContext("currentAccount", currentAccount);
 
 class NewStack {
   private stack: Construct;
