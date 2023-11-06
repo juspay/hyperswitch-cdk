@@ -19,9 +19,9 @@ if [[ $AWS_ARN == *":root"* ]]; then
 fi
 
 # Read the DB Password and Admin API Key
-echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "  
+echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "
 read -s DB_PASS
-echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "  
+echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
 
 # Deploy the EKS Cluster
@@ -32,7 +32,7 @@ bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$AD
 # Wait for the EKS Cluster to be deployed
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
 # Deploy Load balancer and Ingress
-bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c enableLoki=true -c triggerDbMigration=true
+bun cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c enableLoki=true
 echo "Waiting for the Load Balancer to be deployed"
 sleep 30
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -44,10 +44,10 @@ DB_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "S
 LB_SG=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='lbSecurityGroupId'].OutputValue" --output text)
 # Delete app-server and consumer deployments
 kubectl delete deployment hyperswitch-consumer-consumer-v1o47o0ohotfixo3 -n hyperswitch
-kubectl delete deployment hyperswitch-server-v1o52o1v2 -n hyperswitch 
+kubectl delete deployment hyperswitch-server-v1o52o1v2 -n hyperswitch
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm
-helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch 
+helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch
 sleep 30
 echo "App server running on "$APP_HOST
 echo "Logs server running on "$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"
