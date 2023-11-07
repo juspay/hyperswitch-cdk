@@ -10,11 +10,11 @@ export class Configuration {
     let config:Config = {
       stack: {
         name: "hyperswitch",
-        region: "us-east-1" // this has to be dynamic
+        region: "us-east-2"
       },
       vpc: {
         name: "hyperswitch-vpc",
-        availabilityZones: ["us-east-1a", "us-east-1b"]
+        availabilityZones: ["us-east-2a", "us-east-2b"]
       },
       subnet: {
         public: {

@@ -227,6 +227,13 @@ export class EksStack {
       });
     }
 
+    cluster.addHelmChart("MetricsServer", {
+      chart: "metrics-server",
+      repository: "https://kubernetes-sigs.github.io/metrics-server/",
+      namespace: "kube-system",
+      release: "metrics-server",
+    });
+
     cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
       repository: "https://juspay.github.io/hyperswitch-helm",
@@ -269,8 +276,14 @@ export class EksStack {
           user_name: "db_user",
           password: rds.password,
         },
-      },
-    });
+        autoscaling: {
+          enabled: true,
+          minReplicas: 3,
+          maxReplicas: 5,
+          targetCPUUtilizationPercentage: 80,
+        }
+        }
+      });
 
     // Output the cluster name and endpoint
     new cdk.CfnOutput(scope, "ClusterName", {
