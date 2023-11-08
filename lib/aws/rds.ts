@@ -89,32 +89,34 @@ export class DataBaseConstruct {
 
     this.db_cluster = db_cluster;
 
-    let schemaBucket = new Bucket(scope, "SchemaBucket", {
-      removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-      bucketName:
-        "hyperswitch-schema-" +
-        cdk.Aws.ACCOUNT_ID +
-        "-" +
-        process.env.CDK_DEFAULT_REGION,
-    });
-    this.bucket = schemaBucket;
 
-    const bucketDeployment = new BucketDeployment(
-      scope,
-      "DeploySchemaToBucket",
-      {
-        sources: [Source.asset("./dependencies/schema")],
-        destinationBucket: schemaBucket,
-        retainOnDelete: false,
-      }
-    );
+    const schemaBucket = Bucket.fromBucketName(scope, "MyExistingBucket", "juspay-salt-stack");
+
+    // let schemaBucket = new Bucket(scope, "SchemaBucket", {
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    //   autoDeleteObjects: true,
+    //   bucketName:
+    //     "hyperswitch-schema-" +
+    //     cdk.Aws.ACCOUNT_ID +
+    //     "-" +
+    //     process.env.CDK_DEFAULT_REGION,
+    // });
+
+    // const bucketDeployment = new BucketDeployment(
+    //   scope,
+    //   "DeploySchemaToBucket",
+    //   {
+    //     sources: [Source.asset("./dependencies/schema")],
+    //     destinationBucket: schemaBucket,
+    //     retainOnDelete: false,
+    //   }
+    // );
 
     const lambdaRole = new Role(scope, "RDSLambdaRole", {
       assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
     });
 
-    schemaBucket.grantRead(lambdaRole, "dependencies/schema.sql");
+    // schemaBucket.grantRead(lambdaRole, "schema.sql");
 
     lambdaRole.addToPolicy(
       new PolicyStatement({
@@ -151,10 +153,13 @@ export class DataBaseConstruct {
     const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
       runtime: Runtime.PYTHON_3_9,
       handler: "index.db_handler",
-      // code: Code.fromAsset('./dependencies/lambda_package/rds_lambda.py'),
-      code: Code.fromAsset(
-        "./dependencies/migration_runner/migration_runner.zip"
-      ),
+      code: Code.fromBucket(
+        schemaBucket,
+        "migration_runner.zip"
+      ) ,
+      // code: Code.fromAsset(
+      //   "./dependencies/migration_runner/migration_runner.zip"
+      // ),
       environment: {
         DB_SECRET_ARN: secret.secretArn,
         SCHEMA_BUCKET: schemaBucket.bucketName,
