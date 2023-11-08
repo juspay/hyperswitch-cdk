@@ -18,7 +18,7 @@ export class EksStack {
     elasticache: ElasticacheStack,
     admin_api_key: string
   ) {
-    // Create the EKS cluster
+
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
       defaultCapacity: 0,
@@ -26,19 +26,14 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
-    const aws_arn = scope.node.tryGetContext("aws_arn");
-    const is_role =
-      aws_arn.includes(":role") || aws_arn.includes(":assumed-role");
-    if (is_role) {
-      const role = iam.Role.fromRoleName(
-        scope,
-        "admin-role",
-        aws_arn.split("/")[1]
-      );
+    const awsArn = scope.node.tryGetContext("aws_arn");
+    const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
+
+    if (isRole) {
+      const role = iam.Role.fromRoleName(scope, "AdminRole", awsArn.split("/")[1]);
       cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
-    }
-    else {
-      const user = iam.User.fromUserArn(scope, "User", aws_arn);
+    } else {
+      const user = iam.User.fromUserArn(scope, "User", awsArn);
       cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
     }
 
@@ -47,67 +42,60 @@ export class EksStack {
     });
 
     // Attach the required policy to the nodegroup role
-    nodegroupRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKSWorkerNodePolicy")
-    );
-    nodegroupRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")
-    );
-    nodegroupRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "AmazonEC2ContainerRegistryReadOnly"
-      )
-    );
+    const managedPolicies = [
+      "AmazonEKSWorkerNodePolicy",
+      "AmazonEKS_CNI_Policy",
+      "AmazonEC2ContainerRegistryReadOnly",
+    ];
 
-    const fetchAndCreatePolicy = async (
-      url: string
-    ): Promise<iam.PolicyDocument> => {
-      const response = await fetch(url);
-      const policyJSON = await response.json();
-      return iam.PolicyDocument.fromJson(policyJSON);
+    for (const policyName of managedPolicies) {
+      nodegroupRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policyName));
+    }
+
+    const fetchAndCreatePolicy = async (url: string): Promise<iam.PolicyDocument> => {
+      try {
+        const response = await fetch(url);
+        const policyJSON = await response.json();
+        return iam.PolicyDocument.fromJson(policyJSON);
+      } catch (error) {
+        console.error("Error fetching or creating policy document:", error);
+        throw error;
+      }
     };
 
-    fetchAndCreatePolicy(
-      "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json"
-    )
-      .then((policy) => {
-        nodegroupRole.attachInlinePolicy(
-          new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMPolicyInfo", {
-            document: policy,
-          })
-        );
-        nodegroupRole.attachInlinePolicy(
-          new iam.Policy(
-            scope,
-            "HSAWSLoadBalancerControllerIAMInlinePolicyInfo",
-            {
-              document: new iam.PolicyDocument({
-                statements: [
-                  new iam.PolicyStatement({
-                    actions: [
-                      "elasticloadbalancing:AddTags",
-                      "elasticloadbalancing:RemoveTags",
-                    ],
-                    effect: iam.Effect.ALLOW,
-                    resources: [
-                      "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
-                      "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*",
-                    ],
-                  }),
-                ],
-              }),
-            }
-          )
-        );
-      })
-      .catch((error) => {
-        console.error("Error fetching or creating policy document:", error);
-      });
+    const lbControllerPolicyUrl = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json";
 
-    // Create the node group in the EKS cluster
+    fetchAndCreatePolicy(lbControllerPolicyUrl)
+    .then((policy) => {
+      nodegroupRole.attachInlinePolicy(new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMPolicyInfo", {
+        document: policy,
+      }));
+
+      nodegroupRole.attachInlinePolicy(new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMInlinePolicyInfo", {
+        document: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:RemoveTags",
+              ],
+              effect: iam.Effect.ALLOW,
+              resources: [
+                "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
+                "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*",
+              ],
+            }),
+          ],
+        }),
+      }));
+    })
+    .catch((error) => {
+      console.error("Error fetching or creating policy document:", error);
+    });
+
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
-      instanceTypes: [new ec2.InstanceType("t3.medium")],
+      instanceTypes: [new ec2.InstanceType("t3.medium"), new ec2.InstanceType("t3a.medium")],
       minSize: 1,
       maxSize: 3,
       desiredSize: 2,
