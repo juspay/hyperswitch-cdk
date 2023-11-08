@@ -5,7 +5,6 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { Config } from "./config";
-import fetch from "node-fetch";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
 
