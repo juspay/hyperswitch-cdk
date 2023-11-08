@@ -187,6 +187,19 @@ export class EksStack {
             "Resource": "*"
           },
           {
+            "Sid": "AllowReadingLogsFromCloudWatch",
+            "Effect": "Allow",
+            "Action": [
+              "logs:DescribeLogGroups",
+              "logs:GetLogGroupFields",
+              "logs:StartQuery",
+              "logs:StopQuery",
+              "logs:GetQueryResults",
+              "logs:GetLogEvents"
+            ],
+            "Resource": "*"
+          },
+          {
             "Sid": "AllowReadingTagsInstancesRegionsFromEC2",
             "Effect": "Allow",
             "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions"],
@@ -212,7 +225,9 @@ export class EksStack {
         release: "loki",
         values: {
           grafana: {
-            version: "10.0.1",
+            image:{
+              tag: "10.0.1"
+            },
             enabled: true,
             adminPassword: "admin",
             serviceAccount: {
