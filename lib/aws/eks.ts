@@ -225,7 +225,7 @@ export class EksStack {
         release: "loki",
         values: {
           grafana: {
-            version: 10.0.1,
+            version: "10.0.1",
             enabled: true,
             adminPassword: "admin",
             serviceAccount: {
