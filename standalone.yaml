@@ -420,7 +420,7 @@ Resources:
     Properties:
       Code:
         S3Bucket:
-          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+          Fn::Sub: cdkhsassets
         S3Key: 7f18a11296f35510ee16538afec983ed6312e12afbf81b777089a9f8e34e2474.zip
       Timeout: 900
       MemorySize: 128
@@ -657,7 +657,7 @@ Resources:
                   - ""
                   - - "arn:"
                     - Ref: AWS::Partition
-                    - :s3:::juspay-salt-stack/*
+                    - :s3:::hyperswitch-bucket/*
         Version: "2012-10-17"
       PolicyName: RDSLambdaRoleDefaultPolicy11180193
       Roles:
@@ -680,13 +680,13 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: juspay-salt-stack
+        S3Bucket: hyperswitch-bucket
         S3Key: migration_runner.zip
       Environment:
         Variables:
           DB_SECRET_ARN:
             Ref: hypersdbmasterusersecret5E17603B
-          SCHEMA_BUCKET: juspay-salt-stack
+          SCHEMA_BUCKET: hyperswitch-bucket
           SCHEMA_FILE_KEY: schema.sql
       Handler: index.db_handler
       Role:
@@ -718,7 +718,7 @@ Resources:
       - RDSLambdaRole66909C26
     Metadata:
       aws:cdk:path: hyperswitch/InitializeDBFunction/Resource
-  InitializeDBFunctionCurrentVersion6A89862F4053fe2cfdfb0654dfba59fc923f0db3:
+  InitializeDBFunctionCurrentVersion6A89862F609670d17cf8239f03bcc4fb66ff06be:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName:
@@ -742,7 +742,7 @@ Resources:
           - AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91
           - Arn
       HandlerArn:
-        Ref: InitializeDBFunctionCurrentVersion6A89862F4053fe2cfdfb0654dfba59fc923f0db3
+        Ref: InitializeDBFunctionCurrentVersion6A89862F609670d17cf8239f03bcc4fb66ff06be
       InvocationType: Event
       Timeout: "900000"
       ExecuteOnHandlerChange: true
@@ -788,7 +788,7 @@ Resources:
     Properties:
       Code:
         S3Bucket:
-          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+          Fn::Sub: cdkhsassets
         S3Key: 30d27607a2f6a97cb964228693797269365769d596600286bcb294bbb3b1844d.zip
       Timeout: 900
       MemorySize: 128
@@ -1036,3 +1036,4 @@ Rules:
                   - "5"
                 - Ref: BootstrapVersion
         AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+
