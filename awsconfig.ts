@@ -10,11 +10,11 @@ export class Configuration {
     let config:Config = {
       stack: {
         name: "hyperswitch",
-        region: "us-east-2"
+        region: process.env.CDK_DEFAULT_REGION || "us-east-1"
       },
       vpc: {
         name: "hyperswitch-vpc",
-        availabilityZones: ["us-east-2a", "us-east-2b"]
+        availabilityZones: [process.env.CDK_DEFAULT_REGION+"a", process.env.CDK_DEFAULT_REGION+"b"]
       },
       subnet: {
         public: {

@@ -1,9 +1,7 @@
 import * as cdk from "aws-cdk-lib";
-import { Duration, RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, SecretValue } from "aws-cdk-lib";
 import {
   ISecurityGroup,
-  InstanceClass,
-  InstanceSize,
   InstanceType,
   Port,
   SecurityGroup,
@@ -19,10 +17,8 @@ import {
 } from "aws-cdk-lib/aws-rds";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { SubnetNames } from "./networking";
 import { RDSConfig } from "./config";
 import { Bucket } from "aws-cdk-lib/aws-s3";
-import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
@@ -32,6 +28,7 @@ export class DataBaseConstruct {
   sg: SecurityGroup;
   db_cluster: DatabaseCluster;
   password: string;
+  bucket: cdk.aws_s3.Bucket;
 
   constructor(scope: Construct, rds_config: RDSConfig, vpc: Vpc) {
     const engine = DatabaseClusterEngine.auroraPostgres({
@@ -101,6 +98,7 @@ export class DataBaseConstruct {
         "-" +
         process.env.CDK_DEFAULT_REGION,
     });
+    this.bucket = schemaBucket;
 
     const bucketDeployment = new BucketDeployment(
       scope,
