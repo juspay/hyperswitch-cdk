@@ -12,10 +12,6 @@ import { EC2Instance } from "./ec2";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
-    const aws_arn = scope.node.tryGetContext("aws_arn");
-    const is_root_user = aws_arn.includes(":root");
-    if(is_root_user)
-      throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
     super(scope, config.stack.name, {stackName: config.stack.name});
 
     let vpc = new Vpc(this, config.vpc);
@@ -37,6 +33,10 @@ export class AWSStack extends cdk.Stack {
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(80));
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(22));
     }else{
+      const aws_arn = scope.node.tryGetContext("aws_arn");
+      const is_root_user = aws_arn.includes(":root");
+      if(is_root_user)
+        throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
       console.log("Deploying production")
       let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key);
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
