@@ -9,6 +9,7 @@ import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
+import { HyperswitchSDKStack } from "./hs_sdk";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -41,6 +42,7 @@ export class AWSStack extends cdk.Stack {
       let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key);
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
+      let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds);
     }
   }
 }
