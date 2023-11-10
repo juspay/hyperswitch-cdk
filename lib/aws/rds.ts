@@ -57,6 +57,46 @@ export class DataBaseConstruct {
       },
     });
 
+    // const uploadSchemaAndMigrationCode = `import boto3
+    // import urllib3
+
+    // def upload_file_from_url(url, bucket, key):
+    //     s3=boto3.client('s3')
+    //     http=urllib3.PoolManager()
+    //     s3.upload_fileobj(http.request('GET', url,preload_content=False), bucket, key)
+    //     s3.upload_fileobj
+
+    // def lambda_handler(event, context):
+    //     try:
+    //         upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-${process.env.CDK_DEFAULT_REGION}-${cdk.Aws.ACCOUNT_ID}", "migration_runner.zip")
+    //         upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-${process.env.CDK_DEFAULT_REGION}-${cdk.Aws.ACCOUNT_ID}", "schema.sql")
+    //     except e:
+    //         return e
+    //     return '{ status= 200, message = "success"}'`
+
+    // const lambdaRoleSchemaUpload = new Role(scope, "uploadlambdarole", {
+    //   assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
+    // });
+
+    // lambdaRoleSchemaUpload.addToPolicy(
+    //   new PolicyStatement({
+    //     actions: [
+    //       "*"
+    //     ],
+    //     resources: ["*", "*"],
+    //   })
+    // );
+
+    // const initializeUploadFunction = new Function(scope, "initializeUploadFunction", {
+    //   runtime: Runtime.PYTHON_3_9,
+    //   handler: "index.db_handler",
+    //   code: Code.fromInline(uploadSchemaAndMigrationCode),
+    //   vpc: vpc,
+    //   timeout: Duration.minutes(15),
+    //   role: lambdaRoleSchemaUpload,
+    // });
+
+
     this.password = rds_config.password;
     const db_cluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
@@ -89,32 +129,34 @@ export class DataBaseConstruct {
 
     this.db_cluster = db_cluster;
 
-    let schemaBucket = new Bucket(scope, "SchemaBucket", {
-      removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-      bucketName:
-        "hyperswitch-schema-" +
-        cdk.Aws.ACCOUNT_ID +
-        "-" +
-        process.env.CDK_DEFAULT_REGION,
-    });
-    this.bucket = schemaBucket;
 
-    const bucketDeployment = new BucketDeployment(
-      scope,
-      "DeploySchemaToBucket",
-      {
-        sources: [Source.asset("./dependencies/schema")],
-        destinationBucket: schemaBucket,
-        retainOnDelete: false,
-      }
-    );
+    const schemaBucket = Bucket.fromBucketName(scope, "hsbucket", "hyperswitch-bucket");
+
+    // let schemaBucket = new Bucket(scope, "SchemaBucket", {
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    //   autoDeleteObjects: true,
+    //   bucketName:
+    //     "hyperswitch-schema-" +
+    //     cdk.Aws.ACCOUNT_ID +
+    //     "-" +
+    //     process.env.CDK_DEFAULT_REGION,
+    // });
+
+    // const bucketDeployment = new BucketDeployment(
+    //   scope,
+    //   "DeploySchemaToBucket",
+    //   {
+    //     sources: [Source.asset("./dependencies/schema")],
+    //     destinationBucket: schemaBucket,
+    //     retainOnDelete: false,
+    //   }
+    // );
 
     const lambdaRole = new Role(scope, "RDSLambdaRole", {
       assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
     });
 
-    schemaBucket.grantRead(lambdaRole, "dependencies/schema.sql");
+    // schemaBucket.grantRead(lambdaRole, "schema.sql");
 
     lambdaRole.addToPolicy(
       new PolicyStatement({
@@ -151,10 +193,10 @@ export class DataBaseConstruct {
     const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
       runtime: Runtime.PYTHON_3_9,
       handler: "index.db_handler",
-      // code: Code.fromAsset('./dependencies/lambda_package/rds_lambda.py'),
-      code: Code.fromAsset(
-        "./dependencies/migration_runner/migration_runner.zip"
-      ),
+      code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
+      // code: Code.fromAsset(
+      //   "./dependencies/migration_runner/migration_runner.zip"
+      // ),
       environment: {
         DB_SECRET_ARN: secret.secretArn,
         SCHEMA_BUCKET: schemaBucket.bucketName,
@@ -166,11 +208,18 @@ export class DataBaseConstruct {
       role: lambdaRole,
     });
 
+    // new triggers.Trigger(scope, "initializeUploadTrigger", {
+    //   handler: initializeUploadFunction,
+    //   timeout: Duration.minutes(15),
+    //   invocationType: triggers.InvocationType.EVENT,
+    // }).executeBefore();
+
     new triggers.Trigger(scope, "InitializeDBTrigger", {
       handler: initializeDBFunction,
       timeout: Duration.minutes(15),
       invocationType: triggers.InvocationType.EVENT,
     }).executeAfter(db_cluster);
+
   }
 
   addClient(
