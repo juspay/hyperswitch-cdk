@@ -91,7 +91,7 @@ export class DataBaseConstruct {
     lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: [
-          "ec2:sCreateNetworkInterface",
+          "ec2:CreateNetworkInterface",
           "ec2:DescribeNetworkInterfaces",
           "ec2:DeleteNetworkInterface",
           "ec2:AttachNetworkInterface",
