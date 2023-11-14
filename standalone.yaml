@@ -22,6 +22,8 @@ Resources:
           Value: public-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet1
       VpcId:
@@ -32,6 +34,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet1
       VpcId:
@@ -64,6 +68,8 @@ Resources:
     Properties:
       Domain: vpc
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet1
     Metadata:
@@ -78,6 +84,8 @@ Resources:
       SubnetId:
         Ref: appvpcpublicsubnet1Subnet1SubnetFEA47093
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet1
     DependsOn:
@@ -96,6 +104,8 @@ Resources:
           Value: public-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet2
       VpcId:
@@ -106,6 +116,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet2
       VpcId:
@@ -138,6 +150,8 @@ Resources:
     Properties:
       Domain: vpc
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet2
     Metadata:
@@ -152,6 +166,8 @@ Resources:
       SubnetId:
         Ref: appvpcpublicsubnet1Subnet2Subnet0D244743
       Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/public-subnet-1Subnet2
     DependsOn:
@@ -170,6 +186,8 @@ Resources:
           Value: isolated-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/isolated-subnet-1Subnet1
       VpcId:
@@ -180,6 +198,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/isolated-subnet-1Subnet1
       VpcId:
@@ -216,6 +236,8 @@ Resources:
           Value: isolated-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/isolated-subnet-1Subnet2
       VpcId:
@@ -226,6 +248,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/isolated-subnet-1Subnet2
       VpcId:
@@ -262,6 +286,8 @@ Resources:
           Value: database-isolated-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/database-isolated-subnet-1Subnet1
       VpcId:
@@ -272,6 +298,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/database-isolated-subnet-1Subnet1
       VpcId:
@@ -308,6 +336,8 @@ Resources:
           Value: database-isolated-subnet-1
         - Key: aws-cdk:subnet-type
           Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/database-isolated-subnet-1Subnet2
       VpcId:
@@ -318,6 +348,8 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
         - Key: Name
           Value: hyperswitch/app-vpc/database-isolated-subnet-1Subnet2
       VpcId:
@@ -450,10 +482,10 @@ Resources:
         Ref: appvpc31CA2945
     Metadata:
       aws:cdk:path: hyperswitch/Hyperswitch-elasticache-SG/Resource
-  HyperswitchelasticacheSGfromhyperswitchHyperswitchec2SGA0DD43DE63797E25B267:
+  HyperswitchelasticacheSGfromhyperswitchHSEKSClusterClusterSecurityGroup28DB93296379D08506A5:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: from hyperswitchHyperswitchec2SGA0DD43DE:6379
+      Description: from hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:6379
       FromPort: 6379
       GroupId:
         Fn::GetAtt:
@@ -462,11 +494,11 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId:
         Fn::GetAtt:
-          - Hyperswitchec2SG673984F9
-          - GroupId
+          - HSEKSClusterE8C0D9C4
+          - ClusterSecurityGroupId
       ToPort: 6379
     Metadata:
-      aws:cdk:path: hyperswitch/Hyperswitch-elasticache-SG/from hyperswitchHyperswitchec2SGA0DD43DE:6379
+      aws:cdk:path: hyperswitch/Hyperswitch-elasticache-SG/from hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:6379
   HSSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
     Properties:
@@ -527,10 +559,10 @@ Resources:
       ToPort: 5432
     Metadata:
       aws:cdk:path: hyperswitch/Hyperswitch-db-SG/from hyperswitchLambdaSecurityGroup74AB0985:5432
-  HyperswitchdbSGfromhyperswitchHyperswitchec2SGA0DD43DE543243630B1E:
+  HyperswitchdbSGfromhyperswitchHSEKSClusterClusterSecurityGroup28DB93295432BF3BB35F:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: from hyperswitchHyperswitchec2SGA0DD43DE:5432
+      Description: from hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:5432
       FromPort: 5432
       GroupId:
         Fn::GetAtt:
@@ -539,11 +571,11 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId:
         Fn::GetAtt:
-          - Hyperswitchec2SG673984F9
-          - GroupId
+          - HSEKSClusterE8C0D9C4
+          - ClusterSecurityGroupId
       ToPort: 5432
     Metadata:
-      aws:cdk:path: hyperswitch/Hyperswitch-db-SG/from hyperswitchHyperswitchec2SGA0DD43DE:5432
+      aws:cdk:path: hyperswitch/Hyperswitch-db-SG/from hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:5432
   hypersdbmasterusersecret5E17603B:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -564,6 +596,227 @@ Resources:
       TargetType: AWS::RDS::DBCluster
     Metadata:
       aws:cdk:path: hyperswitch/hypers-db-master-user-secret/Attachment/Resource
+  schemaBucket7A946203:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: hyperswitch-us-east-1-225681119357
+      Tags:
+        - Key: aws-cdk:auto-delete-objects
+          Value: "true"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/schemaBucket/Resource
+  schemaBucketPolicy1EA9065A:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: schemaBucket7A946203
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:List*
+              - s3:PutBucketPolicy
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::GetAtt:
+                  - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+                  - Arn
+            Resource:
+              - Fn::GetAtt:
+                  - schemaBucket7A946203
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - schemaBucket7A946203
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: hyperswitch/schemaBucket/Policy/Resource
+  schemaBucketAutoDeleteObjectsCustomResourceF34E38A3:
+    Type: Custom::S3AutoDeleteObjects
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F
+          - Arn
+      BucketName:
+        Ref: schemaBucket7A946203
+    DependsOn:
+      - schemaBucketPolicy1EA9065A
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/schemaBucket/AutoDeleteObjectsCustomResource/Default
+  CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: hyperswitch/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role
+  CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6.zip
+      Timeout: 900
+      MemorySize: 128
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+          - Arn
+      Runtime: nodejs18.x
+      Description:
+        Fn::Join:
+          - ""
+          - - "Lambda function for auto-deleting objects in "
+            - Ref: schemaBucket7A946203
+            - " S3 bucket."
+    DependsOn:
+      - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+    Metadata:
+      aws:cdk:path: hyperswitch/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler
+      aws:asset:path: asset.b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6
+      aws:asset:property: Code
+  SchemaUploadLambdaRole37A581A3:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: hyperswitch/SchemaUploadLambdaRole/Resource
+  SchemaUploadLambdaRoleDefaultPolicy62BE4947:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - "*"
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - schemaBucket7A946203
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: SchemaUploadLambdaRoleDefaultPolicy62BE4947
+      Roles:
+        - Ref: SchemaUploadLambdaRole37A581A3
+    Metadata:
+      aws:cdk:path: hyperswitch/SchemaUploadLambdaRole/DefaultPolicy/Resource
+  initializeUploadFunctionSecurityGroup4BC30780:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Automatic security group for Lambda Function hyperswitchinitializeUploadFunction8245C7DA
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: appvpc31CA2945
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+    Metadata:
+      aws:cdk:path: hyperswitch/initializeUploadFunction/SecurityGroup/Resource
+  initializeUploadFunction0ADCCE28:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |-
+          import boto3
+              import urllib3
+
+              def upload_file_from_url(url, bucket, key):
+                  s3=boto3.client('s3')
+                  http=urllib3.PoolManager()
+                  s3.upload_fileobj(http.request('GET', url,preload_content=False), bucket, key)
+                  s3.upload_fileobj
+
+              def lambda_handler(event, context):
+                  try:
+                      upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-us-east-1-225681119357", "migration_runner.zip")
+                      upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-us-east-1-225681119357", "schema.sql")
+                  except e:
+                      return e
+                  return '{ status= 200, message = "success"}'
+      Handler: index.db_handler
+      Role:
+        Fn::GetAtt:
+          - SchemaUploadLambdaRole37A581A3
+          - Arn
+      Runtime: python3.9
+      Timeout: 900
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt:
+              - initializeUploadFunctionSecurityGroup4BC30780
+              - GroupId
+        SubnetIds:
+          - Ref: appvpcisolatedsubnet1Subnet1Subnet54C867C4
+          - Ref: appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+          - Ref: appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+          - Ref: appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - SchemaUploadLambdaRoleDefaultPolicy62BE4947
+      - SchemaUploadLambdaRole37A581A3
+    Metadata:
+      aws:cdk:path: hyperswitch/initializeUploadFunction/Resource
+  initializeUploadFunctionCurrentVersion7844197815d89dc741af254011abe685c5d58eff:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName:
+        Ref: initializeUploadFunction0ADCCE28
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+    Metadata:
+      aws:cdk:path: hyperswitch/initializeUploadFunction/CurrentVersion/Resource
   hyperswitchdbclusterSubnets565E6E0C:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -714,6 +967,7 @@ Resources:
       - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
       - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
       - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - initializeUploadTrigger
       - RDSLambdaRoleDefaultPolicy11180193
       - RDSLambdaRole66909C26
     Metadata:
@@ -732,9 +986,10 @@ Resources:
       - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
       - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
       - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - initializeUploadTrigger
     Metadata:
       aws:cdk:path: hyperswitch/InitializeDBFunction/CurrentVersion/Resource
-  InitializeDBTrigger:
+  initializeUploadTrigger:
     Type: Custom::Trigger
     Properties:
       ServiceToken:
@@ -746,14 +1001,10 @@ Resources:
       InvocationType: Event
       Timeout: "900000"
       ExecuteOnHandlerChange: true
-    DependsOn:
-      - hyperswitchdbcluster6AFB6EE5
-      - hyperswitchdbclusterSubnets565E6E0C
-      - hyperswitchdbclusterWriterInstance3FFAF9E3
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: hyperswitch/InitializeDBTrigger/Default/Default
+      aws:cdk:path: hyperswitch/initializeUploadTrigger/Default/Default
   AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A:
     Type: AWS::IAM::Role
     Properties:
@@ -771,6 +1022,16 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - Fn::GetAtt:
+                            - initializeUploadFunction0ADCCE28
+                            - Arn
+                        - :*
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
@@ -804,37 +1065,580 @@ Resources:
       aws:cdk:path: hyperswitch/AWSCDK.TriggerCustomResourceProviderCustomResourceProvider/Handler
       aws:asset:path: asset.30d27607a2f6a97cb964228693797269365769d596600286bcb294bbb3b1844d
       aws:asset:property: Code
-  Hyperswitchec2SG673984F9:
+  InitializeDBTrigger:
+    Type: Custom::Trigger
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91
+          - Arn
+      HandlerArn:
+        Ref: InitializeDBFunctionCurrentVersion6A89862F45e0812d32b2e78bc9d189532aa72c42
+      InvocationType: Event
+      Timeout: "900000"
+      ExecuteOnHandlerChange: true
+    DependsOn:
+      - hyperswitchdbcluster6AFB6EE5
+      - hyperswitchdbclusterSubnets565E6E0C
+      - hyperswitchdbclusterWriterInstance3FFAF9E3
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/InitializeDBTrigger/Default/Default
+  HSEKSClusterKubectlHandlerRole12043DEB:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - Fn::If:
+            - HSEKSClusterHasEcrPublic1090A4D3
+            - Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - :iam::aws:policy/AmazonElasticContainerRegistryPublicReadOnly
+            - Ref: AWS::NoValue
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/KubectlHandlerRole/Resource
+  HSEKSClusterKubectlHandlerRoleDefaultPolicy22C955DE:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: eks:DescribeCluster
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - HSEKSClusterE8C0D9C4
+                - Arn
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - HSEKSClusterCreationRole592B55AB
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: HSEKSClusterKubectlHandlerRoleDefaultPolicy22C955DE
+      Roles:
+        - Ref: HSEKSClusterKubectlHandlerRole12043DEB
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/KubectlHandlerRole/DefaultPolicy/Resource
+  HSEKSClusterRole2BC614D6:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonEKSClusterPolicy
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/Role/Resource
+  HSEKSClusterControlPlaneSecurityGroupD141A0D2:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: hyperswitch/Hyperswitch-ec2-SG
-      GroupName: Hyperswitch-ec2-SG
+      GroupDescription: EKS Control Plane Security Group
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           Description: Allow all outbound traffic by default
           IpProtocol: "-1"
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          Description: from 0.0.0.0/0:80
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
-        - CidrIp: 0.0.0.0/0
-          Description: from 0.0.0.0/0:22
-          FromPort: 22
-          IpProtocol: tcp
-          ToPort: 22
       VpcId:
         Ref: appvpc31CA2945
     Metadata:
-      aws:cdk:path: hyperswitch/Hyperswitch-ec2-SG/Resource
-  Hyperswitchec2keypair:
-    Type: AWS::EC2::KeyPair
+      aws:cdk:path: hyperswitch/HSEKSCluster/ControlPlaneSecurityGroup/Resource
+  HSEKSClusterCreationRole592B55AB:
+    Type: AWS::IAM::Role
     Properties:
-      KeyName: Hyperswitch-ec2-keypair
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                - Fn::GetAtt:
+                    - HSEKSClusterKubectlHandlerRole12043DEB
+                    - Arn
+                - Fn::GetAtt:
+                    - awscdkawseksClusterResourceProviderNestedStackawscdkawseksClusterResourceProviderNestedStackResource9827C454
+                    - Outputs.hyperswitchawscdkawseksClusterResourceProviderIsCompleteHandlerServiceRoleFBF9C502Arn
+                - Fn::GetAtt:
+                    - awscdkawseksClusterResourceProviderNestedStackawscdkawseksClusterResourceProviderNestedStackResource9827C454
+                    - Outputs.hyperswitchawscdkawseksClusterResourceProviderOnEventHandlerServiceRoleE2CBF2D8Arn
+        Version: "2012-10-17"
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTable6C7E1D55
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTable838C11C6
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+      - appvpcIGW7D07CE09
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableC6BE7C48
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet1Subnet54C867C4
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTable4364446D
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+      - appvpcpublicsubnet1Subnet1DefaultRoute7A2E49EA
+      - appvpcpublicsubnet1Subnet1EIP63C3C907
+      - appvpcpublicsubnet1Subnet1NATGatewayFE13728D
+      - appvpcpublicsubnet1Subnet1RouteTable7D548588
+      - appvpcpublicsubnet1Subnet1RouteTableAssociation7BC96EB4
+      - appvpcpublicsubnet1Subnet1SubnetFEA47093
+      - appvpcpublicsubnet1Subnet2DefaultRoute454FC4BC
+      - appvpcpublicsubnet1Subnet2EIP8AE85C60
+      - appvpcpublicsubnet1Subnet2NATGateway9CF16758
+      - appvpcpublicsubnet1Subnet2RouteTable142FAEAA
+      - appvpcpublicsubnet1Subnet2RouteTableAssociation8ED59114
+      - appvpcpublicsubnet1Subnet2Subnet0D244743
+      - appvpc31CA2945
+      - appvpcRestrictDefaultSecurityGroupCustomResource0A359118
+      - appvpcVPCGW0F236DB6
     Metadata:
-      aws:cdk:path: hyperswitch/Hyperswitch-ec2-keypair
-  hyperswitchInstanceRole2F509248:
+      aws:cdk:path: hyperswitch/HSEKSCluster/Resource/CreationRole/Resource
+  HSEKSClusterCreationRoleDefaultPolicyFD39A6C4:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: iam:PassRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - HSEKSClusterRole2BC614D6
+                - Arn
+          - Action:
+              - eks:CreateCluster
+              - eks:CreateFargateProfile
+              - eks:DeleteCluster
+              - eks:DescribeCluster
+              - eks:DescribeUpdate
+              - eks:TagResource
+              - eks:UntagResource
+              - eks:UpdateClusterConfig
+              - eks:UpdateClusterVersion
+            Effect: Allow
+            Resource:
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":eks:"
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - :cluster/hs-eks-cluster
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":eks:"
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - :cluster/hs-eks-cluster/*
+          - Action:
+              - eks:DeleteFargateProfile
+              - eks:DescribeFargateProfile
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":eks:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :fargateprofile/hs-eks-cluster/*
+          - Action:
+              - ec2:DescribeDhcpOptions
+              - ec2:DescribeInstances
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeRouteTables
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+              - iam:CreateServiceLinkedRole
+              - iam:GetRole
+              - iam:listAttachedRolePolicies
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: HSEKSClusterCreationRoleDefaultPolicyFD39A6C4
+      Roles:
+        - Ref: HSEKSClusterCreationRole592B55AB
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTable6C7E1D55
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTable838C11C6
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+      - appvpcIGW7D07CE09
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableC6BE7C48
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet1Subnet54C867C4
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTable4364446D
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+      - appvpcpublicsubnet1Subnet1DefaultRoute7A2E49EA
+      - appvpcpublicsubnet1Subnet1EIP63C3C907
+      - appvpcpublicsubnet1Subnet1NATGatewayFE13728D
+      - appvpcpublicsubnet1Subnet1RouteTable7D548588
+      - appvpcpublicsubnet1Subnet1RouteTableAssociation7BC96EB4
+      - appvpcpublicsubnet1Subnet1SubnetFEA47093
+      - appvpcpublicsubnet1Subnet2DefaultRoute454FC4BC
+      - appvpcpublicsubnet1Subnet2EIP8AE85C60
+      - appvpcpublicsubnet1Subnet2NATGateway9CF16758
+      - appvpcpublicsubnet1Subnet2RouteTable142FAEAA
+      - appvpcpublicsubnet1Subnet2RouteTableAssociation8ED59114
+      - appvpcpublicsubnet1Subnet2Subnet0D244743
+      - appvpc31CA2945
+      - appvpcRestrictDefaultSecurityGroupCustomResource0A359118
+      - appvpcVPCGW0F236DB6
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/Resource/CreationRole/DefaultPolicy/Resource
+  HSEKSClusterE8C0D9C4:
+    Type: Custom::AWSCDK-EKS-Cluster
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - awscdkawseksClusterResourceProviderNestedStackawscdkawseksClusterResourceProviderNestedStackResource9827C454
+          - Outputs.hyperswitchawscdkawseksClusterResourceProviderframeworkonEvent416ED79EArn
+      Config:
+        name: hs-eks-cluster
+        version: "1.28"
+        roleArn:
+          Fn::GetAtt:
+            - HSEKSClusterRole2BC614D6
+            - Arn
+        kubernetesNetworkConfig:
+          ipFamily: ipv4
+        resourcesVpcConfig:
+          subnetIds:
+            - Ref: appvpcpublicsubnet1Subnet1SubnetFEA47093
+            - Ref: appvpcpublicsubnet1Subnet2Subnet0D244743
+            - Ref: appvpcisolatedsubnet1Subnet1Subnet54C867C4
+            - Ref: appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+            - Ref: appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+            - Ref: appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+          securityGroupIds:
+            - Fn::GetAtt:
+                - HSEKSClusterControlPlaneSecurityGroupD141A0D2
+                - GroupId
+          endpointPublicAccess: true
+          endpointPrivateAccess: true
+      AssumeRoleArn:
+        Fn::GetAtt:
+          - HSEKSClusterCreationRole592B55AB
+          - Arn
+      AttributesRevision: 2
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTable6C7E1D55
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTable838C11C6
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+      - appvpcIGW7D07CE09
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableC6BE7C48
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet1Subnet54C867C4
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTable4364446D
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+      - appvpcpublicsubnet1Subnet1DefaultRoute7A2E49EA
+      - appvpcpublicsubnet1Subnet1EIP63C3C907
+      - appvpcpublicsubnet1Subnet1NATGatewayFE13728D
+      - appvpcpublicsubnet1Subnet1RouteTable7D548588
+      - appvpcpublicsubnet1Subnet1RouteTableAssociation7BC96EB4
+      - appvpcpublicsubnet1Subnet1SubnetFEA47093
+      - appvpcpublicsubnet1Subnet2DefaultRoute454FC4BC
+      - appvpcpublicsubnet1Subnet2EIP8AE85C60
+      - appvpcpublicsubnet1Subnet2NATGateway9CF16758
+      - appvpcpublicsubnet1Subnet2RouteTable142FAEAA
+      - appvpcpublicsubnet1Subnet2RouteTableAssociation8ED59114
+      - appvpcpublicsubnet1Subnet2Subnet0D244743
+      - appvpc31CA2945
+      - appvpcRestrictDefaultSecurityGroupCustomResource0A359118
+      - appvpcVPCGW0F236DB6
+      - HSEKSClusterCreationRoleDefaultPolicyFD39A6C4
+      - HSEKSClusterCreationRole592B55AB
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/Resource/Resource/Default
+  HSEKSClusterKubectlReadyBarrierA2EF7517:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: aws:cdk:eks:kubectl-ready
+    DependsOn:
+      - HSEKSClusterCreationRoleDefaultPolicyFD39A6C4
+      - HSEKSClusterCreationRole592B55AB
+      - HSEKSClusterE8C0D9C4
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/KubectlReadyBarrier
+  HSEKSClusterClusterSecurityGroupfromhyperswitchHSLBSecurityGroup3F203A59ALLPORTSABC35D0A:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow inbound traffic from an existing load balancer security group
+      FromPort: 0
+      GroupId:
+        Fn::GetAtt:
+          - HSEKSClusterE8C0D9C4
+          - ClusterSecurityGroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - HSLBSecurityGroup4A3E3CBA
+          - GroupId
+      ToPort: 65535
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/ClusterSecurityGroup/from hyperswitchHSLBSecurityGroup3F203A59:ALL PORTS
+  HSEKSClusterAwsAuthmanifest09D00A77:
+    Type: Custom::AWSCDK-EKS-KubernetesResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - awscdkawseksKubectlProviderNestedStackawscdkawseksKubectlProviderNestedStackResourceA7AEBA6B
+          - Outputs.hyperswitchawscdkawseksKubectlProviderframeworkonEvent97E588B3Arn
+      Manifest:
+        Fn::Join:
+          - ""
+          - - '[{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"aws-auth","namespace":"kube-system","labels":{"aws.cdk.eks/prune-c8e4c98fc446123a43a92a8a1452d1508b4bdb237e":""}},"data":{"mapRoles":"[{\"rolearn\":\"arn:'
+            - Ref: AWS::Partition
+            - ":iam::"
+            - Ref: AWS::AccountId
+            - ':role/AWSReservedSSO_AWSAdministratorAccess_ebf3e1964512148f\",\"username\":\"arn:'
+            - Ref: AWS::Partition
+            - ":iam::"
+            - Ref: AWS::AccountId
+            - :role/AWSReservedSSO_AWSAdministratorAccess_ebf3e1964512148f\",\"groups\":[\"system:masters\"]},{\"rolearn\":\"
+            - Fn::GetAtt:
+                - HSNodegroupRoleA5CDE24A
+                - Arn
+            - \",\"username\":\"system:node:{{EC2PrivateDNSName}}\",\"groups\":[\"system:bootstrappers\",\"system:nodes\"]}]","mapUsers":"[]","mapAccounts":"[]"}}]
+      ClusterName:
+        Ref: HSEKSClusterE8C0D9C4
+      RoleArn:
+        Fn::GetAtt:
+          - HSEKSClusterCreationRole592B55AB
+          - Arn
+      PruneLabel: aws.cdk.eks/prune-c8e4c98fc446123a43a92a8a1452d1508b4bdb237e
+      Overwrite: true
+    DependsOn:
+      - HSEKSClusterKubectlReadyBarrierA2EF7517
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/AwsAuth/manifest/Resource/Default
+  HSEKSClusterNodegroupHSNodegroupA43C2719:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      AmiType: AL2_x86_64
+      ClusterName:
+        Ref: HSEKSClusterE8C0D9C4
+      ForceUpdateEnabled: true
+      InstanceTypes:
+        - t3.medium
+      Labels:
+        node-type: generic-compute
+      NodeRole:
+        Fn::GetAtt:
+          - HSNodegroupRoleA5CDE24A
+          - Arn
+      NodegroupName: hs-nodegroup
+      ScalingConfig:
+        DesiredSize: 2
+        MaxSize: 3
+        MinSize: 1
+      Subnets:
+        - Ref: appvpcisolatedsubnet1Subnet1Subnet54C867C4
+        - Ref: appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+        - Ref: appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+        - Ref: appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/NodegroupHSNodegroup/Resource
+  HSEKSClusterchartALBController12883190:
+    Type: Custom::AWSCDK-EKS-HelmChart
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - awscdkawseksKubectlProviderNestedStackawscdkawseksKubectlProviderNestedStackResourceA7AEBA6B
+          - Outputs.hyperswitchawscdkawseksKubectlProviderframeworkonEvent97E588B3Arn
+      ClusterName:
+        Ref: HSEKSClusterE8C0D9C4
+      RoleArn:
+        Fn::GetAtt:
+          - HSEKSClusterCreationRole592B55AB
+          - Arn
+      Release: hs-lb-v1
+      Chart: aws-load-balancer-controller
+      Values:
+        Fn::Join:
+          - ""
+          - - '{"clusterName":"'
+            - Ref: HSEKSClusterE8C0D9C4
+            - '"}'
+      Namespace: kube-system
+      Repository: https://aws.github.io/eks-charts
+    DependsOn:
+      - HSEKSClusterKubectlReadyBarrierA2EF7517
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/chart-ALBController/Resource/Default
+  HSEKSClusterchartHyperswitchServicesB85DA142:
+    Type: Custom::AWSCDK-EKS-HelmChart
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - awscdkawseksKubectlProviderNestedStackawscdkawseksKubectlProviderNestedStackResourceA7AEBA6B
+          - Outputs.hyperswitchawscdkawseksKubectlProviderframeworkonEvent97E588B3Arn
+      ClusterName:
+        Ref: HSEKSClusterE8C0D9C4
+      RoleArn:
+        Fn::GetAtt:
+          - HSEKSClusterCreationRole592B55AB
+          - Arn
+      Release: hypers-v1
+      Chart: hyperswitch-helm
+      Values:
+        Fn::Join:
+          - ""
+          - - '{"clusterName":"'
+            - Ref: HSEKSClusterE8C0D9C4
+            - '","application":{"server":{"server_base_url":"https://sandbox.hyperswitch.io","secrets":{"podAnnotations":{"traffic_sidecar_istio_io_excludeOutboundIPRanges":"10.23.6.12/32"},"kms_admin_api_key":"test_admin","kms_jwt_secret":"test_admin","admin_api_key":"test_admin","jwt_secret":"test_admin","recon_admin_api_key":"test_admin"},"locker":{"host":"locker-host"},"basilisk":{"host":"basilisk-host"}}},"loadBalancer":{"targetSecurityGroup":"'
+            - Fn::GetAtt:
+                - HSLBSecurityGroup4A3E3CBA
+                - GroupId
+            - '"},"redis":{"host":"'
+            - Fn::GetAtt:
+                - HSCacheCluster
+                - RedisEndpoint.Address
+            - '","replicaCount":1},"db":{"host":"'
+            - Fn::GetAtt:
+                - hyperswitchdbcluster6AFB6EE5
+                - Endpoint.Address
+            - '","name":"hyperswitch","user_name":"db_user","password":"dbpassword"}}'
+      Namespace: hyperswitch
+      Repository: https://juspay.github.io/hyperswitch-helm
+      CreateNamespace: true
+    DependsOn:
+      - HSEKSClusterKubectlReadyBarrierA2EF7517
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/HSEKSCluster/chart-HyperswitchServices/Resource/Default
+  awscdkawseksClusterResourceProviderNestedStackawscdkawseksClusterResourceProviderNestedStackResource9827C454:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        Fn::Join:
+          - ""
+          - - https://s3.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - /
+            - Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+            - /e8c4dd4f5e4f50b35a0e4333661ef1f2ba12a1f5d35f761641a9306c9f5d751c.json
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/@aws-cdk--aws-eks.ClusterResourceProvider.NestedStack/@aws-cdk--aws-eks.ClusterResourceProvider.NestedStackResource
+      aws:asset:path: hyperswitchawscdkawseksClusterResourceProviderA539DB13.nested.template.json
+      aws:asset:property: TemplateURL
+  awscdkawseksKubectlProviderNestedStackawscdkawseksKubectlProviderNestedStackResourceA7AEBA6B:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        referencetohyperswitchHSEKSClusterKubectlHandlerRole7916FDB1Arn:
+          Fn::GetAtt:
+            - HSEKSClusterKubectlHandlerRole12043DEB
+            - Arn
+        referencetohyperswitchappvpcisolatedsubnet1Subnet1Subnet0DC9ABC2Ref:
+          Ref: appvpcisolatedsubnet1Subnet1Subnet54C867C4
+        referencetohyperswitchappvpcisolatedsubnet1Subnet2Subnet6DD529FARef:
+          Ref: appvpcisolatedsubnet1Subnet2SubnetD5DCFF99
+        referencetohyperswitchappvpcdatabaseisolatedsubnet1Subnet1Subnet77E445A8Ref:
+          Ref: appvpcdatabaseisolatedsubnet1Subnet1Subnet6FC88100
+        referencetohyperswitchappvpcdatabaseisolatedsubnet1Subnet2SubnetBC1BCCDCRef:
+          Ref: appvpcdatabaseisolatedsubnet1Subnet2SubnetDFC7DD24
+        referencetohyperswitchHSEKSCluster5453481FClusterSecurityGroupId:
+          Fn::GetAtt:
+            - HSEKSClusterE8C0D9C4
+            - ClusterSecurityGroupId
+      TemplateURL:
+        Fn::Join:
+          - ""
+          - - https://s3.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - /
+            - Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+            - /c392d9f063075d46db77e7ad651d6439a9ba896237da22b98b616aa6be8afd77.json
+    DependsOn:
+      - appvpcdatabaseisolatedsubnet1Subnet1DefaultRouteD219FFA5
+      - appvpcdatabaseisolatedsubnet1Subnet1RouteTableAssociationC48FF685
+      - appvpcdatabaseisolatedsubnet1Subnet2DefaultRouteBB622C86
+      - appvpcdatabaseisolatedsubnet1Subnet2RouteTableAssociation2B5D3E03
+      - appvpcisolatedsubnet1Subnet1DefaultRouteA336FE94
+      - appvpcisolatedsubnet1Subnet1RouteTableAssociation0C34A74E
+      - appvpcisolatedsubnet1Subnet2DefaultRouteA8A85DB0
+      - appvpcisolatedsubnet1Subnet2RouteTableAssociation3292EB04
+      - HSEKSClusterKubectlHandlerRoleDefaultPolicy22C955DE
+      - HSEKSClusterKubectlHandlerRole12043DEB
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: hyperswitch/@aws-cdk--aws-eks.KubectlProvider.NestedStack/@aws-cdk--aws-eks.KubectlProvider.NestedStackResource
+      aws:asset:path: hyperswitchawscdkawseksKubectlProvider0A1ED638.nested.template.json
+      aws:asset:property: TemplateURL
+  HSNodegroupRoleA5CDE24A:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -844,88 +1648,207 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
         Version: "2012-10-17"
-      Tags:
-        - Key: Name
-          Value: hyperswitch/hyperswitch
-    Metadata:
-      aws:cdk:path: hyperswitch/hyperswitch/InstanceRole/Resource
-  hyperswitchInstanceProfile0E7C5733:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Roles:
-        - Ref: hyperswitchInstanceRole2F509248
-    Metadata:
-      aws:cdk:path: hyperswitch/hyperswitch/InstanceProfile
-  hyperswitch895CB1FC:
-    Type: AWS::EC2::Instance
-    Properties:
-      AvailabilityZone: us-east-1a
-      IamInstanceProfile:
-        Ref: hyperswitchInstanceProfile0E7C5733
-      ImageId:
-        Ref: SsmParameterValueawsserviceamiamazonlinuxlatestamznamihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter
-      InstanceType: t3.medium
-      KeyName: Hyperswitch-ec2-keypair
-      SecurityGroupIds:
-        - Fn::GetAtt:
-            - Hyperswitchec2SG673984F9
-            - GroupId
-      SubnetId:
-        Ref: appvpcpublicsubnet1Subnet1SubnetFEA47093
-      Tags:
-        - Key: Name
-          Value: hyperswitch/hyperswitch
-      UserData:
-        Fn::Base64:
-          Fn::Join:
+      ManagedPolicyArns:
+        - Fn::Join:
             - ""
-            - - |-
-                #!/bin/bash
-
-                sudo yum update -y
-                sudo yum install docker -y
-                sudo service docker start
-                sudo usermod -a -G docker ec2-user
-
-                docker pull juspaydotin/hyperswitch-router:beta
-
-                curl https://raw.githubusercontent.com/juspay/hyperswitch/v1.55.0/config/development.toml > production.toml
-                cat << EOF >> .env
-                ROUTER__REDIS__HOST=
-              - Fn::GetAtt:
-                  - HSCacheCluster
-                  - RedisEndpoint.Address
-              - |-
-
-                ROUTER__MASTER_DATABASE__HOST=
-              - Fn::GetAtt:
-                  - hyperswitchdbcluster6AFB6EE5
-                  - Endpoint.Address
-              - |-
-
-                ROUTER__REPLICA_DATABASE__HOST=
-              - Fn::GetAtt:
-                  - hyperswitchdbcluster6AFB6EE5
-                  - Endpoint.Address
-              - |-
-
-                ROUTER__SERVER__HOST=0.0.0.0
-                ROUTER__MASTER_DATABASE__USERNAME=db_user
-                ROUTER__MASTER_DATABASE__PASSWORD=dbpassword
-                ROUTER__MASTER_DATABASE__DBNAME=hyperswitch
-                ROUTER__SERVER__BASE_URL=$(curl ifconfig.me)
-                ROUTER__SECRETS__ADMIN_API_KEY=test_admin
-                EOF
-
-                docker run --env-file .env -p 80:8080 -v `pwd`/:/local/config juspaydotin/hyperswitch-router:beta ./router -f /local/config/production.toml
-    DependsOn:
-      - hyperswitchInstanceRole2F509248
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonEKS_CNI_Policy
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
     Metadata:
-      aws:cdk:path: hyperswitch/hyperswitch/Resource
+      aws:cdk:path: hyperswitch/HSNodegroupRole/Resource
+  HSLBSecurityGroup4A3E3CBA:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: hyperswitch/HSLBSecurityGroup
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: from 0.0.0.0/0:ALL TRAFFIC
+          IpProtocol: "-1"
+      VpcId:
+        Ref: appvpc31CA2945
+    Metadata:
+      aws:cdk:path: hyperswitch/HSLBSecurityGroup/Resource
+  HSLBSecurityGrouptohyperswitchHSEKSClusterClusterSecurityGroup28DB9329ALLTRAFFIC082859F7:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: to hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:ALL TRAFFIC
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+          - HSEKSClusterE8C0D9C4
+          - ClusterSecurityGroupId
+      GroupId:
+        Fn::GetAtt:
+          - HSLBSecurityGroup4A3E3CBA
+          - GroupId
+      IpProtocol: "-1"
+    Metadata:
+      aws:cdk:path: hyperswitch/HSLBSecurityGroup/to hyperswitchHSEKSClusterClusterSecurityGroup28DB9329:ALL TRAFFIC
+  HSAWSLoadBalancerControllerIAMPolicyInfo4FB07E73:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - acm:DescribeCertificate
+              - acm:ListCertificates
+              - cognito-idp:DescribeUserPoolClient
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:CreateSecurityGroup
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeAddresses
+              - ec2:DescribeAvailabilityZones
+              - ec2:DescribeCoipPools
+              - ec2:DescribeInstances
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeTags
+              - ec2:DescribeVpcs
+              - ec2:GetCoipPoolUsage
+              - ec2:RevokeSecurityGroupIngress
+              - elasticloadbalancing:AddListenerCertificates
+              - elasticloadbalancing:CreateListener
+              - elasticloadbalancing:CreateRule
+              - elasticloadbalancing:DeleteListener
+              - elasticloadbalancing:DeleteRule
+              - elasticloadbalancing:DescribeListenerCertificates
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeLoadBalancerAttributes
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:DescribeSSLPolicies
+              - elasticloadbalancing:DescribeTags
+              - elasticloadbalancing:DescribeTargetGroupAttributes
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:ModifyListener
+              - elasticloadbalancing:ModifyRule
+              - elasticloadbalancing:RemoveListenerCertificates
+              - elasticloadbalancing:SetWebAcl
+              - iam:CreateServiceLinkedRole
+              - iam:GetServerCertificate
+              - iam:ListServerCertificates
+              - shield:CreateProtection
+              - shield:DeleteProtection
+              - shield:DescribeProtection
+              - shield:GetSubscriptionState
+              - waf-regional:AssociateWebACL
+              - waf-regional:DisassociateWebACL
+              - waf-regional:GetWebACL
+              - waf-regional:GetWebACLForResource
+              - wafv2:AssociateWebACL
+              - wafv2:DisassociateWebACL
+              - wafv2:GetWebACL
+              - wafv2:GetWebACLForResource
+            Effect: Allow
+            Resource: "*"
+          - Action: ec2:CreateTags
+            Condition:
+              StringEquals:
+                ec2:CreateAction: CreateSecurityGroup
+              "Null":
+                aws:RequestTag/elbv2.k8s.aws/cluster: "false"
+            Effect: Allow
+            Resource: arn:aws:ec2:*:*:security-group/*
+          - Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+            Condition:
+              "Null":
+                aws:RequestTag/elbv2.k8s.aws/cluster: "true"
+                aws:ResourceTag/elbv2.k8s.aws/cluster: "false"
+            Effect: Allow
+            Resource: arn:aws:ec2:*:*:security-group/*
+          - Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:DeleteSecurityGroup
+              - ec2:RevokeSecurityGroupIngress
+              - elasticloadbalancing:DeleteLoadBalancer
+              - elasticloadbalancing:DeleteTargetGroup
+              - elasticloadbalancing:ModifyLoadBalancerAttributes
+              - elasticloadbalancing:ModifyTargetGroup
+              - elasticloadbalancing:ModifyTargetGroupAttributes
+              - elasticloadbalancing:SetIpAddressType
+              - elasticloadbalancing:SetSecurityGroups
+              - elasticloadbalancing:SetSubnets
+            Condition:
+              "Null":
+                aws:ResourceTag/elbv2.k8s.aws/cluster: "false"
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - elasticloadbalancing:CreateLoadBalancer
+              - elasticloadbalancing:CreateTargetGroup
+            Condition:
+              "Null":
+                aws:RequestTag/elbv2.k8s.aws/cluster: "false"
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+            Condition:
+              "Null":
+                aws:RequestTag/elbv2.k8s.aws/cluster: "true"
+                aws:ResourceTag/elbv2.k8s.aws/cluster: "false"
+            Effect: Allow
+            Resource:
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+          - Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+            Effect: Allow
+            Resource:
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/app/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/net/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener/app/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener/net/*/*/*
+          - Action:
+              - elasticloadbalancing:DeregisterTargets
+              - elasticloadbalancing:RegisterTargets
+            Effect: Allow
+            Resource: arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+        Version: "2012-10-17"
+      PolicyName: HSAWSLoadBalancerControllerIAMPolicyInfo4FB07E73
+      Roles:
+        - Ref: HSNodegroupRoleA5CDE24A
+    Metadata:
+      aws:cdk:path: hyperswitch/HSAWSLoadBalancerControllerIAMPolicyInfo/Resource
+  HSAWSLoadBalancerControllerIAMInlinePolicyInfo05E49DD2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+            Effect: Allow
+            Resource:
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+        Version: "2012-10-17"
+      PolicyName: HSAWSLoadBalancerControllerIAMInlinePolicyInfo05E49DD2
+      Roles:
+        - Ref: HSNodegroupRoleA5CDE24A
+    Metadata:
+      aws:cdk:path: hyperswitch/HSAWSLoadBalancerControllerIAMInlinePolicyInfo/Resource
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/31STW/bMAz9Lb0rWtr1sGvjbkUwYDWSINeBlllPjS0FIpUiMPzfS/lz6IoBBvj4SJOPpO707fper2/gjVamPK1qW+h2z2BOSqjfLZo73R7PRmUv7phnKo9Fbc0+Fg45cQva+ch4gKLGhV+4ByJvLLD1bk5O4Ps2T+YX8BMwvsFV5cFeBC6Ft44xCJ4SBiWj98Ci9U+DjtUeTQyWr0/Bx3Ov4b/E1lUBiRL/E6852KC2jhicwaHrgDuFNRBbI21Qt/Noc9EsBbI6kqjsFKEJyNSAgwqDrLL3x+YJDeYAoUL+S/yc8DHSqVCSbh+BoQCaGqkPIh43/xBTZu8s09BXvYnmhLyRaspCo9udH27W29zLffslL2j6Ow/+xdZSpIamKEG3P6Iz00lnfMRAIzfCrlM7JB9DWq2o8s3iStvPQ9LsYksZQJ4OsjzJyroq5T9HPkdWHGwlKyZ9GEAvGQI0OE6deVfapKhTzpeoX+nL5fablm9980rWrkJ0bBvUu8G+AyOpu1QLAwAA
+      Analytics: v2:deflate64:H4sIAAAAAAAA/31T227bMAz9lr0rWpZuH5C6XRsM64wkyOtAy6yjxpYCkUoQGP730fehHfbEw8ODY16slf6y/KqXn+BKC5OfFqXNdL1jMCcl1O8azUrXh7NRyas7pIlKY1Zas4uZQ265GW19ZNxDVuLMz9yayBsLbL2bxC143KRteAF+AsYr3FQa7EXgbLxxjEHwKOg7GbI1S6/HCh2rHZoYLN+ego/nrof/EhtXBCT6wD92dKOwBGJrxB11PU00eSVtISkjSXONIjQBmSpwUGCQDXb54N2iPuwhFMh/9TwJ3lfE8k7X99GcepsB9SH1coPbTPd5oyxUut76/gJdnJWjpoQqy0HX36Mz4zUmfMBAAzfARoWcdP0ADBnQOLB6t4yH+w/EqOySjSMGZ1C2ehK3sba+0jryUf2IWXdhpJ/g7CsSqxefYzG6zckzllVyhMBNo7ZIPgYjw4qbr+ZUZv93KQ3+YvP2w0TI8pcX1hWt/lfkc2TFwRZyPtL7HnR39i6346K6h9EoJ/3oN/p8WS31N3k8b2TtIkTHtkK97eMfFyROAlkDAAA=
     Metadata:
       aws:cdk:path: hyperswitch/CDKMetadata/Default
     Condition: CDKMetadataAvailable
@@ -933,25 +1856,36 @@ Outputs:
   VPCid:
     Value:
       Ref: appvpc31CA2945
-  Hyperswitchec2IP:
-    Description: try health api
+  ClusterName:
     Value:
-      Fn::Join:
-        - ""
-        - - http://
-          - Fn::GetAtt:
-              - hyperswitch895CB1FC
-              - PublicIp
-          - /health
-Parameters:
-  SsmParameterValueawsserviceamiamazonlinuxlatestamznamihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2
-  BootstrapVersion:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /cdk-bootstrap/hnb659fds/version
-    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+      Ref: HSEKSClusterE8C0D9C4
+  ClusterEndpoint:
+    Value:
+      Fn::GetAtt:
+        - HSEKSClusterE8C0D9C4
+        - Endpoint
+  redisHost:
+    Value:
+      Fn::GetAtt:
+        - HSCacheCluster
+        - RedisEndpoint.Address
+  dbHost:
+    Value:
+      Fn::GetAtt:
+        - hyperswitchdbcluster6AFB6EE5
+        - Endpoint.Address
+  dbPassword:
+    Value: dbpassword
+  lbSecurityGroupId:
+    Value:
+      Fn::GetAtt:
+        - HSLBSecurityGroup4A3E3CBA
+        - GroupId
 Conditions:
+  HSEKSClusterHasEcrPublic1090A4D3:
+    Fn::Equals:
+      - Ref: AWS::Partition
+      - aws
   CDKMetadataAvailable:
     Fn::Or:
       - Fn::Or:
@@ -1023,6 +1957,11 @@ Conditions:
           - Fn::Equals:
               - Ref: AWS::Region
               - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 Rules:
   CheckBootstrapVersion:
     Assertions:
