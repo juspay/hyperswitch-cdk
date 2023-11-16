@@ -8,4 +8,4 @@ unzip main.zip
 cd $(unzip -Z -1 main.zip| head -1)
 yarn install
 
-cdk deploy --require-approval never -c test=true
+yarn cdk deploy --require-approval never -c test=true
