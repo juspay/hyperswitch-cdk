@@ -62,27 +62,74 @@ export class DataBaseConstruct {
       autoDeleteObjects: true,
       bucketName:
         "hyperswitch-schema-" +
-        cdk.Aws.ACCOUNT_ID +
-        "-" +
-        process.env.CDK_DEFAULT_REGION,
+        process.env.CDK_DEFAULT_ACCOUNT + "-" +
+        process.env.CDK_DEFAULT_REGION
     });
 
     const uploadSchemaAndMigrationCode = `import boto3
-    import urllib3
+import urllib3
+import json
 
-    def upload_file_from_url(url, bucket, key):
-        s3=boto3.client('s3')
-        http=urllib3.PoolManager()
-        s3.upload_fileobj(http.request('GET', url,preload_content=False), bucket, key)
-        s3.upload_fileobj
+SUCCESS = "SUCCESS"
+FAILED = "FAILED"
 
-    def lambda_handler(event, context):
-        try:
-            upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-${process.env.CDK_DEFAULT_REGION}-${process.env.CDK_DEFAULT_ACCOUNT}", "migration_runner.zip")
-            upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-${process.env.CDK_DEFAULT_REGION}-${process.env.CDK_DEFAULT_ACCOUNT}", "schema.sql")
-        except e:
-            return e
-        return '{ status= 200, message = "success"}'`
+http = urllib3.PoolManager()
+
+
+def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
+    responseUrl = event['ResponseURL']
+
+    responseBody = {
+        'Status' : responseStatus,
+        'Reason' : reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),
+        'PhysicalResourceId' : physicalResourceId or context.log_stream_name,
+        'StackId' : event['StackId'],
+        'RequestId' : event['RequestId'],
+        'LogicalResourceId' : event['LogicalResourceId'],
+        'NoEcho' : noEcho,
+        'Data' : responseData
+    }
+
+    json_responseBody = json.dumps(responseBody)
+
+    print("Response body:")
+    print(json_responseBody)
+
+    headers = {
+        'content-type' : '',
+        'content-length' : str(len(json_responseBody))
+    }
+
+    try:
+        response = http.request('PUT', responseUrl, headers=headers, body=json_responseBody)
+        print("Status code:", response.status)
+
+    except Exception as e:
+
+        print("send(..) failed executing http.request(..):", e)
+
+def upload_file_from_url(url, bucket, key):
+    s3=boto3.client('s3')
+    http=urllib3.PoolManager()
+    s3.upload_fileobj(http.request('GET', url,preload_content=False), bucket, key)
+    s3.upload_fileobj
+
+def lambda_handler(event, context):
+    try:
+        # Call the upload_file_from_url function to upload two files to S3
+        if event['RequestType'] == 'Create':
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-225681119357-us-east-1", "migration_runner.zip")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-225681119357-us-east-1", "schema.sql")
+          send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
+        else:
+          send(event, context, SUCCESS, { "message" : "No action required"})
+    except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable
+        # Handle exceptions and return an error message
+        send(event, context, FAILED, {"message": str(e)})
+        return str(e)
+    # Return a success message
+    return '{ "status": 200, "message": "success" }'
+    `
 
     const lambdaRole = new Role(scope, "SchemaUploadLambdaRole", {
       assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
@@ -191,7 +238,7 @@ export class DataBaseConstruct {
       handler: initializeDBFunction,
       timeout: Duration.minutes(15),
       invocationType: triggers.InvocationType.REQUEST_RESPONSE,
-    });
+    }).executeAfter(db_cluster);
 
     initializeDBFunction.node.addDependency(initializeDbTriggerCustomResource);
   }
