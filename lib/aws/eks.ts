@@ -7,6 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
@@ -126,6 +127,15 @@ export class EksStack {
       nodeRole: nodegroupRole,
     });
 
+    const asg = cluster.addAutoScalingGroupCapacity("HSAutoScalingGroup", {
+      instanceType: new ec2.InstanceType("t3.medium"),
+      minCapacity: 1,
+      maxCapacity: 3,
+      desiredCapacity: 2,
+      autoScalingGroupName: "generic-compute-asg",
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+    });
+
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
       vpc: cluster.vpc,
@@ -159,6 +169,36 @@ export class EksStack {
       values: {
         clusterName: cluster.clusterName,
       },
+    });
+
+    const hyperswitchServerLoadBalancer = new elbv2.ApplicationLoadBalancer(scope, 'HyperswitchServerLoadBalancer', {
+      loadBalancerName: 'hyperswitch',
+      vpc: vpc,
+      securityGroup: lbSecurityGroup,
+      internetFacing: true,
+    });
+
+    const hyperswitchLogsLoadBalancer = new elbv2.ApplicationLoadBalancer(scope, 'HyperswitchLogsLoadBalancer', {
+      loadBalancerName: 'hyperswitch-logs',
+      vpc: vpc,
+      securityGroup: lbSecurityGroup,
+      internetFacing: true,
+    });
+
+    new cdk.CfnOutput(scope, 'LoadBalancerHSDNS', {
+      value: hyperswitchServerLoadBalancer.loadBalancerDnsName,
+    });
+
+    new cdk.CfnOutput(scope, 'LoadBalancerLogsDNS', {
+      value: hyperswitchLogsLoadBalancer.loadBalancerDnsName,
+    });
+
+    const hyperswitchServerListener = hyperswitchServerLoadBalancer.addListener('HyperswitchServerListener', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.fixedResponse(404, {
+        contentType: 'text/plain',
+        messageBody: 'Not Found',
+      }),
     });
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
@@ -214,6 +254,19 @@ export class EksStack {
     });
 
     hypersChart.node.addDependency(albControllerChart);
+
+    hyperswitchServerListener.addAction('HyperswitchServerAction', {
+      action: elbv2.ListenerAction.forward([new elbv2.ApplicationTargetGroup(scope, 'HyperswitchServerTargetGroup', {
+        vpc: vpc,
+        port: 8080,
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        targets: [asg],
+      })]),
+      priority: 1,
+      conditions: [
+        elbv2.ListenerCondition.pathPatterns(['/*']),
+      ],
+    });
 
     const provider = cluster.openIdConnectProvider;
 
