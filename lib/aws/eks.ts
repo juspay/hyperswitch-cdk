@@ -7,9 +7,12 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
+  hyperswitchHost: string;
+  lokiChart: eks.HelmChart;
   constructor(
     scope: Construct,
     config: Config,
@@ -172,6 +175,7 @@ export class EksStack {
         application: {
           server: {
             server_base_url: "https://sandbox.hyperswitch.io",
+            image: "juspaydotin/hyperswitch-router:v1.78.0-standalone",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
@@ -188,8 +192,23 @@ export class EksStack {
             },
             basilisk: {
               host: "basilisk-host",
-            },
+            }
           },
+          dashboard: {
+            env: {
+              apiBaseUrl: "http://localhost:8080",
+              sdkBaseUrl: "http://localhost:8080"
+            }
+          },
+          sdk: {
+            image: "jeevaramachandran/hyperswitch-web:v1.0.0",
+            env: {
+              hyperswitchPublishableKey: "pk_test_123",
+              hyperswitchSecretKey: "sk_test_123",
+              hyperswitchServerUrl: "http://localhost:8080",
+              hyperSwitchClientUrl: "http://localhost:8080"
+            }
+          }
         },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
@@ -314,6 +333,7 @@ export class EksStack {
       },
     });
     lokiChart.node.addDependency(hypersChart);
+    this.lokiChart = lokiChart;
 
     cluster.addHelmChart("MetricsServer", {
       chart: "metrics-server",
@@ -321,6 +341,42 @@ export class EksStack {
       namespace: "kube-system",
       release: "metrics-server",
     });
+
+    // // Import an existing load balancer by its ARN
+    // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
+    // });
+    // hypersLB.node.addDependency(lokiChart);
+
+    // // Import an existing load balancer by its ARN
+    // const hypersLogsLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLogsLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-logs-alb-ingress-group' },
+    // });
+    // hypersLogsLB.node.addDependency(lokiChart);
+
+    // // Import an existing load balancer by its ARN
+    // const dashboardLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'DashboardLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-control-center-alb-ingress-group' },
+    // });
+    // dashboardLB.node.addDependency(lokiChart);
+
+    // // Output the cluster name and endpoint
+    // const hyperswitchHost = new cdk.CfnOutput(scope, "HyperswitchHost", {
+    //   value: hypersLB.loadBalancerDnsName,
+    // });
+
+    // hyperswitchHost.node.addDependency(lokiChart);
+
+    // this.hyperswitchHost = hypersLB.loadBalancerDnsName;
+
+    // // Output the cluster name and endpoint
+    // new cdk.CfnOutput(scope, "HyperswitchLogsHost", {
+    //   value: hypersLogsLB.loadBalancerDnsName,
+    // });
+    // // Output the cluster name and endpoint
+    // new cdk.CfnOutput(scope, "ControlCenterHost", {
+    //   value: dashboardLB.loadBalancerDnsName,
+    // });
 
     // Output the cluster name and endpoint
     new cdk.CfnOutput(scope, "ClusterName", {
@@ -331,19 +387,19 @@ export class EksStack {
       value: cluster.clusterEndpoint,
     });
 
-    new cdk.CfnOutput(scope, "redisHost", {
+    new cdk.CfnOutput(scope, "RedisHost", {
       value: elasticache.cluster.attrRedisEndpointAddress,
     });
 
-    new cdk.CfnOutput(scope, "dbHost", {
+    new cdk.CfnOutput(scope, "DbHost", {
       value: rds.db_cluster.clusterEndpoint.hostname,
     });
 
-    new cdk.CfnOutput(scope, "dbPassword", {
+    new cdk.CfnOutput(scope, "DbPassword", {
       value: rds.password,
     });
 
-    new cdk.CfnOutput(scope, "lbSecurityGroupId", {
+    new cdk.CfnOutput(scope, "LbSecurityGroupId", {
       value: lbSecurityGroup.securityGroupId,
     });
   }
