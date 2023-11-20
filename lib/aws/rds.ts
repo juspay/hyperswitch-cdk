@@ -66,6 +66,8 @@ export class DataBaseConstruct {
         process.env.CDK_DEFAULT_REGION
     });
 
+    this.bucket = schemaBucket;
+
     const uploadSchemaAndMigrationCode = `import boto3
 import urllib3
 import json
@@ -118,8 +120,8 @@ def lambda_handler(event, context):
     try:
         # Call the upload_file_from_url function to upload two files to S3
         if event['RequestType'] == 'Create':
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-225681119357-us-east-1", "migration_runner.zip")
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-225681119357-us-east-1", "schema.sql")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "migration_runner.zip")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
           send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
         else:
           send(event, context, SUCCESS, { "message" : "No action required"})
