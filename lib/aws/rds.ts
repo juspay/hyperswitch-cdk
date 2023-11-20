@@ -18,7 +18,7 @@ import {
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { RDSConfig } from "./config";
-import { Bucket } from "aws-cdk-lib/aws-s3";
+import { Bucket, BlockPublicAccess, BucketAccessControl } from "aws-cdk-lib/aws-s3";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
@@ -60,6 +60,15 @@ export class DataBaseConstruct {
     const schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      blockPublicAccess: new BlockPublicAccess({
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
+      }),
+      accessControl: BucketAccessControl.PUBLIC_READ,
+      objectOwnership: cdk.aws_s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+      publicReadAccess: true,
       bucketName:
         "hyperswitch-schema-" +
         cdk.Aws.ACCOUNT_ID + "-" +
