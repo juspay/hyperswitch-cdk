@@ -62,7 +62,7 @@ export class DataBaseConstruct {
       autoDeleteObjects: true,
       bucketName:
         "hyperswitch-schema-" +
-        process.env.CDK_DEFAULT_ACCOUNT + "-" +
+        cdk.Aws.ACCOUNT_ID + "-" +
         process.env.CDK_DEFAULT_REGION
     });
 

@@ -13,7 +13,13 @@ import { HyperswitchSDKStack } from "./hs_sdk";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
-    super(scope, config.stack.name, {stackName: config.stack.name});
+    super(scope, config.stack.name, {
+      // env: {
+      //   account: process.env.CDK_DEFAULT_ACCOUNT,
+      //   region: process.env.CDK_DEFAULT_REGION
+      // },
+      stackName: config.stack.name
+    });
 
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
@@ -42,7 +48,7 @@ export class AWSStack extends cdk.Stack {
       let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key);
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
-      let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds);
+      let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
     }
   }
 }
