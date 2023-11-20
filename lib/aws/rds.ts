@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Duration, RemovalPolicy, SecretValue } from "aws-cdk-lib";
 import {
   ISecurityGroup,
@@ -59,6 +60,10 @@ export class DataBaseConstruct {
 
     const schemaBucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: false,
+      }),
+      publicReadAccess: true,
       autoDeleteObjects: true,
       bucketName:
         "hyperswitch-schema-" +
