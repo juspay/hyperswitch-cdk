@@ -2,7 +2,7 @@ echo "##########################################\nInstalling dependencies\n#####
 # Install dependencies
 if ! command -v node &> /dev/null
 then
-    echo "node could not be found. Please install Node.js."
+    echo "node could not be found. Please install Node.js 18 or above."
     exit 1
 fi
 version=$(node -v | cut -d'.' -f1 | tr -d 'v')
