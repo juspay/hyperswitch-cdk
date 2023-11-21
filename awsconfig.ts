@@ -40,6 +40,12 @@ export class Configuration {
         admin_api_key: admin_api_key,
         redis_host: "",
         db_host: "",
+      },
+      locker: {
+        master_key: scope.node.tryGetContext('master_key') || "test_admin",
+        db_user: "lockeruser",
+        db_pass: scope.node.tryGetContext('locker_pass') || "lockerpass"
+
       }
     }
     this.config = config;

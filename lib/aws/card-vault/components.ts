@@ -19,6 +19,7 @@ import { SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
+import { LockerConfig } from "../config";
 
 type LockerData = {
   master_key: string; // kms encrypted
@@ -27,11 +28,6 @@ type LockerData = {
     password: string; // kms encrypted
     host: string;
   };
-};
-
-type KmsConfig = {
-  id: string;
-  region: string;
 };
 
 type RsaKeyPair = {
@@ -46,11 +42,7 @@ export class LockerEc2 {
   readonly hyperswitch: RsaKeyPair;
   readonly kms_key: kms.Key;
 
-  constructor(
-    scope: Construct,
-    vpc: ec2.Vpc,
-    locker_data: LockerData & { kms: KmsConfig },
-  ) {
+  constructor(scope: Construct, vpc: ec2.Vpc, locker_data: LockerData) {
     const kms_key = new kms.Key(scope, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -202,12 +194,6 @@ export class LockerEc2 {
     });
   }
 }
-
-type LockerConfig = {
-  master_key: string;
-  db_pass: string;
-  db_user: string;
-};
 
 export class LockerSetup {
   locker_ec2: LockerEc2;
@@ -376,5 +362,14 @@ export class LockerSetup {
     }).executeAfter(db_cluster);
 
     initializeDBFunction.node.addDependency(initializeDbTriggerCustomResource);
+
+    this.locker_ec2 = new LockerEc2(scope, vpc, {
+      master_key: config.master_key,
+      database: {
+        user: config.db_user,
+        password: config.db_pass,
+        host: db_cluster.clusterEndpoint.hostname,
+      },
+    });
   }
 }

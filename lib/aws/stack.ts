@@ -10,6 +10,7 @@ import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { HyperswitchSDKStack } from "./hs_sdk";
+import { LockerSetup } from "./card-vault/components";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -24,13 +25,15 @@ export class AWSStack extends cdk.Stack {
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
-    let rds = new DataBaseConstruct( this, config.rds ,vpc.vpc);
+    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc);
     rds.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(5432)); // this is required to connect db from local
 
     update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
+    let locker = new LockerSetup(scope, vpc.vpc, config.locker);
+
     let isStandalone = scope.node.tryGetContext('test') || false;
-    if (isStandalone){
+    if (isStandalone) {
       console.log("Deploying Standalone")
       let hyperswitch_ec2 = new EC2Instance(this, vpc.vpc, config);
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
@@ -39,10 +42,10 @@ export class AWSStack extends cdk.Stack {
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(80));
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(22));
-    }else{
+    } else {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
-      if(is_root_user)
+      if (is_root_user)
         throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
       console.log("Deploying production")
       let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key);
@@ -53,7 +56,7 @@ export class AWSStack extends cdk.Stack {
   }
 }
 
-function update_config(config:Config, db_host:string, redis_host:string){
+function update_config(config: Config, db_host: string, redis_host: string) {
   config.hyperswitch_ec2.db_host = db_host;
   config.hyperswitch_ec2.redis_host = redis_host;
   return config;
