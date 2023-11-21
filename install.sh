@@ -32,6 +32,7 @@ read -s ADMIN_API_KEY
 echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
 # Deploy the EKS Cluster
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
+npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
 if cdk deploy --no-rollback --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN ; then
   # Wait for the EKS Cluster to be deployed
