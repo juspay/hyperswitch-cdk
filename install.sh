@@ -1,5 +1,16 @@
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
+if ! command -v node &> /dev/null
+then
+    echo "node could not be found. Please install Node.js."
+    exit 1
+fi
+version=$(node -v | cut -d'.' -f1 | tr -d 'v')
+if [ "$version" -lt 18 ]
+then
+  echo "Invalid Node.js version. Expected 18 or above, but got $version."
+  exit 1
+fi
 if aws --version; then
   echo "##########################################\nAWS CLI Installed\n##########################################"
 else
@@ -69,13 +80,14 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json' \
   --header 'api-key: '$ADMIN_API_KEY \
-  --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe","connector_account_details":{"auth_type":"HeaderKey","api_key":"'$STRIPE_KEY'"},"test_mode":false,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}'
+  --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}'
   helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.sdk.image=$SDK_IMAGE,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.image=juspaydotin/hyperswitch-router:v1.78.0-standalone,application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch
-  echo "##########################################\nPlease wait for the application to deploy\n##########################################"
+  echo "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
   sleep 240
+  echo "HyperloaderJS Hosted at "$SDK_URL/HyperLoader.js
   echo "App server running on "http://$APP_HOST
   echo "Logs server running on "http://$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"
   echo "Control center server running on "http://$CONTROL_CENTER_HOST", Login with Email: test@gmail.com, password: admin, Please change on startup"
-  echo "SDK Demo server running on "http://$SDK_HOST
+  echo "SDK Demo running on "http://$SDK_HOST
   echo "##########################################"
 fi
