@@ -25,9 +25,9 @@ fi
 npm install -g aws-cdk
 cdk --version
 os=$(uname)
-if [ "$os" == "Linux" ]; then
+if [ "$os" = "Linux" ]; then
   sh linux_deps.sh
-elif [ "$os" == "Darwin" ]; then
+elif [ "$os" = "Darwin" ]; then
   sh mac_deps.sh
 else
   echo "Unsupported operating system."
@@ -94,13 +94,13 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.sdk.image=$SDK_IMAGE,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.image=juspaydotin/hyperswitch-router:v1.78.0-standalone,application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch
   sleep 240
   echo "--------------------------------------------------------------------------------"
-  echo "Service                          Host"
+  echo "Service                           Host"
   echo "--------------------------------------------------------------------------------"
-  echo "HyperloaderJS Hosted at          "$SDK_URL/HyperLoader.js
-  echo "App server running on            "http://$APP_HOST
-  echo "Logs server running on           "http://$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"
-  echo "Control center server running on "http://$CONTROL_CENTER_HOST", Login with Email: test@gmail.com, password: admin, Please change on startup"
-  echo "SDK Demo running on              "http://$SDK_HOST
+  echo "HyperloaderJS Hosted at           "$SDK_URL/HyperLoader.js
+  echo "App server running on             "http://$APP_HOST
+  echo "Logs server running on            "http://$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"
+  echo "Control center server running on  "http://$CONTROL_CENTER_HOST", Login with Email: test@gmail.com, password: admin, Please change on startup"
+  echo "Hyperswitch Demo Store running on "http://$SDK_HOST
   echo "--------------------------------------------------------------------------------"
   echo "##########################################"
 fi
