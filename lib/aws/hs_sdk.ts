@@ -18,18 +18,11 @@ export class HyperswitchSDKStack {
   ) {
     // Create a new S3 bucket
     const bucket = rds.bucket;
-    let sdkVersion = '0.5.0';
+    let sdkVersion = '0.5.6';
 
-    fetch('https://raw.githubusercontent.com/juspay/hyperswitch-web/main/package.json')
-      .then(response => response.json())
-      .then(data => {
-        sdkVersion = data.version;
-        // Output a field from the JSON
-        new cdk.CfnOutput(scope, 'HyperLoaderUrl', {
-          value: "http://"+rds.bucket.bucketDomainName+"/"+data.version+"/v0",
-        });
-      })
-      .catch(error => console.error(error));
+    new cdk.CfnOutput(scope, 'HyperLoaderUrl', {
+      value: "http://"+rds.bucket.bucketDomainName+"/"+sdkVersion+"/v0",
+    });
 
     // Create a new CodeBuild project
     const project = new codebuild.Project(scope, "HyperswitchSDK", {
@@ -40,7 +33,7 @@ export class HyperswitchSDKStack {
           install: {
             commands: [
               "export envBackendUrl=\"http://$(aws elbv2 describe-load-balancers --name 'hyperswitch' --query 'LoadBalancers[].DNSName' --output text)\"",
-              "git clone https://github.com/juspay/hyperswitch-web",
+              "git clone --branch v"+sdkVersion+" https://github.com/juspay/hyperswitch-web",
               "cd hyperswitch-web",
               "n install 18",
               "npm -v",
@@ -54,8 +47,7 @@ export class HyperswitchSDKStack {
           },
           post_build: {
             commands: [
-              "export sdkVersion=$(node -e \"console.log(require('./package.json').version);\")",
-              "aws s3 cp --recursive dist/integ/ s3://$sdkBucket/$sdkVersion/v0",
+              "aws s3 cp --recursive dist/integ/ s3://$sdkBucket/"+sdkVersion+"/v0",
             ],
           },
         },
