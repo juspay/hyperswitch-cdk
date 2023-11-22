@@ -1,9 +1,8 @@
-#!/bin/sh
 yum update -y
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 yum install jq -y
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-. /.nvm/nvm.sh
+. ~/.nvm/nvm.sh
 nvm install 18 -y
 nvm use 18
 npm install yarn -g
