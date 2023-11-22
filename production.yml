@@ -7,7 +7,7 @@ Resources:
       ResourceSignal:
         Timeout: PT1H
     Properties:
-      ImageId: 'ami-07ffe1e45b5441531'
+      ImageId: 'ami-051f7e7f6c2f40dc1'
       InstanceType: 't3.micro'
       IamInstanceProfile: !Ref InstanceProfile
       UserData:
@@ -34,7 +34,7 @@ Resources:
           GroupSet:
             - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
           AssociatePublicIpAddress: true
-      KeyName: 'hyps'
+      KeyName: 'hyps-oneclick'
   AwsIamRole:
     Type: AWS::IAM::Role
     Properties:
