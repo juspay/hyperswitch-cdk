@@ -1,3 +1,5 @@
+#!/bin/sh
+sudo su
 yum update -y
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 yum install jq -y
@@ -16,5 +18,5 @@ wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
 unzip main.zip
 cd $(unzip -Z -1 main.zip| head -1)
 npm install
-cdk bootstrap aws://$AWS_ACCOUNT/us-east-1 -c aws_arn=$AWS_ARN
-cdk deploy --require-approval never -c db_pass=dbpassword -c admin_api_key=test_admin -c aws_arn=$AWS_ARN
+cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
+cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
