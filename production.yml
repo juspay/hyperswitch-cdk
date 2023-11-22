@@ -8,7 +8,7 @@ Resources:
         Timeout: PT1H
     Properties:
       ImageId: 'ami-051f7e7f6c2f40dc1'
-      InstanceType: 't3.micro'
+      InstanceType: 't3.small'
       IamInstanceProfile: !Ref InstanceProfile
       UserData:
         Fn::Base64: !Sub |
@@ -24,9 +24,9 @@ Resources:
           export ADMIN_API_KEY="${AdminApiKey}"
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          # /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-          # delete the stack
-          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          delete the stack
+          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
