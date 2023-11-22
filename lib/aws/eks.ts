@@ -113,20 +113,28 @@ export class EksStack {
         console.error("Error fetching or creating policy document:", error);
       });
 
-    const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
-      nodegroupName: "hs-nodegroup",
-      instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
-        new ec2.InstanceType("t3a.medium"),
-      ],
-      minSize: 1,
-      maxSize: 3,
-      desiredSize: 2,
-      labels: {
-        "node-type": "generic-compute",
-      },
-      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      nodeRole: nodegroupRole,
+    // const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
+    //   nodegroupName: "hs-nodegroup",
+    //   instanceTypes: [
+    //     new ec2.InstanceType("t3.medium"),
+    //     new ec2.InstanceType("t3a.medium"),
+    //   ],
+    //   minSize: 1,
+    //   maxSize: 3,
+    //   desiredSize: 2,
+    //   labels: {
+    //     "node-type": "generic-compute",
+    //   },
+    //   subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+    //   nodeRole: nodegroupRole,
+    // });
+
+    const asg = cluster.addAutoScalingGroupCapacity("HSNodegroup", {
+      instanceType: new ec2.InstanceType("t3.medium"),
+      minCapacity: 1,
+      maxCapacity: 3,
+      desiredCapacity: 2,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
     });
 
     // Create a security group for the load balancer
@@ -163,6 +171,29 @@ export class EksStack {
         clusterName: cluster.clusterName,
       },
     });
+
+    // create a load balancer
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(
+      scope,
+      "HyperswitchLoadBalancer",
+      {
+        loadBalancerName: "hyperswitch",
+        vpc: cluster.vpc,
+        internetFacing: true,
+        securityGroup: lbSecurityGroup,
+      }
+    );
+
+    // create listener
+    const listener = loadBalancer.addListener("Listener", {
+      port: 80,
+    });
+
+    // // create target group
+    // const targetGroup = listener.addTargets("TargetGroup", {
+    //   port: 8080,
+    //   targets: [asg],
+    // });
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
@@ -231,6 +262,20 @@ export class EksStack {
         },
       },
     });
+
+    // create target group
+    const targetGroup = listener.addTargets("TargetGroup", {
+      port: 8080,
+      targets: [asg],
+    });
+
+    targetGroup.node.addDependency(hypersChart);
+    // // get load balancer listener arns
+    // const listenerArns = loadBalancer.listeners.map(
+    //   (listener) => listener.listenerArn
+    // );
+
+    // loadBalancer.node.addDependency(hypersChart);
 
     hypersChart.node.addDependency(albControllerChart);
 
