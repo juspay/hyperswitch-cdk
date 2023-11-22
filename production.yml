@@ -14,7 +14,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/sh
           sudo su
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/fix/scripts/single-click.sh
           chmod a+x run-cdk.sh
 
           # export env variables
@@ -23,6 +23,9 @@ Resources:
           export AWS_REGION="${AWS::Region}"
           export DB_PASS="${DBPassword}"
           export ADMIN_API_KEY="${AdminApiKey}"
+          echo "HYPERSWITCH_INSTALL_MODE=${HYPERSWITCH_INSTALL_MODE}" >> /var/log/env-print.log
+          echo "DB_PASS=${DB_PASS}" >> /var/log/env-print.log
+          echo "ADMIN_API_KEY=${ADMIN_API_KEY}" >> /var/log/env-print.log
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
