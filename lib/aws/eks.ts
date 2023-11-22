@@ -7,7 +7,8 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
-import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
@@ -19,7 +20,8 @@ export class EksStack {
     vpc: ec2.Vpc,
     rds: DataBaseConstruct,
     elasticache: ElasticacheStack,
-    admin_api_key: string
+    admin_api_key: string,
+    locker: LockerSetup,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -36,7 +38,7 @@ export class EksStack {
       const role = iam.Role.fromRoleName(
         scope,
         "AdminRole",
-        awsArn.split("/")[1]
+        awsArn.split("/")[1],
       );
       cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
     } else {
@@ -57,12 +59,12 @@ export class EksStack {
 
     for (const policyName of managedPolicies) {
       nodegroupRole.addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName(policyName)
+        iam.ManagedPolicy.fromAwsManagedPolicyName(policyName),
       );
     }
 
     const fetchAndCreatePolicy = async (
-      url: string
+      url: string,
     ): Promise<iam.PolicyDocument> => {
       try {
         const response = await fetch(url);
@@ -82,7 +84,7 @@ export class EksStack {
         nodegroupRole.attachInlinePolicy(
           new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMPolicyInfo", {
             document: policy,
-          })
+          }),
         );
 
         nodegroupRole.attachInlinePolicy(
@@ -105,8 +107,8 @@ export class EksStack {
                   }),
                 ],
               }),
-            }
-          )
+            },
+          ),
         );
       })
       .catch((error) => {
@@ -143,13 +145,13 @@ export class EksStack {
     // Add outbound rule to the EKS cluster
     lbSecurityGroup.addEgressRule(
       cluster.clusterSecurityGroup,
-      ec2.Port.allTraffic()
+      ec2.Port.allTraffic(),
     );
 
     cluster.clusterSecurityGroup.addIngressRule(
       lbSecurityGroup,
       ec2.Port.allTcp(),
-      "Allow inbound traffic from an existing load balancer security group"
+      "Allow inbound traffic from an existing load balancer security group",
     );
 
     const albControllerChart = cluster.addHelmChart("ALBController", {
@@ -188,17 +190,20 @@ export class EksStack {
               recon_admin_api_key: "test_admin",
             },
             locker: {
-              host: "locker-host",
+              host: locker.locker_ec2.instance.instancePrivateIp,
+              locker_public_key: locker.locker_ec2.locker_pair.public_key,
+              hyperswitch_private_key:
+                locker.locker_ec2.hyperswitch.private_key,
             },
             basilisk: {
               host: "basilisk-host",
-            }
+            },
           },
           dashboard: {
             env: {
               apiBaseUrl: "http://localhost:8080",
-              sdkBaseUrl: "http://localhost:8080"
-            }
+              sdkBaseUrl: "http://localhost:8080",
+            },
           },
           sdk: {
             image: "jeevaramachandran/hyperswitch-web:v1.0.0",
@@ -206,9 +211,9 @@ export class EksStack {
               hyperswitchPublishableKey: "pk_test_123",
               hyperswitchSecretKey: "sk_test_123",
               hyperswitchServerUrl: "http://localhost:8080",
-              hyperSwitchClientUrl: "http://localhost:8080"
-            }
-          }
+              hyperSwitchClientUrl: "http://localhost:8080",
+            },
+          },
         },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
@@ -253,9 +258,9 @@ export class EksStack {
           {
             StringEquals: conditions,
           },
-          "sts:AssumeRoleWithWebIdentity"
+          "sts:AssumeRoleWithWebIdentity",
         ),
-      }
+      },
     );
 
     const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
@@ -309,7 +314,7 @@ export class EksStack {
     grafanaServiceAccountRole.attachInlinePolicy(
       new iam.Policy(scope, "GrafanaPolicy", {
         document: grafanaPolicyDocument,
-      })
+      }),
     );
 
     const lokiChart = cluster.addHelmChart("LokiController", {

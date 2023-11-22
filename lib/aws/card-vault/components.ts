@@ -193,6 +193,16 @@ export class LockerEc2 {
       description: "try health api",
     });
   }
+
+  addClient(sg: ec2.ISecurityGroup, port: ec2.Port) {
+    this.sg.addIngressRule(sg, port);
+    sg.addEgressRule(this.sg, port);
+  }
+
+  addServer(sg: ec2.ISecurityGroup, port: ec2.Port) {
+    this.sg.addEgressRule(sg, port);
+    sg.addIngressRule(this.sg, port);
+  }
 }
 
 export class LockerSetup {
@@ -371,5 +381,7 @@ export class LockerSetup {
         host: db_cluster.clusterEndpoint.hostname,
       },
     });
+
+    this.locker_ec2.addServer(this.db_sg, ec2.Port.tcp(5432));
   }
 }
