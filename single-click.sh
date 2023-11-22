@@ -1,13 +1,10 @@
 #!/bin/sh
 sudo su
 yum update -y
-echo "HYPERSWITCH_INSTALL_MODE=${HyperswitchInstallMode}" >> /var/log/env-print.log
-echo "DB_PASS=${DBPassword}" >> /var/log/env-print.log
-echo "ADMIN_API_KEY=${AdminApiKey}" >> /var/log/env-print.log
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 yum install jq -y
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-. ~/.nvm/nvm.sh
+. /.nvm/nvm.sh
 nvm install 18 -y
 nvm use 18
 npm install -g aws-cdk
