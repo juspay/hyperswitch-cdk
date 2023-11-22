@@ -22,14 +22,11 @@ Resources:
           export AWS_REGION="${AWS::Region}"
           export DB_PASS="${DBPassword}"
           export ADMIN_API_KEY="${AdminApiKey}"
-          echo "HYPERSWITCH_INSTALL_MODE=${HYPERSWITCH_INSTALL_MODE}" >> /var/log/env-print.log
-          echo "DB_PASS=${DB_PASS}" >> /var/log/env-print.log
-          echo "ADMIN_API_KEY=${ADMIN_API_KEY}" >> /var/log/env-print.log
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          # /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
-          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
