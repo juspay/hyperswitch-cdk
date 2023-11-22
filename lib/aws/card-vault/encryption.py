@@ -19,7 +19,7 @@ def worker():
     enc_pl = lambda x: kms_fun(credentials[x])
     pl = lambda x: credentials[x]
 
-    return """
+    return f"""
 #!/bin/bash
 
 yum update -y \
@@ -58,7 +58,7 @@ docker run --restart unless-stopped --env-file .env -d --net=host juspaydotin/hy
 
 
 def kms_encryptor(key_id: str, region: str):
-    lambda data: kms_client.encrypt(keyId=key_id, Plaintext=data)
+    return lambda data: kms_client.encrypt(keyId=key_id, Plaintext=data)
 
 def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
     responseUrl = event['ResponseURL']

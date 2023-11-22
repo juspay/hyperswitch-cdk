@@ -211,7 +211,7 @@ export class LockerSetup {
   db_sg: SecurityGroup;
   db_bucket: s3.Bucket;
 
-  constructor(scope: Construct, vpc: ec2.Vpc, config: LockerConfig) {
+  constructor(scope: Construct, vpc: ec2.Vpc, config: LockerConfig, rdsSchemaBucket: s3.Bucket) {
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
       version: AuroraPostgresEngineVersion.VER_13_7,
@@ -293,17 +293,7 @@ export class LockerSetup {
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
-    const initializeUploadFunction = new Function(
-      scope,
-      "initializeUploadFunction",
-      {
-        runtime: Runtime.PYTHON_3_9,
-        handler: "index.lambda_handler",
-        code: Code.fromInline(migrationCode),
-        timeout: cdk.Duration.minutes(15),
-        role: lambdaRole,
-      },
-    );
+  
 
     const db_cluster = new DatabaseCluster(scope, "locker-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
@@ -311,16 +301,7 @@ export class LockerSetup {
           ec2.InstanceClass.T4G,
           ec2.InstanceSize.MEDIUM,
         ),
-        publiclyAccessible: true,
       }),
-      // readers: [
-      //   ClusterInstance.provisioned("Reader Instance", {
-      //     instanceType: InstanceType.of(
-      //       rds_config.reader_instance_class,
-      //       rds_config.reader_instance_size
-      //     ),
-      //   }),
-      // ],
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       engine,
@@ -336,15 +317,9 @@ export class LockerSetup {
 
     this.db_cluster = db_cluster;
 
-    const initializeDbTriggerCustomResource = new cdk.CustomResource(
-      scope,
-      "InitializeDbTriggerCustomResource",
-      {
-        serviceToken: initializeUploadFunction.functionArn,
-      },
-    );
 
-    const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
+
+    const initializeDBFunction = new Function(scope, "InitializeLockerDBFunction", {
       runtime: Runtime.PYTHON_3_9,
       handler: "index.db_handler",
       code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
@@ -365,13 +340,12 @@ export class LockerSetup {
     //   invocationType: triggers.InvocationType.EVENT,
     // }).executeBefore();
 
-    new cdk.triggers.Trigger(scope, "InitializeDBTrigger", {
+    new cdk.triggers.Trigger(scope, "InitializeLockerDBTrigger", {
       handler: initializeDBFunction,
       timeout: cdk.Duration.minutes(15),
       invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
     }).executeAfter(db_cluster);
 
-    initializeDBFunction.node.addDependency(initializeDbTriggerCustomResource);
 
     this.locker_ec2 = new LockerEc2(scope, vpc, {
       master_key: config.master_key,

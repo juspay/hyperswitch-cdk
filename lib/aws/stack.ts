@@ -30,7 +30,7 @@ export class AWSStack extends cdk.Stack {
 
     update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
-    let locker = new LockerSetup(scope, vpc.vpc, config.locker);
+    let locker = new LockerSetup(scope, vpc.vpc, config.locker, rds.bucket);
 
     let isStandalone = scope.node.tryGetContext('test') || false;
     if (isStandalone) {
