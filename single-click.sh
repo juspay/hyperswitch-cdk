@@ -19,4 +19,5 @@ unzip main.zip
 cd $(unzip -Z -1 main.zip| head -1)
 npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
+echo "$DB_PASS, $ADMIN_API_KEY, $AWS_ARN"
 cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
