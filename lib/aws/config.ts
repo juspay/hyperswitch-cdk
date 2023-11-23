@@ -83,3 +83,15 @@ export type Config = {
   hyperswitch_ec2: EC2;
   rds: RDSConfig;
 };
+
+export type EC2Config = {
+  id          : string;   // id of the instance
+  machineImage: ec2.IMachineImage;
+  instanceType: ec2.InstanceType;
+  vpcSubnets  : ec2.SubnetSelection;
+  securityGroup? : ec2.SecurityGroup;
+  keyPair?  : ec2.CfnKeyPair;
+  userData? : ec2.UserData;
+  ssmSessionPermissions? : boolean;
+  associatePublicIpAddress? : boolean;
+}
