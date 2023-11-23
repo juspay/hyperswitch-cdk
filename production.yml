@@ -7,24 +7,25 @@ Resources:
       ResourceSignal:
         Timeout: PT1H
     Properties:
-      ImageId: 'ami-076c7acfc9e8ee57d'
+      ImageId: 'ami-051f7e7f6c2f40dc1'
       InstanceType: 't3.micro'
       IamInstanceProfile: !Ref InstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
           sudo su
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/my-test/dependencies/script.sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
           chmod a+x run-cdk.sh
 
           # export env variables
           export HYPERSWITCH_INSTALL_MODE="${HyperswitchInstallMode}"
           export AWS_STACK_NAME="${AWS::StackName}"
           export AWS_REGION="${AWS::Region}"
+          export DB_PASS="${DBPassword}"
+          export ADMIN_API_KEY="${AdminApiKey}"
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-          
           # delete the stack
           aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
@@ -34,7 +35,6 @@ Resources:
             - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
           AssociatePublicIpAddress: true
       KeyName: 'hyps-oneclick'
-      
   AwsIamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -100,9 +100,9 @@ Conditions:
 Parameters:
   HyperswitchInstallMode:
     Type: String
-    Default: standalone
+    Default: Enterprise
     AllowedValues:
-      - standalone
+      - Enterprise
     Description: Hyperswitch Enterprise Edition Mode
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
@@ -112,3 +112,11 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Default: ""
     Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one)."
+  DBPassword:
+    Type: String
+    Default: ""
+    Description: "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9])"
+  AdminApiKey:
+    Type: String
+    Default: ""
+    Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
