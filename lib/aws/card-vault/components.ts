@@ -43,7 +43,7 @@ export class LockerEc2 {
   readonly hyperswitch: RsaKeyPair;
   readonly kms_key: kms.Key;
 
-  constructor(scope: Construct, vpc: ec2.Vpc, locker_data: LockerData) {
+  constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
     const kms_key = new kms.Key(scope, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -236,7 +236,7 @@ export class LockerSetup {
 
   constructor(
     scope: Construct,
-    vpc: ec2.Vpc,
+    vpc: ec2.IVpc,
     config: LockerConfig,
     rdsSchemaBucket: s3.Bucket,
   ) {
