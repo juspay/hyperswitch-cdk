@@ -20,6 +20,7 @@ import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { LockerConfig } from "../config";
+import { RetentionDays } from "aws-cdk-lib/aws-logs";
 
 type LockerData = {
   master_key: string; // kms encrypted
@@ -47,10 +48,24 @@ export class LockerEc2 {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
       keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
-      keySpec: kms.KeySpec.RSA_2048,
-      alias: "alias/mykey",
+      keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
+      alias: "alias/locker-kms-key",
       description: "KMS key for encrypting the objects in an S3 bucket",
       enableKeyRotation: false,
+    });
+
+    const envBucket = new s3.Bucket(scope, "LockerEnvBucket", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      autoDeleteObjects: true,
+      bucketName:
+        "locker-env-store-" +
+        cdk.Aws.ACCOUNT_ID +
+        "-" +
+        process.env.CDK_DEFAULT_REGION,
     });
 
     const kms_policy = new iam.PolicyDocument({
@@ -58,6 +73,14 @@ export class LockerEc2 {
         new iam.PolicyStatement({
           actions: ["kms:*"],
           resources: [kms_key.keyArn],
+        }),
+        new iam.PolicyStatement({
+          actions: ["secretsmanager:*"],
+          resources: ["*"],
+        }),
+        new iam.PolicyStatement({
+          actions: ["s3:PutObject"],
+          resources: [`${envBucket.bucketArn}/*`],
         }),
       ],
     });
@@ -98,7 +121,7 @@ export class LockerEc2 {
     };
 
     let secret = new Secret(scope, "locker-kms-userdata-secret", {
-      secretName: "locker kms data secret",
+      secretName: "LockerKmsDataSecret",
       description: "Database master user credentials",
       secretObjectValue: {
         db_username: cdk.SecretValue.unsafePlainText(locker_data.database.user),
@@ -122,7 +145,10 @@ export class LockerEc2 {
       "lib/aws/card-vault/encryption.py",
     ).toString();
 
+    let env_file = "envfile";
+
     const kms_encrypt_function = new Function(scope, "kms-encrypt", {
+      functionName: "KmsEncryptionLambda",
       runtime: Runtime.PYTHON_3_9,
       handler: "index.lambda_handler",
       code: Code.fromInline(encryption_code),
@@ -130,20 +156,17 @@ export class LockerEc2 {
       role: lambda_role,
       environment: {
         SECRET_MANAGER_ARN: secret.secretArn,
+        ENV_BUCKET_NAME: envBucket.bucketName,
+        ENV_FILE: env_file,
       },
+      logRetention: RetentionDays.INFINITE,
     });
 
-    // new cdk.triggers.Trigger(scope, "kms encryption trigger", {
-    //   handler: kms_encrypt_function,
-    //   timeout: cdk.Duration.minutes(15),
-    //   invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
-    // }).executeAfter(kms_key);
-    const triggerStuff = new cdk.CustomResource(scope, "kms encryption cr", {
+    const triggerStuff = new cdk.CustomResource(scope, "KmsEncryptionCR", {
       serviceToken: kms_encrypt_function.functionArn,
     });
-    const userDataResponse: { Data: { content: string } } & any = triggerStuff
-      .getAtt("Response")
-      .toJSON();
+
+    const userDataResponse = triggerStuff.getAtt("message").toString();
 
     const locker_role = new iam.Role(scope, "locker-role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -156,21 +179,20 @@ export class LockerEc2 {
       securityGroupName: "Locker-SG",
       vpc: vpc,
     });
+
     this.sg = sg;
     let keypair_id = "locker-ec2-keypair";
     const aws_key_pair = new ec2.CfnKeyPair(scope, keypair_id, {
       keyName: "Locker-ec2-keypair",
     });
 
+    new cdk.CfnOutput(scope, "GetLockerSSHKey", {
+      value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${aws_key_pair.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > new-key-pair.pem`,
+    });
+
     let customData = readFileSync("lib/aws/card-vault/user-data.sh", "utf8")
-      .replaceAll("{{db_user}}", locker_data.database.user)
-      .replaceAll("{{kms_enc_db_pass}}", locker_data.database.password)
-      .replaceAll("{{db_host}}", locker_data.database.host)
-      .replaceAll("{{kms_enc_master_key}}", locker_data.master_key)
-      .replaceAll("{{kms_enc_lpriv_key}}", this.locker_pair.private_key)
-      .replaceAll("{{kms_enc_tpub_key}}", this.hyperswitch.public_key)
-      .replaceAll("{{kms_id}}", kms_key.keyId)
-      .replaceAll("{{kms_region}}", kms_key.stack.region);
+      .replaceAll("{{BUCKET_NAME}}", envBucket.bucketName)
+      .replaceAll("{{ENV_FILE}}", env_file);
 
     this.instance = new ec2.Instance(scope, "locker-ec2", {
       instanceType: ec2.InstanceType.of(
@@ -190,8 +212,8 @@ export class LockerEc2 {
     });
 
     new cdk.CfnOutput(scope, "Locker-ec2-IP", {
-      value: `http://${this.instance.instancePrivateIp}/health`,
-      description: "try health api",
+      value: `${this.instance.instancePrivateIp}`,
+      description: "Locker Private IP",
     });
   }
 
@@ -232,7 +254,7 @@ export class LockerSetup {
 
     this.db_sg = db_security_group;
 
-    const secretName = "locker-db-master-user-secret";
+    const secretName = "LockerDbMasterUserSecret";
 
     // Create the secret if it doesn't exist
     let secret = new Secret(scope, "locker-db-master-user-secret", {

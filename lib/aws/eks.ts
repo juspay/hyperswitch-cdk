@@ -8,6 +8,7 @@ import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { LockerSetup } from "./card-vault/components";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -21,7 +22,7 @@ export class EksStack {
     rds: DataBaseConstruct,
     elasticache: ElasticacheStack,
     admin_api_key: string,
-    // locker: LockerSetup | undefined,
+    locker: LockerSetup,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),

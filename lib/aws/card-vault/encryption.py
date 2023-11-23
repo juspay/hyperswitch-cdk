@@ -2,33 +2,30 @@ import os
 import json
 import boto3
 import urllib3
+import base64
 
-secrets_manager = boto3.client('secretsmanager')
-s3_client = boto3.client('s3')
-kms_client = boto3.client('kms')
 
 http = urllib3.PoolManager()
 
 
 def worker():
+
+
+    secrets_manager = boto3.client('secretsmanager')
+    s3_client = boto3.client('s3')
+    kms_client = boto3.client('kms')
+
     secret_arn = os.environ['SECRET_MANAGER_ARN']
     secret_value_response = secrets_manager.get_secret_value(SecretId=secret_arn)
     credentials = json.loads(secret_value_response['SecretString'])
 
-    kms_fun = kms_encryptor(credentials["kms_id"], credentials["region"])
+    kms_fun = kms_encryptor(credentials["kms_id"], credentials["region"], kms_client)
     enc_pl = lambda x: kms_fun(credentials[x])
     pl = lambda x: credentials[x]
 
-    return f"""
-#!/bin/bash
 
-yum update -y \
-    && amazon-linux-extras install docker -y \
-    && systemctl start docker \
-    && systemctl enable docker \
-    && docker pull juspaydotin/hyperswitch-card-vault:latest
 
-cat << EOF >> .env
+    output = f"""
 LOCKER__SERVER__HOST=0.0.0.0
 LOCKER__SERVER__PORT=8080
 LOCKER__LOG__CONSOLE__ENABLED=true
@@ -51,14 +48,19 @@ LOCKER__SECRETS__TENANT_PUBLIC_KEY={enc_pl("public_key")} # kms encrypted locker
 
 LOCKER__KMS__KEY_ID={pl("kms_id")} # kms id used to encrypt it below
 LOCKER__KMS__REGION={pl("region")} # kms region used
-EOF
+    """
 
-docker run --restart unless-stopped --env-file .env -d --net=host juspaydotin/hyperswitch-card-vault:latest
-"""
+    bucket_name = os.environ['ENV_BUCKET_NAME']
+    filename = os.environ['ENV_FILE']
+
+    s3_client.put_object(Bucket=bucket_name, Key=filename, Body=output.encode("utf-8"))
+    
 
 
-def kms_encryptor(key_id: str, region: str):
-    return lambda data: kms_client.encrypt(keyId=key_id, Plaintext=data)
+
+
+def kms_encryptor(key_id: str, region: str, kms_client):
+    return lambda data: base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"]).decode("utf-8")
 
 def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
     responseUrl = event['ResponseURL']
@@ -87,16 +89,29 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
     try:
         response = http.request('PUT', responseUrl, headers=headers, body=json_responseBody)
         print("Status code:", response.status)
+        return responseBody
 
     except Exception as e:
 
         print("send(..) failed executing http.request(..):", e)
+        return {}
 
 def lambda_handler(event, context):
     try:
-          send(event, context, "SUCCESS", { "content" : worker()})
+        if event['RequestType'] == 'Create':
+            try:
+                worker()
+                message = "Completed Successfully"
+                status = "SUCCESS"
+            except Exception as e:
+                message = str(e)
+                status = "FAILED"
+
+            send(event, context, status, { "message": message})
+        else:
+            send(event, context, "SUCCESS", { "message" : "No action required"})
     except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable
-        send(event, context, "FAILURE", { "message": str(e)} )
+        send(event, context, "FAILED", { "message": str(e)} )
         return str(e)
     # Return a success message
     return '{ "status": 200, "message": "success" }'
