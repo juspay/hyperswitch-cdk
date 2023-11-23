@@ -69,6 +69,34 @@ export class LockerEc2 {
       },
     });
 
+    const { privateKey: locker_private_key, publicKey: locker_public_key } =
+      generateKeyPairSync("rsa", {
+        modulusLength: 2048,
+      });
+
+    this.locker_pair = {
+      public_key: locker_public_key
+        .export({ type: "spki", format: "pem" })
+        .toString(),
+      private_key: locker_private_key
+        .export({ type: "pkcs8", format: "pem" })
+        .toString(),
+    };
+
+    const { privateKey: tenant_private_key, publicKey: tenant_public_key } =
+      generateKeyPairSync("rsa", {
+        modulusLength: 2048,
+      });
+
+    this.hyperswitch = {
+      public_key: tenant_public_key
+        .export({ type: "spki", format: "pem" })
+        .toString(),
+      private_key: tenant_private_key
+        .export({ type: "pkcs8", format: "pem" })
+        .toString(),
+    };
+
     let secret = new Secret(scope, "locker-kms-userdata-secret", {
       secretName: "locker kms data secret",
       description: "Database master user credentials",
@@ -85,8 +113,8 @@ export class LockerEc2 {
         public_key: cdk.SecretValue.unsafePlainText(
           this.hyperswitch.public_key,
         ),
-        kms_id: cdk.SecretValue.unsafePlainText(locker_data.kms.id),
-        region: cdk.SecretValue.unsafePlainText(locker_data.kms.region),
+        kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
+        region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
       },
     });
 
@@ -134,34 +162,6 @@ export class LockerEc2 {
       keyName: "Locker-ec2-keypair",
     });
 
-    const { locker_private_key, locker_public_key } = generateKeyPairSync(
-      "rsa",
-      {
-        modulusLength: 2048,
-      },
-    );
-
-    this.locker_pair.public_key = locker_public_key
-      .export({ type: "spki", format: "pem" })
-      .toString();
-    this.locker_pair.private_key = locker_private_key
-      .export({ type: "pkcs8", format: "pem" })
-      .toString();
-
-    const { tenant_private_key, tenant_public_key } = generateKeyPairSync(
-      "rsa",
-      {
-        modulusLength: 2048,
-      },
-    );
-
-    this.hyperswitch.public_key = tenant_public_key
-      .export({ type: "spki", format: "pem" })
-      .toString();
-    this.hyperswitch.private_key = tenant_private_key
-      .export({ type: "pkcs8", format: "pem" })
-      .toString();
-
     let customData = readFileSync("lib/aws/card-vault/user-data.sh", "utf8")
       .replaceAll("{{db_user}}", locker_data.database.user)
       .replaceAll("{{kms_enc_db_pass}}", locker_data.database.password)
@@ -169,8 +169,8 @@ export class LockerEc2 {
       .replaceAll("{{kms_enc_master_key}}", locker_data.master_key)
       .replaceAll("{{kms_enc_lpriv_key}}", this.locker_pair.private_key)
       .replaceAll("{{kms_enc_tpub_key}}", this.hyperswitch.public_key)
-      .replaceAll("{{kms_id}}", locker_data.kms.id)
-      .replaceAll("{{kms_region}}", locker_data.kms.region);
+      .replaceAll("{{kms_id}}", kms_key.keyId)
+      .replaceAll("{{kms_region}}", kms_key.stack.region);
 
     this.instance = new ec2.Instance(scope, "locker-ec2", {
       instanceType: ec2.InstanceType.of(
@@ -180,7 +180,8 @@ export class LockerEc2 {
       machineImage: new ec2.AmazonLinuxImage(),
       vpc,
       vpcSubnets: {
-        subnetGroupName: SubnetNames.IsolatedSubnet,
+        // subnetGroupName: SubnetNames.IsolatedSubnet,
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       securityGroup: sg,
       keyName: aws_key_pair.keyName,
@@ -211,7 +212,12 @@ export class LockerSetup {
   db_sg: SecurityGroup;
   db_bucket: s3.Bucket;
 
-  constructor(scope: Construct, vpc: ec2.Vpc, config: LockerConfig, rdsSchemaBucket: s3.Bucket) {
+  constructor(
+    scope: Construct,
+    vpc: ec2.Vpc,
+    config: LockerConfig,
+    rdsSchemaBucket: s3.Bucket,
+  ) {
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
       version: AuroraPostgresEngineVersion.VER_13_7,
@@ -239,19 +245,20 @@ export class LockerSetup {
       },
     });
 
-    let schemaBucket = new s3.Bucket(scope, "LockerSchemaBucket", {
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      blockPublicAccess: new s3.BlockPublicAccess({
-        blockPublicAcls: false,
-      }),
-      publicReadAccess: true,
-      autoDeleteObjects: true,
-      bucketName:
-        "locker-schema-" +
-        cdk.Aws.ACCOUNT_ID +
-        "-" +
-        process.env.CDK_DEFAULT_REGION,
-    });
+    // let schemaBucket = new s3.Bucket(scope, "LockerSchemaBucket", {
+    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
+    //   blockPublicAccess: new s3.BlockPublicAccess({
+    //     blockPublicAcls: false,
+    //   }),
+    //   publicReadAccess: true,
+    //   autoDeleteObjects: true,
+    //   bucketName:
+    //     "locker-schema-" +
+    //     cdk.Aws.ACCOUNT_ID +
+    //     "-" +
+    //     process.env.CDK_DEFAULT_REGION,
+    // });
+    let schemaBucket = rdsSchemaBucket;
 
     this.db_bucket = schemaBucket;
 
@@ -259,7 +266,7 @@ export class LockerSetup {
       .replaceAll("{{ACCOUNT}}", process.env.CDK_DEFAULT_ACCOUNT!)
       .replaceAll("{{REGION}}", process.env.CDK_DEFAULT_REGION!);
 
-    const lambdaRole = new iam.Role(scope, "SchemaUploadLambdaRole", {
+    const lambdaRole = new iam.Role(scope, "SchemaUploadLambdaRole2", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
     });
 
@@ -284,7 +291,7 @@ export class LockerSetup {
 
     const lambdaSecurityGroup = new SecurityGroup(
       scope,
-      "LambdaSecurityGroup",
+      "LambdaSecurityGroup2",
       {
         vpc,
         allowAllOutbound: true,
@@ -292,8 +299,6 @@ export class LockerSetup {
     );
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
-
-  
 
     const db_cluster = new DatabaseCluster(scope, "locker-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
@@ -303,7 +308,7 @@ export class LockerSetup {
         ),
       }),
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       engine,
       port: 5432,
       securityGroups: [db_security_group],
@@ -317,22 +322,24 @@ export class LockerSetup {
 
     this.db_cluster = db_cluster;
 
-
-
-    const initializeDBFunction = new Function(scope, "InitializeLockerDBFunction", {
-      runtime: Runtime.PYTHON_3_9,
-      handler: "index.db_handler",
-      code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
-      environment: {
-        DB_SECRET_ARN: secret.secretArn,
-        SCHEMA_BUCKET: schemaBucket.bucketName,
-        SCHEMA_FILE_KEY: "schema.sql",
+    const initializeDBFunction = new Function(
+      scope,
+      "InitializeLockerDBFunction",
+      {
+        runtime: Runtime.PYTHON_3_9,
+        handler: "index.db_handler",
+        code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
+        environment: {
+          DB_SECRET_ARN: secret.secretArn,
+          SCHEMA_BUCKET: schemaBucket.bucketName,
+          SCHEMA_FILE_KEY: "locker-schema.sql",
+        },
+        vpc: vpc,
+        securityGroups: [lambdaSecurityGroup],
+        timeout: cdk.Duration.minutes(15),
+        role: lambdaRole,
       },
-      vpc: vpc,
-      securityGroups: [lambdaSecurityGroup],
-      timeout: cdk.Duration.minutes(15),
-      role: lambdaRole,
-    });
+    );
 
     // new triggers.Trigger(scope, "initializeUploadTrigger", {
     //   handler: initializeUploadFunction,
@@ -345,7 +352,6 @@ export class LockerSetup {
       timeout: cdk.Duration.minutes(15),
       invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
     }).executeAfter(db_cluster);
-
 
     this.locker_ec2 = new LockerEc2(scope, vpc, {
       master_key: config.master_key,

@@ -8,7 +8,7 @@ import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import { LockerSetup } from "./card-vault/components";
+// import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
@@ -21,7 +21,7 @@ export class EksStack {
     rds: DataBaseConstruct,
     elasticache: ElasticacheStack,
     admin_api_key: string,
-    locker: LockerSetup,
+    // locker: LockerSetup | undefined,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -190,10 +190,11 @@ export class EksStack {
               recon_admin_api_key: "test_admin",
             },
             locker: {
-              host: locker.locker_ec2.instance.instancePrivateIp,
-              locker_public_key: locker.locker_ec2.locker_pair.public_key,
-              hyperswitch_private_key:
-                locker.locker_ec2.hyperswitch.private_key,
+              host: "locker_host"
+              // host: locker.locker_ec2.instance.instancePrivateIp,
+              // locker_public_key: locker.locker_ec2.locker_pair.public_key,
+              // hyperswitch_private_key:
+              //   locker.locker_ec2.hyperswitch.private_key,
             },
             basilisk: {
               host: "basilisk-host",

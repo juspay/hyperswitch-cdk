@@ -30,7 +30,7 @@ export class AWSStack extends cdk.Stack {
 
     update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
-    let locker = new LockerSetup(scope, vpc.vpc, config.locker, rds.bucket);
+    let locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
 
     let isStandalone = scope.node.tryGetContext('test') || false;
     if (isStandalone) {
@@ -48,7 +48,7 @@ export class AWSStack extends cdk.Stack {
       if (is_root_user)
         throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
       console.log("Deploying production")
-      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key, locker);
+      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key); // , locker);
       locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
