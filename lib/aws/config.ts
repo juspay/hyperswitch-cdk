@@ -84,4 +84,6 @@ export type EC2Config = {
   securityGroup? : ec2.SecurityGroup;
   keyPair?  : ec2.CfnKeyPair;
   userData? : ec2.UserData;
+  ssmSessionPermissions? : boolean;
+  associatePublicIpAddress? : boolean;
 }

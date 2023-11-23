@@ -17,6 +17,7 @@ export class EC2Instance {
             sg = new ec2.SecurityGroup(scope, sg_id, {
                 securityGroupName: sg_id,
                 vpc: vpc,
+                allowAllOutbound: false,
             });
         }
         this.sg = sg;
@@ -40,6 +41,8 @@ export class EC2Instance {
             vpcSubnets: config.vpcSubnets,
             instanceType: config.instanceType,
             machineImage: config.machineImage,
+            ssmSessionPermissions: config.ssmSessionPermissions,
+            associatePublicIpAddress: config.associatePublicIpAddress,
         });
 
         // new cdk.CfnOutput(scope, '', {
