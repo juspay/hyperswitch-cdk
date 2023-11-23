@@ -26,7 +26,7 @@ export class AWSStack extends cdk.Stack {
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
     let rds = new DataBaseConstruct( this, config.rds ,vpc.vpc);
-    rds.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(5432)); // this is required to connect db from local
+    rds.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
 
     config = update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
@@ -49,10 +49,17 @@ export class AWSStack extends cdk.Stack {
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
 
+      // Create Jumps and add rules to access RDS, Elasticache and Proxies
+      // Internal Jump can be accessed only from external jump. External jump can be accessed only from Session Manager
       let internal_jump = new EC2Instance(this, vpc.vpc, get_internal_jump_ec2_config(config, "hyperswitch_internal_jump_ec2"));
       let external_jump = new EC2Instance(this, vpc.vpc, get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"));
-      internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
       external_jump.sg.addEgressRule(internal_jump.sg, ec2.Port.tcp(22));
+      internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
+      internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
+      internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
+      rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
+      elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
+
     }
   }
 }
