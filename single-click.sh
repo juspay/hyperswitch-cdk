@@ -14,14 +14,15 @@ mv ./kubectl /usr/local/bin/kubectl
 kubectl version --client
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
-# wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
-# unzip main.zip
-# cd $(unzip -Z -1 main.zip| head -1)
-# npm install
-# cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
-# cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
+wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
+unzip main.zip
+cd $(unzip -Z -1 main.zip| head -1)
+npm install
+cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
+cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
 aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
-sleep 50
+aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
+sleep 10
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
