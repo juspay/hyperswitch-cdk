@@ -22,10 +22,11 @@ Resources:
           export AWS_REGION="${AWS::Region}"
           export DB_PASS="${DBPassword}"
           export ADMIN_API_KEY="${AdminApiKey}"
+          export MAILID="${MailId}"
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-          delete the stack
+          # delete the stack
           aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
         - DeviceIndex: 0
@@ -34,6 +35,23 @@ Resources:
             - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
           AssociatePublicIpAddress: true
       KeyName: 'hyps-oneclick'
+  HyperswitchAwsEksAccessRole:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Sid: AllowEksAccess
+            Effect: Allow
+            Action:
+              - eks:*
+              - sts:GetCallerIdentity
+              - sns:CreateTopic
+              - sns:Subscribe
+              - sns:Publish
+              - sns:DeleteTopic
+            Resource: "*"
   AwsIamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -50,6 +68,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2FullAccess
         - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
         - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+        - !Ref HyperswitchAwsEksAccessRole
       Path: /
       Policies:
         - PolicyName: CdkPolicy
@@ -119,3 +138,7 @@ Parameters:
     Type: String
     Default: ""
     Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
+  MailId:
+    Type: String
+    Default: ""
+    Description: "Please enter the mail id (Your credentials will be mailed to this email. Please do not forget to subscribe to the mailing list when prompted)"
