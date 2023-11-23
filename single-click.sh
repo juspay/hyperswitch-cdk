@@ -71,7 +71,6 @@ TEMPLATE=$(echo "$TEMPLATE" | jq '.Outputs.PUB_KEY = {"Value": "'"$PUB_KEY"'"}')
 TEMPLATE=$(echo "$TEMPLATE" | jq '.Outputs.API_KEY = {"Value": "'"$API_KEY"'"}')
 TEMPLATE=$(echo "$TEMPLATE" | jq '.Outputs.CONNECTOR_KEY = {"Value": "'"$CONNECTOR_KEY"'"}')
 
-# Write the modified template back to the file
 echo "$TEMPLATE" > template.json
 
 aws cloudformation update-stack --stack-name my-stack --template-body file://template.json
