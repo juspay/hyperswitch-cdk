@@ -25,9 +25,9 @@ Resources:
           export MAILID="${MailId}"
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-          # delete the stack
-          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+          # /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          # # delete the stack
+          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
