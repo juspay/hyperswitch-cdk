@@ -32,7 +32,6 @@ export class AWSStack extends cdk.Stack {
 
     let isStandalone = scope.node.tryGetContext('test') || false;
     if (isStandalone){
-      console.log("Deploying Standalone")
       let hyperswitch_ec2 = new EC2Instance(this, vpc.vpc, get_standalone_ec2_config(config));
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
@@ -49,6 +48,11 @@ export class AWSStack extends cdk.Stack {
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
+
+      let internal_jump = new EC2Instance(this, vpc.vpc, get_internal_jump_ec2_config(config, "hyperswitch_internal_jump_ec2"));
+      let external_jump = new EC2Instance(this, vpc.vpc, get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"));
+      internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
+      external_jump.sg.addEgressRule(internal_jump.sg, ec2.Port.tcp(22));
     }
   }
 }
@@ -67,6 +71,32 @@ function get_standalone_ec2_config(config:Config){
     machineImage: new ec2.AmazonLinuxImage(),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     userData: ec2.UserData.custom(customData),
+  };
+  return ec2_config;
+}
+
+function get_internal_jump_ec2_config(config:Config, id:string){
+  let ec2_config:EC2Config = {
+    id,
+    instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
+    machineImage: new ec2.AmazonLinuxImage(),
+    vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+    associatePublicIpAddress: false,
+  };
+  return ec2_config;
+}
+
+function get_external_jump_ec2_config(config:Config, id:string){
+  let props:ec2.AmazonLinuxImageProps = {
+    generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+  };
+
+  let ec2_config:EC2Config = {
+    id,
+    instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
+    machineImage: new ec2.AmazonLinuxImage(props) ,
+    vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+    ssmSessionPermissions: true,
   };
   return ec2_config;
 }
