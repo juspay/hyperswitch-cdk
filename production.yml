@@ -2,10 +2,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Resources:
   HyperswitchCDKBootstrapEC2:
-    Type: AWS::EC2::Instance
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT1H
+    # Type: AWS::EC2::Instance
+    # CreationPolicy:
+    #   ResourceSignal:
+    #     Timeout: PT1H
     Properties:
       ImageId: 'ami-051f7e7f6c2f40dc1'
       InstanceType: 't3.small'
@@ -23,6 +23,7 @@ Resources:
           export DB_PASS="${DBPassword}"
           export ADMIN_API_KEY="${AdminApiKey}"
           export MAILID="${MailId}"
+          export NAME="${Name}"
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           # /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
@@ -142,3 +143,7 @@ Parameters:
     Type: String
     Default: ""
     Description: "Please enter the mail id (Your credentials will be mailed to this email. Please do not forget to subscribe to the mailing list when prompted)"
+  Name:
+    Type: String
+    Default: ""
+    Description: "Please enter the your name"
