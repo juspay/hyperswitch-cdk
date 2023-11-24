@@ -21,7 +21,7 @@ npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
 cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
 aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
-aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
+export KUBECONFIG= ~/.kube/config
 sleep 10
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
