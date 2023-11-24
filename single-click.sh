@@ -21,7 +21,7 @@ npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
 cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
 aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
-export KUBECONFIG= ~/.kube/config
+export KUBECONFIG=~/.kube/config
 sleep 10
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -53,11 +53,13 @@ export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$APP_HOS
 --header 'api-key: '$ADMIN_API_KEY \
 --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}' )
 helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.sdk.image=$SDK_IMAGE,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.image=juspaydotin/hyperswitch-router:v1.78.0-standalone,application.server.server_base_url=http://$APP_HOST,application.server.secrets.admin_api_key=$ADMIN_API_KEY,db.host=$DB_HOST,db.password=$DB_PASS,redis.host=$REDIS_HOST,loadBalancer.targetSecurityGroup=$LB_SG" -n hyperswitch
-export subject="Hyperswitch Installation Completed! Find your credentials in this mail.."
 export body="App Host: $APP_HOST\nLogs Host: $LOGS_HOST\nControl Center Host: $CONTROL_CENTER_HOST\nSDK Host: $SDK_HOST\nRedis Host: $REDIS_HOST\nDB Host: $DB_HOST\nSDK URL: $SDK_URL\nSDK Image: $SDK_IMAGE\nMerchant ID: $MERCHANT_ID\nPublishable Key: $PUB_KEY\nAPI Key: $API_KEY\nConnector Key: $CONNECTOR_KEY"
-aws sns create-topic --name hs-email-topic
-export topic_arn=$(aws sns list-topics --query "Topics[?contains(TopicArn, 'hs-email-topic')].TopicArn" --output text)
-aws sns subscribe --topic-arn $topic_arn --protocol email --notification-endpoint $MAILID
-aws sns publish --topic-arn $topic_arn --message "$body" --subject "$subject"
-# delete sns
-aws sns delete-topic --topic-arn $topic_arn
+# Subscribe to the email-one-click API
+curl -X POST -H "Content-Type: application/json" -d "{\"recipient\": \"$MAILID\"}" https://8x2foxz2bd.execute-api.us-east-1.amazonaws.com/default/email-one-click
+
+# Send the actual email
+curl -X POST -H "Content-Type: application/json" -d "{
+  \"recipient\": \"$MAILID\",
+  \"name\": \"$NAME\",
+  \"body\": \"$body\"
+}" https://8x2foxz2bd.execute-api.us-east-1.amazonaws.com/default/email-one-click
