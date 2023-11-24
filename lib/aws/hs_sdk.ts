@@ -75,6 +75,13 @@ export class HyperswitchSDKStack {
       })
     );
 
+    project.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["logs:CreateLogStream"],
+        resources: ["*"],
+      })
+    );
+
     // Allow the CodeBuild project to access the S3 bucket
     bucket.grantReadWrite(project);
 
