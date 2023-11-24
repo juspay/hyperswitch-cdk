@@ -26,7 +26,7 @@ export class AWSStack extends cdk.Stack {
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
-    let rds = new DataBaseConstruct( this, config.rds ,vpc.vpc);
+    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc);
     rds.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
 
     config = update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
@@ -34,7 +34,7 @@ export class AWSStack extends cdk.Stack {
     let locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
 
     let isStandalone = scope.node.tryGetContext('test') || false;
-    if (isStandalone){
+    if (isStandalone) {
       let hyperswitch_ec2 = new EC2Instance(this, vpc.vpc, get_standalone_ec2_config(config));
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
@@ -48,7 +48,7 @@ export class AWSStack extends cdk.Stack {
       if (is_root_user)
         throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
       console.log("Deploying production")
-      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key , locker);
+      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key, locker);
       locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
@@ -62,6 +62,11 @@ export class AWSStack extends cdk.Stack {
       internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
       internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
+
+      locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
+      locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
+      internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
+
       rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
 
@@ -75,9 +80,9 @@ function update_config(config: Config, db_host: string, redis_host: string) {
   return config;
 }
 
-function get_standalone_ec2_config(config:Config){
+function get_standalone_ec2_config(config: Config) {
   let customData = readFileSync('lib/aws/userdata.sh', 'utf8').replace("{{redis_host}}", config.hyperswitch_ec2.redis_host).replaceAll("{{db_host}}", config.hyperswitch_ec2.db_host).replace("{{password}}", config.rds.password).replace("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key).replace("{{db_username}}", config.rds.db_user).replace("{{db_name}}", config.rds.db_name);
-  let ec2_config:EC2Config = {
+  let ec2_config: EC2Config = {
     id: "hyperswitch_standalone_ec2",
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
     machineImage: new ec2.AmazonLinuxImage(),
@@ -87,8 +92,8 @@ function get_standalone_ec2_config(config:Config){
   return ec2_config;
 }
 
-function get_internal_jump_ec2_config(config:Config, id:string){
-  let ec2_config:EC2Config = {
+function get_internal_jump_ec2_config(config: Config, id: string) {
+  let ec2_config: EC2Config = {
     id,
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
     machineImage: new ec2.AmazonLinuxImage(),
@@ -98,15 +103,15 @@ function get_internal_jump_ec2_config(config:Config, id:string){
   return ec2_config;
 }
 
-function get_external_jump_ec2_config(config:Config, id:string){
-  let props:ec2.AmazonLinuxImageProps = {
+function get_external_jump_ec2_config(config: Config, id: string) {
+  let props: ec2.AmazonLinuxImageProps = {
     generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
   };
 
-  let ec2_config:EC2Config = {
+  let ec2_config: EC2Config = {
     id,
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-    machineImage: new ec2.AmazonLinuxImage(props) ,
+    machineImage: new ec2.AmazonLinuxImage(props),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     ssmSessionPermissions: true,
   };
