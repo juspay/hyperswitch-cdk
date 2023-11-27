@@ -10,7 +10,7 @@ import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import { LockerSetup } from "./components";
 
-type StandaloneLockerConfig = {
+export type StandaloneLockerConfig = {
   vpc_id: string;
   name: string;
   master_key: string;
@@ -21,13 +21,14 @@ type StandaloneLockerConfig = {
 export class JusVault extends cdk.Stack {
   schemaBucket: s3.Bucket;
   vpc: IVpc;
+  locker: LockerSetup;
 
   constructor(scope: Construct, config: StandaloneLockerConfig) {
     super(scope, config.name, {
-      // env: {
-      //   account: process.env.CDK_DEFAULT_ACCOUNT,
-      //   region: process.env.CDK_DEFAULT_REGION
-      // },
+      env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
+        region: process.env.CDK_DEFAULT_REGION,
+      },
       stackName: config.name,
     });
 
@@ -35,7 +36,7 @@ export class JusVault extends cdk.Stack {
       vpcId: config.vpc_id,
     });
 
-    const schemaBucket = new Bucket(scope, "SchemaBucket", {
+    const schemaBucket = new Bucket(this, "SchemaBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: false,
@@ -55,7 +56,7 @@ export class JusVault extends cdk.Stack {
       .replaceAll("{{ACCOUNT}}", process.env.CDK_DEFAULT_ACCOUNT!)
       .replaceAll("{{REGION}}", process.env.CDK_DEFAULT_REGION!);
 
-    const lambdaRole = new Role(scope, "SchemaUploadLambdaRole", {
+    const lambdaRole = new Role(this, "SchemaUploadLambdaRole", {
       assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
     });
 
@@ -78,14 +79,10 @@ export class JusVault extends cdk.Stack {
       }),
     );
 
-    const lambdaSecurityGroup = new SecurityGroup(
-      scope,
-      "LambdaSecurityGroup",
-      {
-        vpc: this.vpc,
-        allowAllOutbound: true,
-      },
-    );
+    const lambdaSecurityGroup = new SecurityGroup(this, "LambdaSecurityGroup", {
+      vpc: this.vpc,
+      allowAllOutbound: true,
+    });
 
     const initializeUploadFunction = new Function(
       this,
@@ -96,11 +93,12 @@ export class JusVault extends cdk.Stack {
         code: Code.fromInline(migrationCode),
         timeout: cdk.Duration.minutes(15),
         role: lambdaRole,
+        // securityGroups: [lambdaSecurityGroup],
       },
     );
 
     const initializeDbTriggerCustomResource = new cdk.CustomResource(
-      scope,
+      this,
       "InitializeDbTriggerCustomResource",
       {
         serviceToken: initializeUploadFunction.functionArn,
@@ -117,5 +115,7 @@ export class JusVault extends cdk.Stack {
       },
       this.schemaBucket,
     );
+
+    this.locker = locker;
   }
 }
