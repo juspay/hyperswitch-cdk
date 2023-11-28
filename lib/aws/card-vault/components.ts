@@ -162,11 +162,11 @@ export class LockerEc2 {
       logRetention: RetentionDays.INFINITE,
     });
 
-    const triggerStuff = new cdk.CustomResource(scope, "KmsEncryptionCR", {
+    const triggerKMSEncryption = new cdk.CustomResource(scope, "KmsEncryptionCR", {
       serviceToken: kms_encrypt_function.functionArn,
     });
 
-    const userDataResponse = triggerStuff.getAtt("message").toString();
+    const userDataResponse = triggerKMSEncryption.getAtt("message").toString();
 
     const locker_role = new iam.Role(scope, "locker-role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -272,19 +272,6 @@ export class LockerSetup {
       },
     });
 
-    // let schemaBucket = new s3.Bucket(scope, "LockerSchemaBucket", {
-    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
-    //   blockPublicAccess: new s3.BlockPublicAccess({
-    //     blockPublicAcls: false,
-    //   }),
-    //   publicReadAccess: true,
-    //   autoDeleteObjects: true,
-    //   bucketName:
-    //     "locker-schema-" +
-    //     cdk.Aws.ACCOUNT_ID +
-    //     "-" +
-    //     process.env.CDK_DEFAULT_REGION,
-    // });
     let schemaBucket = rdsSchemaBucket;
 
     this.db_bucket = schemaBucket;
@@ -367,12 +354,6 @@ export class LockerSetup {
         role: lambdaRole,
       },
     );
-
-    // new triggers.Trigger(scope, "initializeUploadTrigger", {
-    //   handler: initializeUploadFunction,
-    //   timeout: Duration.minutes(15),
-    //   invocationType: triggers.InvocationType.EVENT,
-    // }).executeBefore();
 
     new cdk.triggers.Trigger(scope, "InitializeLockerDBTrigger", {
       handler: initializeDBFunction,
