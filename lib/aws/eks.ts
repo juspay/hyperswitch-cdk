@@ -22,7 +22,7 @@ export class EksStack {
     rds: DataBaseConstruct,
     elasticache: ElasticacheStack,
     admin_api_key: string,
-    locker: LockerSetup,
+    locker: LockerSetup | undefined,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -167,16 +167,6 @@ export class EksStack {
       },
     });
 
-    
-    new cdk.CfnOutput(scope, "Hyperswitch-Private-Key", {
-      value: locker.locker_ec2.hyperswitch.private_key,
-    });
-
-
-    new cdk.CfnOutput(scope, "Locker-Public-Key", {
-      value: locker.locker_ec2.locker_pair.public_key,
-    });
-
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
       repository: "https://juspay.github.io/hyperswitch-helm",
@@ -201,9 +191,9 @@ export class EksStack {
               recon_admin_api_key: "test_admin",
             },
             locker: {
-              host: locker.locker_ec2.instance.instancePrivateIp,
-              locker_public_key: locker.locker_ec2.locker_pair.public_key,
-              hyperswitch_private_key: locker.locker_ec2.hyperswitch.private_key,
+              host: locker ? locker.locker_ec2.instance.instancePrivateIp : "locker-host",
+              locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+              hyperswitch_private_key: locker ? locker.locker_ec2.hyperswitch.private_key : "locker-key",
             },
             basilisk: {
               host: "basilisk-host",

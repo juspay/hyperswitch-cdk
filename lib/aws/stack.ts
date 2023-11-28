@@ -31,7 +31,10 @@ export class AWSStack extends cdk.Stack {
 
     config = update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
-    let locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
+    let locker: LockerSetup | undefined;
+    if (config.locker.master_key) {
+      locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
+    }
 
     let isStandalone = scope.node.tryGetContext('test') || false;
     if (isStandalone) {
@@ -49,7 +52,7 @@ export class AWSStack extends cdk.Stack {
         throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
       console.log("Deploying production")
       let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key, locker);
-      locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
+      if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
@@ -63,9 +66,9 @@ export class AWSStack extends cdk.Stack {
       internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
 
-      locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
-      locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
-      internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
+      if (locker) locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
+      if(locker) locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
+      if(locker) internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
 
       rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
