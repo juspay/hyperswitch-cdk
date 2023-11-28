@@ -32,23 +32,23 @@ LOCKER__LOG__CONSOLE__ENABLED=true
 LOCKER__LOG__CONSOLE__LEVEL=DEBUG
 LOCKER__LOG__CONSOLE__LOG_FORMAT=default
 
-LOCKER__DATABASE__USERNAME={pl("db_username")} # add the database user created above
-LOCKER__DATABASE__PASSWORD={enc_pl("db_password")} # add the kms encrypted password here (kms encryption process mentioned below)
-LOCKER__DATABASE__HOST={pl("db_host")} # add the host of the database (database url)
-LOCKER__DATABASE__PORT=5432 # if used differently mention here
+LOCKER__DATABASE__USERNAME={pl("db_username")}
+LOCKER__DATABASE__PASSWORD={enc_pl("db_password")}
+LOCKER__DATABASE__HOST={pl("db_host")}
+LOCKER__DATABASE__PORT=5432
 LOCKER__DATABASE__DBNAME=locker
 
 LOCKER__LIMIT__REQUEST_COUNT=100
 LOCKER__LIMIT__DURATION=60
 
 LOCKER__SECRETS__TENANT=hyperswitch
-LOCKER__SECRETS__MASTER_KEY={enc_pl("master_key")} # kms encrypted master key
-LOCKER__SECRETS__LOCKER_PRIVATE_KEY={enc_pl("private_key")} # kms encrypted locker private key
-LOCKER__SECRETS__TENANT_PUBLIC_KEY={enc_pl("public_key")} # kms encrypted locker private key
+LOCKER__SECRETS__MASTER_KEY={enc_pl("master_key")}
+LOCKER__SECRETS__LOCKER_PRIVATE_KEY={enc_pl("private_key")}
+LOCKER__SECRETS__TENANT_PUBLIC_KEY={enc_pl("public_key")}
 
-LOCKER__KMS__KEY_ID={pl("kms_id")} # kms id used to encrypt it below
-LOCKER__KMS__REGION={pl("region")} # kms region used
-    """
+LOCKER__KMS__KEY_ID={pl("kms_id")}
+LOCKER__KMS__REGION={pl("region")}
+"""
 
     bucket_name = os.environ['ENV_BUCKET_NAME']
     filename = os.environ['ENV_FILE']

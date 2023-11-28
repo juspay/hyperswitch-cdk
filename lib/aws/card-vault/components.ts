@@ -88,7 +88,7 @@ export class LockerEc2 {
     const lambda_role = new iam.Role(scope, "locker-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       inlinePolicies: {
-        "use-kms": kms_policy,
+        "use-kms-sm-s3": kms_policy,
       },
     });
 
@@ -171,8 +171,11 @@ export class LockerEc2 {
     const locker_role = new iam.Role(scope, "locker-role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
       inlinePolicies: {
-        "use-kms": kms_policy,
+        "use-kms-sm-s3": kms_policy,
       },
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
+      ],
     });
 
     const sg = new ec2.SecurityGroup(scope, "Locker-SG", {
@@ -210,6 +213,8 @@ export class LockerEc2 {
       userData: ec2.UserData.custom(customData),
       role: locker_role,
     });
+
+    envBucket.grantRead(this.instance);
 
     new cdk.CfnOutput(scope, "Locker-ec2-IP", {
       value: `${this.instance.instancePrivateIp}`,
