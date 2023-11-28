@@ -127,6 +127,7 @@ def lambda_handler(event, context):
         if event['RequestType'] == 'Create':
           upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "migration_runner.zip")
           upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/locker-schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "locker-schema.sql")
           send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
         else:
           send(event, context, SUCCESS, { "message" : "No action required"})

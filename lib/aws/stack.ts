@@ -11,6 +11,7 @@ import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { HyperswitchSDKStack } from "./hs_sdk";
+import { LockerSetup } from "./card-vault/components";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -25,13 +26,18 @@ export class AWSStack extends cdk.Stack {
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
-    let rds = new DataBaseConstruct( this, config.rds ,vpc.vpc);
+    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc);
     rds.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
 
     config = update_config(config, rds.db_cluster.clusterEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress)
 
+    let locker: LockerSetup | undefined;
+    if (config.locker.master_key) {
+      locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
+    }
+
     let isStandalone = scope.node.tryGetContext('test') || false;
-    if (isStandalone){
+    if (isStandalone) {
       let hyperswitch_ec2 = new EC2Instance(this, vpc.vpc, get_standalone_ec2_config(config));
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
@@ -39,12 +45,14 @@ export class AWSStack extends cdk.Stack {
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(80));
       hyperswitch_ec2.sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(22));
-    }else{
+    } else {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
-      if(is_root_user)
+      if (is_root_user)
         throw new Error("Please create new user with appropiate role as ROOT user is not recommended");
-      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key);
+      console.log("Deploying production")
+      let eks = new EksStack(this, config, vpc.vpc, rds, elasticache, config.hyperswitch_ec2.admin_api_key, locker);
+      if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
@@ -57,6 +65,11 @@ export class AWSStack extends cdk.Stack {
       internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
       internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
+
+      if (locker) locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
+      if(locker) locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
+      if(locker) internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
+
       rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
 
@@ -64,15 +77,15 @@ export class AWSStack extends cdk.Stack {
   }
 }
 
-function update_config(config:Config, db_host:string, redis_host:string){
+function update_config(config: Config, db_host: string, redis_host: string) {
   config.hyperswitch_ec2.db_host = db_host;
   config.hyperswitch_ec2.redis_host = redis_host;
   return config;
 }
 
-function get_standalone_ec2_config(config:Config){
+function get_standalone_ec2_config(config: Config) {
   let customData = readFileSync('lib/aws/userdata.sh', 'utf8').replace("{{redis_host}}", config.hyperswitch_ec2.redis_host).replaceAll("{{db_host}}", config.hyperswitch_ec2.db_host).replace("{{password}}", config.rds.password).replace("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key).replace("{{db_username}}", config.rds.db_user).replace("{{db_name}}", config.rds.db_name);
-  let ec2_config:EC2Config = {
+  let ec2_config: EC2Config = {
     id: "hyperswitch_standalone_ec2",
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
     machineImage: new ec2.AmazonLinuxImage(),
@@ -82,8 +95,8 @@ function get_standalone_ec2_config(config:Config){
   return ec2_config;
 }
 
-function get_internal_jump_ec2_config(config:Config, id:string){
-  let ec2_config:EC2Config = {
+function get_internal_jump_ec2_config(config: Config, id: string) {
+  let ec2_config: EC2Config = {
     id,
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
     machineImage: new ec2.AmazonLinuxImage(),
@@ -93,15 +106,15 @@ function get_internal_jump_ec2_config(config:Config, id:string){
   return ec2_config;
 }
 
-function get_external_jump_ec2_config(config:Config, id:string){
-  let props:ec2.AmazonLinuxImageProps = {
+function get_external_jump_ec2_config(config: Config, id: string) {
+  let props: ec2.AmazonLinuxImageProps = {
     generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
   };
 
-  let ec2_config:EC2Config = {
+  let ec2_config: EC2Config = {
     id,
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-    machineImage: new ec2.AmazonLinuxImage(props) ,
+    machineImage: new ec2.AmazonLinuxImage(props),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     ssmSessionPermissions: true,
   };

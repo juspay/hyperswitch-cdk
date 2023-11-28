@@ -67,8 +67,16 @@ export type EC2 = {
   db_host : string;
 };
 
+
+export type LockerConfig = {
+  master_key: string;
+  db_pass: string;
+  db_user: string;
+};
+
 export type Config = {
   stack: StackConfig;
+  locker: LockerConfig;
   vpc: VpcConfig;
   subnet: SubnetConfigs;
   extra_subnets: ExtraSubnetConfig[]; // TODO: remove this if not required
