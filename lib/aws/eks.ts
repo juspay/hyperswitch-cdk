@@ -202,8 +202,8 @@ export class EksStack {
             },
             locker: {
               host: locker.locker_ec2.instance.instancePrivateIp,
-              // locker_public_key: locker.locker_ec2.locker_pair.public_key,
-              // hyperswitch_private_key: locker.locker_ec2.hyperswitch.private_key,
+              locker_public_key: locker.locker_ec2.locker_pair.public_key,
+              hyperswitch_private_key: locker.locker_ec2.hyperswitch.private_key,
             },
             basilisk: {
               host: "basilisk-host",
