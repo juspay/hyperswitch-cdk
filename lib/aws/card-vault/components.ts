@@ -46,6 +46,10 @@ export class LockerEc2 extends Construct {
 
   constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
     super(scope, "LockerEc2");
+
+    const lockerSubnetId: string | undefined =
+      scope.node.tryGetContext("locker_subnet_id");
+
     const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -205,6 +209,19 @@ export class LockerEc2 extends Construct {
       .replaceAll("{{BUCKET_NAME}}", envBucket.bucketName)
       .replaceAll("{{ENV_FILE}}", env_file);
 
+    let vpcSubnets: ec2.SubnetSelection;
+    if (lockerSubnetId) {
+      vpcSubnets = {
+        subnets: [
+          ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerSubnetId),
+        ],
+      };
+    } else {
+      vpcSubnets = {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      };
+    }
+
     this.instance = new ec2.Instance(this, "locker-ec2", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -212,10 +229,7 @@ export class LockerEc2 extends Construct {
       ),
       machineImage: new ec2.AmazonLinuxImage(),
       vpc,
-      vpcSubnets: {
-        // subnetGroupName: SubnetNames.IsolatedSubnet,
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
+      vpcSubnets,
       securityGroup: sg,
       keyName: aws_key_pair.keyName,
       userData: ec2.UserData.custom(customData),
@@ -254,6 +268,10 @@ export class LockerSetup extends Construct {
     rdsSchemaBucket: s3.Bucket,
   ) {
     super(scope, "LockerSetup");
+    // Provide Subnet For Locker from Context
+    const lockerdbSubnetId: string | undefined = scope.node.tryGetContext(
+      "locker_db_subnet_id",
+    );
 
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
@@ -324,6 +342,20 @@ export class LockerSetup extends Construct {
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
+
+    let vpcSubnetsDb: ec2.SubnetSelection;
+    if (lockerdbSubnetId) {
+      vpcSubnetsDb = {
+        subnets: [
+          ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerdbSubnetId),
+        ],
+      };
+    } else {
+      vpcSubnetsDb = {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      };
+    }
+
     const db_cluster = new DatabaseCluster(this, "locker-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
         instanceType: ec2.InstanceType.of(
@@ -332,7 +364,7 @@ export class LockerSetup extends Construct {
         ),
       }),
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      vpcSubnets: vpcSubnetsDb,
       engine,
       port: 5432,
       securityGroups: [db_security_group],

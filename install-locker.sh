@@ -24,7 +24,21 @@ ask_yes_no() {
 
 echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
-read -p "Enter the VPC ID to use: " VPC_ID
+read -r -p "Enter the VPC ID to use: " VPC_ID
+read -r -p "Enter the Locker Subnet ID to use: " LOCKER_SUBNET_ID
+
+LOCKER_FLAGS=""
+
+if [ -n "$LOCKER_SUBNET_ID" ]; then
+  LOCKER_FLAGS+="-c locker_subnet_id=$LOCKER_SUBNET_ID"
+fi
+
+read -r -p "Enter the Locker DB Subnet ID to use: " LOCKER_DB_SUBNET_ID
+
+
+if [ -n "$LOCKER_DB_SUBNET_ID" ]; then
+  LOCKER_FLAGS+="-c locker_db_subnet_id=$LOCKER_DB_SUBNET_ID"
+fi
 
 echo -e "$(tput bold)$(tput setaf 3)To generated the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
 echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
@@ -53,7 +67,7 @@ export TEMP_FILE=$(mktemp)
 
 export STACK="card-vault"
 
-cdk deploy --require-approval never -c vpc_id="$VPC_ID" -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER > "$TEMP_FILE"
+echo cdk deploy --require-approval never -c vpc_id="$VPC_ID" -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS > "$TEMP_FILE"
 
 
 export JUMP_COMMAND=$(grep ''$STACK'.GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/'$STACK'.GetJumpLockerSSHKey = \(.*\)/\1/g')
