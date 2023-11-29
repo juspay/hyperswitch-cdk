@@ -66,6 +66,7 @@ export class AWSStack extends cdk.Stack {
       internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
       internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
+      external_jump.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22));
 
       if (locker) locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
       if(locker) locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));

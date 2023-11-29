@@ -191,7 +191,7 @@ export class EksStack {
               recon_admin_api_key: "test_admin",
             },
             locker: {
-              host: locker ? locker.locker_ec2.instance.instancePrivateIp : "locker-host",
+              host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
               locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
               hyperswitch_private_key: locker ? locker.locker_ec2.hyperswitch.private_key : "locker-key",
             },
@@ -206,7 +206,7 @@ export class EksStack {
             },
           },
           sdk: {
-            image: "jeevaramachandran/hyperswitch-web:v1.0.0",
+            image: "juspaydotin/hyperswitch-web:v1.0.1",
             env: {
               hyperswitchPublishableKey: "pk_test_123",
               hyperswitchSecretKey: "sk_test_123",
