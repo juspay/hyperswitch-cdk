@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import { IVpc, InstanceType, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, InstanceType, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -12,9 +12,11 @@ import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import { LockerSetup } from "./components";
 import { EC2Instance } from "../ec2";
+import { Vpc } from "../networking";
+import { SubnetStack } from "../subnet";
 
 export type StandaloneLockerConfig = {
-  vpc_id: string;
+  vpc_id: string | undefined;
   name: string;
   master_key: string;
   db_user: string;
@@ -35,9 +37,18 @@ export class JusVault extends cdk.Stack {
       stackName: config.name,
     });
 
-    this.vpc = Vpc.fromLookup(this, "TheVpc", {
-      vpcId: config.vpc_id,
-    });
+    if (config.vpc_id) {
+      this.vpc = ec2.Vpc.fromLookup(this, "TheVpc", {
+        vpcId: config.vpc_id,
+      });
+    } else {
+      const vpc = new Vpc(this, {
+        name: "locker-standalone",
+        availabilityZones: [],
+      });
+
+      this.vpc = vpc.vpc;
+    }
 
     const schemaBucket = new Bucket(this, "SchemaBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,

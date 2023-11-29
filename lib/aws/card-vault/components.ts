@@ -213,7 +213,11 @@ export class LockerEc2 extends Construct {
     if (lockerSubnetId) {
       vpcSubnets = {
         subnets: [
-          ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerSubnetId),
+          // ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerSubnetId),
+          ec2.Subnet.fromSubnetAttributes(this, "instanceSubnet", {
+            availabilityZone: lockerSubnetId.split(",")[1],
+            subnetId: lockerSubnetId.split(",")[0],
+          }),
         ],
       };
     } else {
@@ -342,12 +346,19 @@ export class LockerSetup extends Construct {
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
-
     let vpcSubnetsDb: ec2.SubnetSelection;
     if (lockerdbSubnetId) {
       vpcSubnetsDb = {
         subnets: [
-          ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerdbSubnetId),
+          ec2.Subnet.fromSubnetAttributes(this, "instancedbSubnet1", {
+            subnetId: lockerdbSubnetId.split(",")[0],
+            availabilityZone: lockerdbSubnetId.split(",")[1],
+          }),
+
+          ec2.Subnet.fromSubnetAttributes(this, "instancedbSubnet2", {
+            subnetId: lockerdbSubnetId.split(",")[2],
+            availabilityZone: lockerdbSubnetId.split(",")[3],
+          }),
         ],
       };
     } else {

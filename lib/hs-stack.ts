@@ -39,7 +39,7 @@ export class HyperswitchStack {
       case "card-vault":
         console.log("Deploying Locker Individually");
         const lockerConfig: StandaloneLockerConfig = {
-          vpc_id: scope.node.getContext("vpc_id")!,
+          vpc_id: scope.node.tryGetContext("vpc_id"),
           name: scope.node.tryGetContext("stack_name") || "tartarus",
           master_key: scope.node.getContext("master_key"),
           db_user: scope.node.tryGetContext("db_user") || "locksmith",

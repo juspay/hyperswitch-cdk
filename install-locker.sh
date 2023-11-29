@@ -1,7 +1,10 @@
 #!/bin/bash
 # shellcheck disable=2155
 
+
 source deps.sh
+
+set -e
 
 ask_yes_no() {
     local prompt="$1 [y/n]: "
@@ -33,22 +36,37 @@ echo "##########################################"
 
 echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
-read -r -p "Enter the VPC ID to use: " VPC_ID
 
-read -r -p "Enter the Locker Subnet ID to use: " LOCKER_SUBNET_ID
 
-LOCKER_FLAGS=""
+echo "$(tput bold)$(tput setaf 3)The VPC ID is optional, if absent a VPC will be created for this standalone deployment$(tput sgr0)"
+read -r -p "Enter the VPC ID to use (optional): " VPC_ID
 
-if [ -n "$LOCKER_SUBNET_ID" ]; then
-  LOCKER_FLAGS+="-c locker_subnet_id=$LOCKER_SUBNET_ID"
+if [[ -n "$VPC_ID" ]]; then
+    LOCKER_FLAGS="-c vpc_id=$VPC_ID"
+
+    echo "$(tput bold)$(tput setaf 3)The following Subnet IDs are optional and can be skipped in case:$(tput sgr0)"
+    echo "$(tput bold)$(tput setaf 3)- You have a private subnet with egress$(tput sgr0)"
+    echo "$(tput bold)$(tput setaf 3)- You don't want to manually configure$(tput sgr0)"
+    echo
+    echo "$(tput bold)$(tput setaf 3)Otherwise, the input format for the subnet ids is <subnet-id>,<availability-zone> (e.g. subnet-00000000000000000,us-east-1a)$(tput sgr0)"
+
+    read -r -p "Enter the Locker Subnet ID to use (optional): " LOCKER_SUBNET_ID
+
+    if [ -n "$LOCKER_SUBNET_ID" ]; then
+        LOCKER_FLAGS+="-c locker_subnet_id=$LOCKER_SUBNET_ID "
+    fi
+
+    echo "$(tput bold)$(tput setaf 3)In case of database please provide 2 subnets with different availability zones,"
+    echo "(e.g. subnet-00000000000000000,us-east-1a,subnet-11111111111111111,us-east-1b)$(tput sgr0)"
+    read -r -p "Enter the Locker DB Subnet ID to use (optional): " LOCKER_DB_SUBNET_ID
+
+
+    if [ -n "$LOCKER_DB_SUBNET_ID" ]; then
+        LOCKER_FLAGS+="-c locker_db_subnet_id=$LOCKER_DB_SUBNET_ID "
+    fi
+
 fi
 
-read -r -p "Enter the Locker DB Subnet ID to use: " LOCKER_DB_SUBNET_ID
-
-
-if [ -n "$LOCKER_DB_SUBNET_ID" ]; then
-  LOCKER_FLAGS+="-c locker_db_subnet_id=$LOCKER_DB_SUBNET_ID"
-fi
 
 echo -e "$(tput bold)$(tput setaf 3)To generated the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
 echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
@@ -78,9 +96,10 @@ export TEMP_FILE=$(mktemp)
 export STACK="card-vault"
 
 
+AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 cdk bootstrap aws://"$AWS_ACCOUNT"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
 
-echo cdk deploy --require-approval never -c vpc_id="$VPC_ID" -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS > "$TEMP_FILE"
+echo cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS # > "$TEMP_FILE"
 
 export JUMP_COMMAND=$(grep ''$STACK'.GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/'$STACK'.GetJumpLockerSSHKey = \(.*\)/\1/g')
 
