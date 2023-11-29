@@ -49,9 +49,9 @@ if [[ ! $DB_PASS =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
 fi
 echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
-echo "Please input the encrypted master key: "
+echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY
-echo "Please enter the database password to be used for locker: "
+echo "Please enter the database password to be used for locker (optional): "
 read -s LOCKER_DB_PASS
 echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
 
