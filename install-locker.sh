@@ -1,6 +1,7 @@
 #!/bin/bash
 # shellcheck disable=2155
 
+source deps.sh
 
 ask_yes_no() {
     local prompt="$1 [y/n]: "
@@ -24,7 +25,7 @@ ask_yes_no() {
 
 echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
-read -p "Enter the VPC ID to use: " VPC_ID
+read -r -p "Enter the VPC ID to use: " VPC_ID
 
 echo -e "$(tput bold)$(tput setaf 3)To generated the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
 echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
