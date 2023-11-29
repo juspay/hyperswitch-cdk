@@ -26,6 +26,8 @@ then
 fi
 sudo npm install -g aws-cdk
 cdk --version
+npm install
+
 os=$(uname)
 if [ "$os" = "Linux" ]; then
     sh linux_deps.sh
@@ -35,3 +37,4 @@ else
     echo "Unsupported operating system."
     exit 1
 fi
+
