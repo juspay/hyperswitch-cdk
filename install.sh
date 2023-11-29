@@ -54,11 +54,23 @@ read -s MASTER_KEY
 echo "Please enter the database password to be used for locker: "
 read -s LOCKER_DB_PASS
 echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
+
+LOCKER=""
+
+if [[ -n "$MASTER_KEY" ]]; then
+  LOCKER+="-c master_key=$MASTER_KEY "
+fi
+
+
+if [[ -n "$LOCKER_DB_PASS" ]]; then
+  LOCKER+="-c locker_pass==$LOCKER_DB_PASS "
+fi
+
 # Deploy the EKS Cluster
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
-if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_key=$MASTER_KEY -c locker_pass=$LOCKER_DB_PASS ; then
+if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
   aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
   # Deploy Load balancer and Ingress
