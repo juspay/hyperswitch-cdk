@@ -119,6 +119,8 @@ export class JusVault extends cdk.Stack {
       this.schemaBucket,
     );
 
+    locker.node.addDependency(initializeDbTriggerCustomResource);
+
     this.locker = locker;
 
     if (

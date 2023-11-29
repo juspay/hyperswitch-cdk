@@ -36,7 +36,7 @@ type RsaKeyPair = {
   public_key: string;
 };
 
-export class LockerEc2 {
+export class LockerEc2 extends Construct {
   readonly instance: ec2.Instance;
   sg: ec2.SecurityGroup;
   readonly locker_pair: RsaKeyPair;
@@ -45,7 +45,8 @@ export class LockerEc2 {
   readonly locker_ssh_key: ec2.CfnKeyPair;
 
   constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
-    const kms_key = new kms.Key(scope, "locker-kms-key", {
+    super(scope, "LockerEc2");
+    const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
       keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
@@ -55,7 +56,7 @@ export class LockerEc2 {
       enableKeyRotation: false,
     });
 
-    const envBucket = new s3.Bucket(scope, "LockerEnvBucket", {
+    const envBucket = new s3.Bucket(this, "LockerEnvBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: true,
@@ -86,7 +87,7 @@ export class LockerEc2 {
       ],
     });
 
-    const lambda_role = new iam.Role(scope, "locker-lambda-role", {
+    const lambda_role = new iam.Role(this, "locker-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       inlinePolicies: {
         "use-kms-sm-s3": kms_policy,
@@ -121,7 +122,7 @@ export class LockerEc2 {
         .toString(),
     };
 
-    let secret = new Secret(scope, "locker-kms-userdata-secret", {
+    let secret = new Secret(this, "locker-kms-userdata-secret", {
       secretName: "LockerKmsDataSecret",
       description: "Database master user credentials",
       secretObjectValue: {
@@ -148,7 +149,7 @@ export class LockerEc2 {
 
     let env_file = "envfile";
 
-    const kms_encrypt_function = new Function(scope, "kms-encrypt", {
+    const kms_encrypt_function = new Function(this, "kms-encrypt", {
       functionName: "KmsEncryptionLambda",
       runtime: Runtime.PYTHON_3_9,
       handler: "index.lambda_handler",
@@ -164,7 +165,7 @@ export class LockerEc2 {
     });
 
     const triggerKMSEncryption = new cdk.CustomResource(
-      scope,
+      this,
       "KmsEncryptionCR",
       {
         serviceToken: kms_encrypt_function.functionArn,
@@ -173,7 +174,7 @@ export class LockerEc2 {
 
     const userDataResponse = triggerKMSEncryption.getAtt("message").toString();
 
-    const locker_role = new iam.Role(scope, "locker-role", {
+    const locker_role = new iam.Role(this, "locker-role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
       inlinePolicies: {
         "use-kms-sm-s3": kms_policy,
@@ -183,20 +184,20 @@ export class LockerEc2 {
       ],
     });
 
-    const sg = new ec2.SecurityGroup(scope, "Locker-SG", {
+    const sg = new ec2.SecurityGroup(this, "Locker-SG", {
       securityGroupName: "Locker-SG",
       vpc: vpc,
     });
 
     this.sg = sg;
     let keypair_id = "locker-ec2-keypair";
-    const aws_key_pair = new ec2.CfnKeyPair(scope, keypair_id, {
+    const aws_key_pair = new ec2.CfnKeyPair(this, keypair_id, {
       keyName: "Locker-ec2-keypair",
     });
 
     this.locker_ssh_key = aws_key_pair;
 
-    new cdk.CfnOutput(scope, "GetLockerSSHKey", {
+    new cdk.CfnOutput(this, "GetLockerSSHKey", {
       value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${aws_key_pair.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > locker.pem`,
     });
 
@@ -204,7 +205,7 @@ export class LockerEc2 {
       .replaceAll("{{BUCKET_NAME}}", envBucket.bucketName)
       .replaceAll("{{ENV_FILE}}", env_file);
 
-    this.instance = new ec2.Instance(scope, "locker-ec2", {
+    this.instance = new ec2.Instance(this, "locker-ec2", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
         ec2.InstanceSize.MEDIUM,
@@ -223,7 +224,7 @@ export class LockerEc2 {
 
     envBucket.grantRead(this.instance);
 
-    new cdk.CfnOutput(scope, "Locker-ec2-IP", {
+    new cdk.CfnOutput(this, "Locker-ec2-IP", {
       value: `${this.instance.instancePrivateIp}`,
       description: "Locker Private IP",
     });
@@ -240,7 +241,7 @@ export class LockerEc2 {
   }
 }
 
-export class LockerSetup {
+export class LockerSetup extends Construct {
   locker_ec2: LockerEc2;
   db_cluster: DatabaseCluster;
   db_sg: SecurityGroup;
@@ -252,6 +253,8 @@ export class LockerSetup {
     config: LockerConfig,
     rdsSchemaBucket: s3.Bucket,
   ) {
+    super(scope, "LockerSetup");
+
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
       version: AuroraPostgresEngineVersion.VER_13_7,
@@ -259,7 +262,7 @@ export class LockerSetup {
 
     const db_name = "locker";
 
-    const db_security_group = new SecurityGroup(scope, "Locker-db-SG", {
+    const db_security_group = new SecurityGroup(this, "Locker-db-SG", {
       securityGroupName: "Locker-db-SG",
       vpc: vpc,
     });
@@ -269,7 +272,7 @@ export class LockerSetup {
     const secretName = "LockerDbMasterUserSecret";
 
     // Create the secret if it doesn't exist
-    let secret = new Secret(scope, "locker-db-master-user-secret", {
+    let secret = new Secret(this, "locker-db-master-user-secret", {
       secretName: secretName,
       description: "Database master user credentials",
       secretObjectValue: {
@@ -287,7 +290,7 @@ export class LockerSetup {
       .replaceAll("{{ACCOUNT}}", process.env.CDK_DEFAULT_ACCOUNT!)
       .replaceAll("{{REGION}}", process.env.CDK_DEFAULT_REGION!);
 
-    const lambdaRole = new iam.Role(scope, "SchemaUploadLambdaRole2", {
+    const lambdaRole = new iam.Role(this, "SchemaUploadLambdaRole2", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
     });
 
@@ -311,7 +314,7 @@ export class LockerSetup {
     );
 
     const lambdaSecurityGroup = new SecurityGroup(
-      scope,
+      this,
       "LambdaSecurityGroup2",
       {
         vpc,
@@ -321,7 +324,7 @@ export class LockerSetup {
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
-    const db_cluster = new DatabaseCluster(scope, "locker-db-cluster", {
+    const db_cluster = new DatabaseCluster(this, "locker-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
         instanceType: ec2.InstanceType.of(
           ec2.InstanceClass.T4G,
@@ -344,7 +347,7 @@ export class LockerSetup {
     this.db_cluster = db_cluster;
 
     const initializeDBFunction = new Function(
-      scope,
+      this,
       "InitializeLockerDBFunction",
       {
         runtime: Runtime.PYTHON_3_9,
@@ -362,13 +365,13 @@ export class LockerSetup {
       },
     );
 
-    new cdk.triggers.Trigger(scope, "InitializeLockerDBTrigger", {
+    new cdk.triggers.Trigger(this, "InitializeLockerDBTrigger", {
       handler: initializeDBFunction,
       timeout: cdk.Duration.minutes(15),
       invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
     }).executeAfter(db_cluster);
 
-    this.locker_ec2 = new LockerEc2(scope, vpc, {
+    this.locker_ec2 = new LockerEc2(this, vpc, {
       master_key: config.master_key,
       database: {
         user: config.db_user,
