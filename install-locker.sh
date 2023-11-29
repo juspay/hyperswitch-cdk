@@ -1,6 +1,7 @@
 #!/bin/bash
 # shellcheck disable=2155
 
+source deps.sh
 
 ask_yes_no() {
     local prompt="$1 [y/n]: "
@@ -25,6 +26,7 @@ ask_yes_no() {
 echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
 read -r -p "Enter the VPC ID to use: " VPC_ID
+
 read -r -p "Enter the Locker Subnet ID to use: " LOCKER_SUBNET_ID
 
 LOCKER_FLAGS=""
