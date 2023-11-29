@@ -31,7 +31,7 @@ REDIS_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query
 DB_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DbHost'].OutputValue" --output text)
 LB_SG=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='LbSecurityGroupId'].OutputValue" --output text)
 SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
-SDK_IMAGE="jeevaramachandran/hyperswitch-web:v1.0.0"
+SDK_IMAGE="juspaydotin/hyperswitch-web:v1.0.1"
 helm repo add hs https://juspay.github.io/hyperswitch-helm
 export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
 --header 'Content-Type: application/json' \
