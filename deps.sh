@@ -24,7 +24,7 @@ then
     echo "AWS CLI could not be found. Please rerun \`sh install.sh\` with Sudo access"
     exit 1
 fi
-npm install -g aws-cdk
+sudo npm install -g aws-cdk
 cdk --version
 os=$(uname)
 if [ "$os" = "Linux" ]; then
