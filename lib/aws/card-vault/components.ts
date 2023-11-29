@@ -42,6 +42,7 @@ export class LockerEc2 {
   readonly locker_pair: RsaKeyPair;
   readonly hyperswitch: RsaKeyPair;
   readonly kms_key: kms.Key;
+  readonly locker_ssh_key: ec2.CfnKeyPair;
 
   constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
     const kms_key = new kms.Key(scope, "locker-kms-key", {
@@ -162,9 +163,13 @@ export class LockerEc2 {
       logRetention: RetentionDays.INFINITE,
     });
 
-    const triggerKMSEncryption = new cdk.CustomResource(scope, "KmsEncryptionCR", {
-      serviceToken: kms_encrypt_function.functionArn,
-    });
+    const triggerKMSEncryption = new cdk.CustomResource(
+      scope,
+      "KmsEncryptionCR",
+      {
+        serviceToken: kms_encrypt_function.functionArn,
+      },
+    );
 
     const userDataResponse = triggerKMSEncryption.getAtt("message").toString();
 
@@ -189,8 +194,10 @@ export class LockerEc2 {
       keyName: "Locker-ec2-keypair",
     });
 
+    this.locker_ssh_key = aws_key_pair;
+
     new cdk.CfnOutput(scope, "GetLockerSSHKey", {
-      value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${aws_key_pair.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > new-key-pair.pem`,
+      value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${aws_key_pair.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > locker.pem`,
     });
 
     let customData = readFileSync("lib/aws/card-vault/user-data.sh", "utf8")

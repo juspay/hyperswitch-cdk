@@ -51,7 +51,7 @@ def lambda_handler(event, context):
         # Call the upload_file_from_url function to upload two files to S3
         if event['RequestType'] == 'Create':
           upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "locker-schema-{{ACCOUNT}}-{{REGION}}", "migration_runner.zip")
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "locker-schema-{{ACCOUNT}}-{{REGION}}", "locker-schema.sql")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/locker-schema.sql", "locker-schema-{{ACCOUNT}}-{{REGION}}", "locker-schema.sql")
           send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
         else:
           send(event, context, SUCCESS, { "message" : "No action required"})
