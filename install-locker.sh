@@ -23,6 +23,14 @@ ask_yes_no() {
     esac
 }
 
+
+AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
+if [[ $AWS_ARN == *":root"* ]]; then
+    echo "ROOT user is not recommended. Please create new user with AdministratorAccess and use their Access Token"
+    exit 1
+fi
+echo "##########################################"
+
 echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
 read -r -p "Enter the VPC ID to use: " VPC_ID
@@ -38,7 +46,7 @@ read -r -s -p "Enter the database password to be used: " DB_PASS
 
 echo
 
-echo -e "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:- AWS_DEFAULT_REGION\n- AWS_PROFILE$(tput sgr0)"
+echo -e "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:\n- AWS_DEFAULT_REGION\n- AWS_PROFILE$(tput sgr0)"
 
 if ! ask_yes_no "Continue with the installation?"; then
     exit 1
@@ -53,6 +61,9 @@ fi
 export TEMP_FILE=$(mktemp)
 
 export STACK="card-vault"
+
+
+cdk bootstrap aws://"$AWS_ACCOUNT"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
 
 cdk deploy --require-approval never -c vpc_id="$VPC_ID" -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER > "$TEMP_FILE"
 
