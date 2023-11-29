@@ -29,13 +29,13 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
           aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
-      NetworkInterfaces:
-        - DeviceIndex: 0
-          SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
-          GroupSet:
-            - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
-          AssociatePublicIpAddress: true
-      KeyName: 'hyps-oneclick'
+      # NetworkInterfaces:
+      #   - DeviceIndex: 0
+      #     SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
+      #     GroupSet:
+      #       - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
+      #     AssociatePublicIpAddress: true
+      # KeyName: 'hyps-oneclick'
   HyperswitchAwsEksAccessRole:
     Type: AWS::IAM::ManagedPolicy
     Properties:
