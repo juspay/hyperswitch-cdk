@@ -19,7 +19,7 @@ else
 fi
 if ! command -v aws &> /dev/null
 then
-    echo "AWS CLI could not be found. Please rerun `sh install.sh` with Sudo access"
+    echo "AWS CLI could not be found. Please rerun \`sh install.sh\` with Sudo access"
     exit 1
 fi
 npm install -g aws-cdk
@@ -98,14 +98,19 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   helm get values -n hyperswitch hypers-v1 > values.yaml
   helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
   sleep 240
+  export BOLD=$(tput bold)
+  export BLUE=$(tput setaf 4)
+  export GREEN=$(tput setaf 2)
+  export YELLOW=$(tput setaf 3)
+  export RESET=$(tput sgr0)
   echo "--------------------------------------------------------------------------------"
-  echo "Service                           Host"
+  echo "$BOLD Service                           Host$RESET"
   echo "--------------------------------------------------------------------------------"
-  echo "HyperloaderJS Hosted at           "$SDK_URL/HyperLoader.js
-  echo "App server running on             "http://$APP_HOST
-  echo "Logs server running on            "http://$LOGS_HOST", Login with username:admin, password:admin, Please change on startup"
-  echo "Control center server running on  "http://$CONTROL_CENTER_HOST", Login with Email: test@gmail.com, password: admin, Please change on startup"
-  echo "Hyperswitch Demo Store running on "http://$SDK_HOST
+  echo "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
+  echo "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echo "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
+  echo "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
+  echo "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
   echo "--------------------------------------------------------------------------------"
   echo "##########################################"
 fi

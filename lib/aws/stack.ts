@@ -34,6 +34,7 @@ export class AWSStack extends cdk.Stack {
     let locker: LockerSetup | undefined;
     if (config.locker.master_key) {
       locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket);
+      locker.node.addDependency(rds.bucket);
     }
 
     let isStandalone = scope.node.tryGetContext('test') || false;

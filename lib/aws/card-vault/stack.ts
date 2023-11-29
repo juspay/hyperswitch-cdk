@@ -1,6 +1,8 @@
 import * as cdk from "aws-cdk-lib";
-import { IVpc, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, InstanceType, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 
 import { Bucket } from "aws-cdk-lib/aws-s3";
@@ -9,6 +11,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import { LockerSetup } from "./components";
+import { EC2Instance } from "../ec2";
 
 export type StandaloneLockerConfig = {
   vpc_id: string;
@@ -116,6 +119,50 @@ export class JusVault extends cdk.Stack {
       this.schemaBucket,
     );
 
+    locker.node.addDependency(initializeDbTriggerCustomResource);
+
     this.locker = locker;
+
+    if (
+      this.node.tryGetContext("locker_jump") == undefined ||
+      this.node.tryGetContext("locker_jump") == "true"
+    ) {
+      let jump_sg = new ec2.SecurityGroup(this, "locker-jump-sg", {
+        securityGroupName: "locker-jump-sg",
+        vpc: this.vpc,
+      });
+
+      this.locker.locker_ec2.addClient(jump_sg, ec2.Port.tcp(22));
+      this.locker.locker_ec2.addClient(jump_sg, ec2.Port.tcp(8080));
+      jump_sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22));
+
+      const jump_key = new ec2.CfnKeyPair(this, "jump-server-key", {
+        keyName: "LockerJump-ec2-keypair",
+      });
+
+      let jump_server = new ec2.Instance(this, "Locker Jump Server", {
+        instanceType: ec2.InstanceType.of(
+          ec2.InstanceClass.T3,
+          ec2.InstanceSize.MEDIUM,
+        ),
+        machineImage: new ec2.AmazonLinuxImage({
+          generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+        }),
+        vpc: this.vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        securityGroup: jump_sg,
+        keyName: jump_key.keyName,
+      });
+
+      new cdk.CfnOutput(this, "GetJumpLockerSSHKey", {
+        value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${jump_key.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > locker-jump.pem`,
+      });
+
+      new cdk.CfnOutput(this, "JumpLockerPublicIP", {
+        value: `${jump_server.instancePublicIp}`,
+      });
+    }
   }
 }
