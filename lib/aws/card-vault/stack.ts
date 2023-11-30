@@ -137,7 +137,7 @@ export class JusVault extends cdk.Stack {
 
     const hyperswitch_private_key = new ssm.StringParameter(
       this,
-      "TenantPrivateKey",
+      "TenantPrivateKeySP",
       {
         parameterName: "/tenant/private_key",
         stringValue: this.locker.locker_ec2.tenant.private_key,
@@ -146,7 +146,7 @@ export class JusVault extends cdk.Stack {
 
     const locker_public_key = new ssm.StringParameter(
       this,
-      "LockerPublicKey",
+      "LockerPublicKeySP",
       {
         parameterName: "/locker/public_key",
         stringValue: this.locker.locker_ec2.locker_pair.public_key,
@@ -154,11 +154,11 @@ export class JusVault extends cdk.Stack {
     );
 
     new cdk.CfnOutput(this, "LockerPublicKey", {
-      value: `aws ssm get-parameter --name ${locker_public_key.parameterName} --query 'Parameter.Value' --output text`,
+      value: `aws ssm get-parameter --name ${locker_public_key.parameterName}:1 --query 'Parameter.Value' --output text`,
     });
 
     new cdk.CfnOutput(this, "TenantPrivateKey", {
-      value: `aws ssm get-parameter --name ${hyperswitch_private_key.parameterName} --query 'Parameter.Value' --output text`,
+      value: `aws ssm get-parameter --name ${hyperswitch_private_key.parameterName}:1 --query 'Parameter.Value' --output text`,
     });
 
     if (

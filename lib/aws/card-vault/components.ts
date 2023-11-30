@@ -241,7 +241,7 @@ export class LockerEc2 extends Construct {
 
     envBucket.grantRead(this.instance);
 
-    new cdk.CfnOutput(this, "Locker-ec2-IP", {
+    new cdk.CfnOutput(this, "LockerIP", {
       value: `${this.instance.instancePrivateIp}`,
       description: "Locker Private IP",
     });
