@@ -7,6 +7,8 @@ import { generateKeyPairSync } from "crypto";
 import { SubnetNames } from "../networking";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as ssm from "aws-cdk-lib/aws-ssm";
+
 import {
   AuroraPostgresEngineVersion,
   ClusterInstance,
@@ -46,6 +48,53 @@ export class LockerEc2 extends Construct {
 
   constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
     super(scope, "LockerEc2");
+
+    const { privateKey: locker_private_key, publicKey: locker_public_key } =
+      generateKeyPairSync("rsa", {
+        modulusLength: 2048,
+      });
+
+    this.locker_pair = {
+      public_key: getOrCreatePersistantData(this, "locker_public_key", () =>
+        locker_public_key.export({ type: "spki", format: "pem" }).toString(),
+      ),
+      private_key: getOrCreatePersistantData(this, "locker_private_key", () =>
+        locker_private_key.export({ type: "spki", format: "pem" }).toString(),
+      ),
+    };
+
+    // this.locker_pair = {
+    //   public_key: locker_public_key
+    //     .export({ type: "spki", format: "pem" })
+    //     .toString(),
+    //   private_key: locker_private_key
+    //     .export({ type: "pkcs8", format: "pem" })
+    //     .toString(),
+    // };
+
+    const { privateKey: tenant_private_key, publicKey: tenant_public_key } =
+      generateKeyPairSync("rsa", {
+        modulusLength: 2048,
+      });
+
+    this.hyperswitch = {
+      public_key: getOrCreatePersistantData(this, "tenant_public_key", () =>
+        tenant_public_key.export({ type: "spki", format: "pem" }).toString(),
+      ),
+      private_key: getOrCreatePersistantData(this, "tenant_private_key", () =>
+        tenant_private_key.export({ type: "spki", format: "pem" }).toString(),
+      ),
+    };
+
+    // this.hyperswitch = {
+    //   public_key: tenant_public_key
+    //     .export({ type: "spki", format: "pem" })
+    //     .toString(),
+    //   private_key: tenant_private_key
+    //     .export({ type: "pkcs8", format: "pem" })
+    //     .toString(),
+    // };
+
     const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -93,34 +142,6 @@ export class LockerEc2 extends Construct {
         "use-kms-sm-s3": kms_policy,
       },
     });
-
-    const { privateKey: locker_private_key, publicKey: locker_public_key } =
-      generateKeyPairSync("rsa", {
-        modulusLength: 2048,
-      });
-
-    this.locker_pair = {
-      public_key: locker_public_key
-        .export({ type: "spki", format: "pem" })
-        .toString(),
-      private_key: locker_private_key
-        .export({ type: "pkcs8", format: "pem" })
-        .toString(),
-    };
-
-    const { privateKey: tenant_private_key, publicKey: tenant_public_key } =
-      generateKeyPairSync("rsa", {
-        modulusLength: 2048,
-      });
-
-    this.hyperswitch = {
-      public_key: tenant_public_key
-        .export({ type: "spki", format: "pem" })
-        .toString(),
-      private_key: tenant_private_key
-        .export({ type: "pkcs8", format: "pem" })
-        .toString(),
-    };
 
     let secret = new Secret(this, "locker-kms-userdata-secret", {
       secretName: "LockerKmsDataSecret",
@@ -382,4 +403,25 @@ export class LockerSetup extends Construct {
 
     this.locker_ec2.addServer(this.db_sg, ec2.Port.tcp(5432));
   }
+}
+
+function getOrCreatePersistantData(
+  scope: Construct,
+  key: string,
+  generator: () => string,
+): string {
+  const output: ssm.IStringParameter =
+    ssm.StringParameter.fromSecureStringParameterAttributes(
+      scope,
+      `imported-${key}`,
+      {
+        parameterName: key,
+      },
+    ) ||
+    new ssm.StringParameter(scope, `imported-${key}`, {
+      parameterName: key,
+      stringValue: generator(),
+    });
+
+  return output.stringValue;
 }
