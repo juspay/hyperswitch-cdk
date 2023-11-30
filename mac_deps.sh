@@ -7,12 +7,15 @@ fi
 if ! command -v helm &> /dev/null
 then
     brew install helm
+    brew link helm
 fi
 if ! command -v jq &> /dev/null
 then
     brew install jq
+    brew link jq
 fi
 if ! command -v kubectl &> /dev/null
 then
     brew install kubectl
+    brew link kubectl
 fi
