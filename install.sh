@@ -60,7 +60,7 @@ fi
 echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
 
-echo "If you want use Card Vault, please create master key by following below steps, leave it empty if you don't need it"
+echo -e "$(tput bold)$(tput setaf 3)If you want use Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
 echo -e "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
 echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
 
