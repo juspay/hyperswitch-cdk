@@ -206,7 +206,7 @@ export class EksStack {
             },
           },
           sdk: {
-            image: "juspaydotin/hyperswitch-web:v1.0.1",
+            image: "juspaydotin/hyperswitch-web:v1.0.4",
             env: {
               hyperswitchPublishableKey: "pk_test_123",
               hyperswitchSecretKey: "sk_test_123",

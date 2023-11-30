@@ -131,11 +131,14 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echoLog "$BOLD Service                           Host$RESET"
   echoLog "--------------------------------------------------------------------------------"
   echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echoLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
   echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
   echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
   echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
   echoLog "--------------------------------------------------------------------------------"
   echoLog "##########################################"
+  echo "$BLUE Please run 'cat cdk.services.log' to view the services details again"$RESET
   exit 0
+else
+  aws cloudformation delete-stack --stack-name CDKToolkit
 fi
