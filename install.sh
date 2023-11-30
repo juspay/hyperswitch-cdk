@@ -2,6 +2,12 @@ export LOG_FILE="cdk.services.log"
 function echoLog() {
   echo "$1" | tee -a $LOG_FILE
 }
+function isValidPass() {
+  if [[ ! $1 =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
+    echo "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
+    exit 1
+  fi
+}
 
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
@@ -53,34 +59,25 @@ echo "##########################################"
 # Read the DB Password and Admin API Key
 echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "
 read -s DB_PASS
-if [[ ! $DB_PASS =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
-  echo "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
-  exit 1
-fi
+isValidPass $DB_PASS
 echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
 
-echo -e "$(tput bold)$(tput setaf 1)If you want use Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
-echo -e "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
-echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 1)If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
 
 echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY
-echo "Please enter the database password to be used for locker (optional): "
-read -s LOCKER_DB_PASS
-echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
-
 LOCKER=""
-
 if [[ -n "$MASTER_KEY" ]]; then
   LOCKER+="-c master_key=$MASTER_KEY "
+  echo "Please enter the database password to be used for locker: "
+  read -s LOCKER_DB_PASS
+  isValidPass $LOCKER_DB_PASS
+  LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
 fi
-
-
-if [[ -n "$LOCKER_DB_PASS" ]]; then
-  LOCKER+="-c locker_pass==$LOCKER_DB_PASS "
-fi
-
+echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
 # Deploy the EKS Cluster
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 npm install
