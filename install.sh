@@ -1,3 +1,8 @@
+export LOG_FILE="cdk.services.log"
+function echoLog() {
+  echo "$1" | tee -a $LOG_FILE
+}
+
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
 if ! command -v node &> /dev/null
@@ -23,6 +28,11 @@ then
     exit 1
 fi
 npm install -g aws-cdk
+if ! command -v cdk &> /dev/null
+then
+    echo "AWS CDK could not be found. Please rerun \`sh install.sh\` with Sudo access"
+    exit 1
+fi
 cdk --version
 os=$(uname)
 if [ "$os" = "Linux" ]; then
@@ -120,14 +130,15 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   export GREEN=$(tput setaf 2)
   export YELLOW=$(tput setaf 3)
   export RESET=$(tput sgr0)
-  echo "--------------------------------------------------------------------------------"
-  echo "$BOLD Service                           Host$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echo "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
-  echo "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
-  echo "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
-  echo "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "##########################################"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$BOLD Service                           Host$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
+  echLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "##########################################"
+  exit 0
 fi
