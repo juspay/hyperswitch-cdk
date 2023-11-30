@@ -1,3 +1,14 @@
+export LOG_FILE="cdk.services.log"
+function echoLog() {
+  echo "$1" | tee -a $LOG_FILE
+}
+function isValidPass() {
+  if [[ ! $1 =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
+    echo "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
+    exit 1
+  fi
+}
+
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
 if ! command -v node &> /dev/null
@@ -23,6 +34,11 @@ then
     exit 1
 fi
 npm install -g aws-cdk
+if ! command -v cdk &> /dev/null
+then
+    echo "AWS CDK could not be found. Please rerun \`sh install.sh\` with Sudo access"
+    exit 1
+fi
 cdk --version
 os=$(uname)
 if [ "$os" = "Linux" ]; then
@@ -43,29 +59,24 @@ echo "##########################################"
 # Read the DB Password and Admin API Key
 echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "
 read -s DB_PASS
-if [[ ! $DB_PASS =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
-  echo "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
-  exit 1
-fi
+isValidPass $DB_PASS
 echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
+echo "$(tput bold)$(tput setaf 1)If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
+
 echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY
-echo "Please enter the database password to be used for locker (optional): "
-read -s LOCKER_DB_PASS
-echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
-
 LOCKER=""
-
 if [[ -n "$MASTER_KEY" ]]; then
   LOCKER+="-c master_key=$MASTER_KEY "
+  echo "Please enter the database password to be used for locker: "
+  read -s LOCKER_DB_PASS
+  isValidPass $LOCKER_DB_PASS
+  LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
 fi
-
-
-if [[ -n "$LOCKER_DB_PASS" ]]; then
-  LOCKER+="-c locker_pass==$LOCKER_DB_PASS "
-fi
-
+echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
 # Deploy the EKS Cluster
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 npm install
@@ -115,14 +126,15 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   export GREEN=$(tput setaf 2)
   export YELLOW=$(tput setaf 3)
   export RESET=$(tput sgr0)
-  echo "--------------------------------------------------------------------------------"
-  echo "$BOLD Service                           Host$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echo "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
-  echo "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
-  echo "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
-  echo "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "##########################################"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$BOLD Service                           Host$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
+  echLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "##########################################"
+  exit 0
 fi
