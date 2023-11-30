@@ -2,6 +2,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import * as cdk from "aws-cdk-lib";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 import { generateKeyPairSync } from "crypto";
 import { SubnetNames } from "../networking";
@@ -40,7 +41,7 @@ export class LockerEc2 extends Construct {
   readonly instance: ec2.Instance;
   sg: ec2.SecurityGroup;
   readonly locker_pair: RsaKeyPair;
-  readonly hyperswitch: RsaKeyPair;
+  readonly tenant: RsaKeyPair;
   readonly kms_key: kms.Key;
   readonly locker_ssh_key: ec2.CfnKeyPair;
 
@@ -117,7 +118,7 @@ export class LockerEc2 extends Construct {
         modulusLength: 2048,
       });
 
-    this.hyperswitch = {
+    this.tenant = {
       public_key: tenant_public_key
         .export({ type: "spki", format: "pem" })
         .toString(),
@@ -139,9 +140,7 @@ export class LockerEc2 extends Construct {
         private_key: cdk.SecretValue.unsafePlainText(
           this.locker_pair.private_key,
         ),
-        public_key: cdk.SecretValue.unsafePlainText(
-          this.hyperswitch.public_key,
-        ),
+        public_key: cdk.SecretValue.unsafePlainText(this.tenant.public_key),
         kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
         region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
       },
