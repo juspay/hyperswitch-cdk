@@ -1,3 +1,8 @@
+export LOG_FILE="cdk.services.log"
+function echoLog() {
+  echo "$1" | tee -a $LOG_FILE
+}
+
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
 if ! command -v node &> /dev/null
@@ -23,6 +28,11 @@ then
     exit 1
 fi
 npm install -g aws-cdk
+if ! command -v cdk &> /dev/null
+then
+    echo "AWS CDK could not be found. Please rerun \`sh install.sh\` with Sudo access"
+    exit 1
+fi
 cdk --version
 os=$(uname)
 if [ "$os" = "Linux" ]; then
@@ -49,9 +59,14 @@ if [[ ! $DB_PASS =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
 fi
 echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
 read -s ADMIN_API_KEY
-echo "Please input the encrypted master key: "
+
+echo -e "$(tput bold)$(tput setaf 1)If you want use Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
+echo -e "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
+echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
+
+echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY
-echo "Please enter the database password to be used for locker: "
+echo "Please enter the database password to be used for locker (optional): "
 read -s LOCKER_DB_PASS
 echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
 
@@ -115,14 +130,15 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   export GREEN=$(tput setaf 2)
   export YELLOW=$(tput setaf 3)
   export RESET=$(tput sgr0)
-  echo "--------------------------------------------------------------------------------"
-  echo "$BOLD Service                           Host$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echo "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
-  echo "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
-  echo "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
-  echo "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
-  echo "--------------------------------------------------------------------------------"
-  echo "##########################################"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$BOLD Service                           Host$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
+  echLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
+  echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "##########################################"
+  exit 0
 fi
