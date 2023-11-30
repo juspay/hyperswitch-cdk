@@ -178,7 +178,7 @@ export class EksStack {
         application: {
           server: {
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:standalone",
+            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
