@@ -95,8 +95,6 @@ Resources:
           export ADMIN_API_KEY="${AdminApiKey}"
           export MASTER_KEY="${CardVaultMasterKEY}"
           export LOCKER_DB_PASS="${CardVaultDBPass}"
-          export MAILID="${MailId}"
-          export NAME="${Name}"
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
