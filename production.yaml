@@ -128,26 +128,18 @@ Parameters:
     Default: ""
     Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one)."
   DBPassword:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: "testadmin"
     Description: "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9])"
   AdminApiKey:
     Type: String
     Default: "test_admin"
     Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
-  MailId:
-    Type: String
-    Default: ""
-    Description: "Please enter the mail id (Your credentials will be mailed to this email. Please do not forget to subscribe to the mailing list when prompted)"
-  Name:
-    Type: String
-    Default: ""
-    Description: "Please enter the your name"
   CardVaultMasterKEY:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: ""
     Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
   CardVaultDBPass:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: ""
     Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
