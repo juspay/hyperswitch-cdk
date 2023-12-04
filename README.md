@@ -8,6 +8,8 @@ This project contains a script for deploying a full stack of HyperSwitch on AWS 
 - Demo App with SDK Integration
 - Card Vault
 - Monitoring Services
+- Automatically build and host SDK (Hyperloader.js)
+- Jump Servers
 
 ## Installation
 
@@ -17,7 +19,9 @@ There are two ways to install the HyperSwitch Full Stack:
 
 Click the button below to deploy the stack directly to AWS:
 
-&emsp;&emsp; <a href="https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=HyperswitchBootstrap&templateURL=https://hyperswitch-synth.s3.eu-central-1.amazonaws.com/hs-starter-config.yaml"><img src="./images/aws_button.png" height="35"></a>
+&emsp;&emsp; <a href="https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=HyperswitchBootstrap&templateURL=https://hyperswitch-synth.s3.eu-central-1.amazonaws.com/production.yaml"><img src="./images/aws_button.png" height="35"></a>
+
+You will able to see the Hyperswitch services in the Hyperswitch Stack Output section once stack is deployed
 
 Follow below steps to unlock card vault if you have opted for Card Vault.
 
@@ -40,8 +44,8 @@ You also need to have an AWS account and configure your AWS credentials.
 1. Clone this repository:
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/juspay/hyperswitch-cdk.git
+cd hyperswitch-cdk
 ```
 
 2. Set your AWS credentials and region:
@@ -54,17 +58,18 @@ export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
 ```
 
 3. Run the installation script:
-    Execute only one of them based on your need.
+    Execute <b>only one</b> of them based on your need.
+
     <details>
-      <summary>Install all the services provided by hyperswitch</summary>
+      <summary><b>Install all the services provided by hyperswitch</b></summary>
       <pre>sh install.sh</pre>
     </details>
     <details>
-      <summary>Install only card vault as a seperate service</summary>
+      <summary><b>Install only card vault as a seperate service</b></summary>
       <pre>sh install-locker.sh</pre>
     </details>
     <details>
-      <summary>Standalone deployment script to deploy Hyperswitch on AWS quickly</summary>
+      <summary><b>Standalone deployment script to deploy Hyperswitch on AWS quickly</b></summary>
       <pre>curl https://raw.githubusercontent.com/juspay/hyperswitch/main/aws/hyperswitch_aws_setup.sh | bash</pre>
   </details>
 

@@ -60,24 +60,49 @@ export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$APP_HOS
 helm get values -n hyperswitch hypers-v1 > values.yaml
 helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
 sleep 240
-export BOLD=$(tput bold)
-export BLUE=$(tput setaf 4)
-export GREEN=$(tput setaf 2)
-export YELLOW=$(tput setaf 3)
-export RESET=$(tput sgr0)
-export LOG_FILE="cdk.services.log"
-function echoLog() {
-  echo "$1" | tee -a $LOG_FILE
-}
-echoLog "--------------------------------------------------------------------------------"
-echoLog "$BOLD Service                           Host$RESET"
-echoLog "--------------------------------------------------------------------------------"
-echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-echoLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
-echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
-echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
-echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
-echoLog "--------------------------------------------------------------------------------"
-echoLog "##########################################"
-aws s3 cp cdk.services.log s3://hyperswitch-schema-$AWS_ACCOUNT-$AWS_REGION/cdk.services.log
-echo "$BLUE Please run 'cat cdk.services.log' to view the services details again"$RESET
+SDK_URL=$SDK_URL/HyperLoader.js
+APP_HOST=http://$APP_HOST
+LOGS_HOST=http://$LOGS_HOST
+CONTROL_CENTER_HOST=http://CONTROL_CENTER_HOST
+SDK_HOST=http://SDK_HOST
+
+# Generate the HTML content
+HTML_CONTENT="
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Hyperswitch Services</h2>
+
+<table style=\"width:100%;text-align:left\">
+  <tr>
+    <th>Service</th>
+    <th>Host</th>
+  </tr>
+  <tr>
+    <td>HyperloaderJS Hosted at</td>
+    <td><a href=\"$SDK_URL\" id=\"sdk_url\">$SDK_URL</a></td>
+  </tr>
+  <tr>
+    <td>App server running on</td>
+    <td><a href=\"$APP_HOST\" id=\"app_host\">$APP_HOST</a></td>
+  </tr>
+  <tr>
+    <td>Logs server running on</td>
+    <td><a href=\"$LOGS_HOST\" id=\"logs_host\">$LOGS_HOST</a> <span>, Login with username: admin, password: admin , Please change on startup</span> </td>
+  </tr>
+  <tr>
+    <td>Control center server running on</td>
+    <td><a href=\"$CONTROL_CENTER_HOST\" id=\"control_center_host\">$CONTROL_CENTER_HOST</a> <span>Login with Email: test@gmail.com, password: admin , Please change on startup</span> </td>
+  </tr>
+  <tr>
+    <td>Hyperswitch Demo Store running on</td>
+    <td><a href=\"$SDK_HOST\" id=\"sdk_host\">$SDK_HOST</a></td>
+  </tr>
+</table>
+
+</body>
+</html>
+"
+echo "$HTML_CONTENT" > cdk.services.html
+aws s3 cp cdk.services.html s3://hyperswitch-schema-$AWS_ACCOUNT-$AWS_REGION/cdk.services.html
