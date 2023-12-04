@@ -23,6 +23,9 @@ export class HyperswitchSDKStack {
     new cdk.CfnOutput(scope, 'HyperLoaderUrl', {
       value: "http://"+rds.bucket.bucketDomainName+"/"+sdkVersion+"/v0",
     });
+    new cdk.CfnOutput(scope, 'Hyperswitch Logs', {
+      value: "https://"+rds.bucket.bucketDomainName+".s3.amazonaws.com/cdk.services.log",
+    });
 
     // Create a new CodeBuild project
     const project = new codebuild.Project(scope, "HyperswitchSDK", {

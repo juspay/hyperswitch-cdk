@@ -1,19 +1,111 @@
-# hyperswitch-cdk
+# HyperSwitch Full Stack Deployment
 
-To install dependencies and deploy:
+This project contains a script for deploying a full stack of HyperSwitch on AWS using the AWS Cloud Development Kit (CDK). The components installed by this script include:
+
+- App Server
+- Scheduler Services
+- Admin Control Center
+- Demo App with SDK Integration
+- Card Vault
+- Monitoring Services
+
+## Installation
+
+There are two ways to install the HyperSwitch Full Stack:
+
+### 1. Single-Click Deployment
+
+Click the button below to deploy the stack directly to AWS:
+
+&emsp;&emsp; <a href="https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=HyperswitchBootstrap&templateURL=https://hyperswitch-synth.s3.eu-central-1.amazonaws.com/hs-starter-config.yaml"><img src="./images/aws_button.png" height="35"></a>
+
+Follow below steps to unlock card vault if you have opted for Card Vault.
+
+1. Goto AWS console > CloudFormation > Stacks > HyperswitchBootstrap > Resources
+2. Click on HyperswitchCDKBootstrapEC2 instance starting with physical id `i-{{random_id}}`
+3. Open the instance and click on connect and login to the instance
+4. Follow next steps [here](#card_vault)
+
+### 2. Terminal Deployment
+
+#### Prerequisites
+
+Before you can use this script, you need to have the following installed:
+
+- Git
+- Node.js and npm
+
+You also need to have an AWS account and configure your AWS credentials.
+
+1. Clone this repository:
 
 ```bash
-export AWS_DEFAULT_REGION="<Your AWS_REGION>"
-export AWS_ACCESS_KEY_ID="<Your AWS_ACCESS_KEY_ID>"
-export AWS_SECRET_ACCESS_KEY="<Your AWS_SECRET_ACCESS_KEY>"
-export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
-
-sh install.sh
+git clone <repository-url>
+cd <repository-directory>
 ```
 
-This project was created using `bun init` in bun v1.0.2. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+2. Set your AWS credentials and region:
 
-### Stuff to Do
+```bash
+export AWS_DEFAULT_REGION=<Your AWS_REGION> // e.g., export AWS_DEFAULT_REGION=us-east-2
+export AWS_ACCESS_KEY_ID=<Your Access_Key_Id> // e.g., export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+export AWS_SECRET_ACCESS_KEY=<Your Secret_Access_Key> // e.g., export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
+```
+
+3. Run the installation script:
+    Execute only one of them based on your need.
+    <details>
+      <summary>Install all the services provided by hyperswitch</summary>
+      <pre>sh install.sh</pre>
+    </details>
+    <details>
+      <summary>Install only card vault as a seperate service</summary>
+      <pre>sh install-locker.sh</pre>
+    </details>
+    <details>
+      <summary>Standalone deployment script to deploy Hyperswitch on AWS quickly</summary>
+      <pre>curl https://raw.githubusercontent.com/juspay/hyperswitch/main/aws/hyperswitch_aws_setup.sh | bash</pre>
+  </details>
+
+
+# <a name="card_vault"></a>Unlock Card Vault
+
+If you are creating a card vault, you will need to unlock it so that it can start saving/retrieving cards. The CDK script creates an external and internal jump for security purposes, meaning you can only access the Card vault via the internal jump server. Follow the steps below to unlock the card vault:
+
+1. Please check if you have configured AWS Access keys before running the below command
+
+```bash
+curl https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/locker.sh | bash
+```
+
+2. Run below command in the external jump server. This will log you into internal jump server
+
+```bash
+  sh external_jump.sh
+```
+
+3. Run below command in the internal jump server. This will log you into locker server
+
+```bash
+  sh internal_jump.sh
+```
+
+4. Run below command in the locker server. This will prompt for key1 and key2 that you created while creating master key for locker
+
+```bash
+  sh unlock_locker.sh
+```
+
+### More Information
+
+For more information about each component and the full stack deployment, please refer to the [HyperSwitch Open Source Documentation](https://opensource.hyperswitch.io/hyperswitch-open-source/deploy-hyperswitch-on-aws/deploy-app-server/full-stack-deployment).
+
+### Support
+
+If you encounter any issues or need further assistance, please create an issue in this repository.
+
+### Todo
 
 - [ ] Networking
   - [x] VPC
