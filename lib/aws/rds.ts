@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Duration, RemovalPolicy, SecretValue } from "aws-cdk-lib";
 import {
   ISecurityGroup,
@@ -7,7 +7,7 @@ import {
   Port,
   SecurityGroup,
   Vpc,
-  SubnetType
+  SubnetType,
 } from "aws-cdk-lib/aws-ec2";
 import {
   AuroraPostgresEngineVersion,
@@ -24,41 +24,52 @@ import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
 import * as triggers from "aws-cdk-lib/triggers";
+import { readFileSync } from "fs";
 
 export class DataBaseConstruct {
   sg: SecurityGroup;
   db_cluster: DatabaseCluster;
   password: string;
   bucket: cdk.aws_s3.Bucket;
+  lambdaRole: Role;
 
   constructor(scope: Construct, rds_config: RDSConfig, vpc: Vpc) {
     const engine = DatabaseClusterEngine.auroraPostgres({
       version: AuroraPostgresEngineVersion.VER_13_7,
     });
 
-    const db_name = "hyperswitch";
+    this.password = rds_config.password;
 
-    const db_security_group = new SecurityGroup(scope, "Hyperswitch-db-SG", {
+    const secret = new Secret(scope, rds_config.secret_name, {
+      secretName: rds_config.secret_name,
+      description: "Database master user credentials",
+      secretObjectValue: {
+        dbname: SecretValue.unsafePlainText(rds_config.db_name),
+        username: SecretValue.unsafePlainText(rds_config.db_user),
+        password: SecretValue.unsafePlainText(this.password),
+      },
+    });
+
+    const lambdaSecurityGroup = new SecurityGroup(
+      scope,
+      "LambdaSecurityGroup",
+      {
+        vpc,
+        allowAllOutbound: true,
+      }
+    );
+
+    this.sg = new SecurityGroup(scope, "Hyperswitch-db-SG", {
       securityGroupName: "Hyperswitch-db-SG",
       vpc: vpc,
     });
 
-    this.sg = db_security_group;
+    this.sg.addIngressRule(
+      lambdaSecurityGroup,
+      Port.tcp(rds_config.port)
+    );
 
-    const secretName = "hypers-db-master-user-secret";
-
-    // Create the secret if it doesn't exist
-    let secret = new Secret(scope, "hypers-db-master-user-secret", {
-      secretName: secretName,
-      description: "Database master user credentials",
-      secretObjectValue: {
-        dbname: SecretValue.unsafePlainText(db_name),
-        username: SecretValue.unsafePlainText(rds_config.db_user),
-        password: SecretValue.unsafePlainText(rds_config.password),
-      },
-    });
-
-    const schemaBucket = new Bucket(scope, "SchemaBucket", {
+    this.bucket = new Bucket(scope, "SchemaBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: false,
@@ -67,83 +78,16 @@ export class DataBaseConstruct {
       autoDeleteObjects: true,
       bucketName:
         "hyperswitch-schema-" +
-        cdk.Aws.ACCOUNT_ID + "-" +
-        process.env.CDK_DEFAULT_REGION
+        cdk.Aws.ACCOUNT_ID +
+        "-" +
+        process.env.CDK_DEFAULT_REGION,
     });
 
-    this.bucket = schemaBucket;
-
-    const uploadSchemaAndMigrationCode = `import boto3
-import urllib3
-import json
-
-SUCCESS = "SUCCESS"
-FAILED = "FAILED"
-
-http = urllib3.PoolManager()
-
-
-def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
-    responseUrl = event['ResponseURL']
-
-    responseBody = {
-        'Status' : responseStatus,
-        'Reason' : reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),
-        'PhysicalResourceId' : physicalResourceId or context.log_stream_name,
-        'StackId' : event['StackId'],
-        'RequestId' : event['RequestId'],
-        'LogicalResourceId' : event['LogicalResourceId'],
-        'NoEcho' : noEcho,
-        'Data' : responseData
-    }
-
-    json_responseBody = json.dumps(responseBody)
-
-    print("Response body:")
-    print(json_responseBody)
-
-    headers = {
-        'content-type' : '',
-        'content-length' : str(len(json_responseBody))
-    }
-
-    try:
-        response = http.request('PUT', responseUrl, headers=headers, body=json_responseBody)
-        print("Status code:", response.status)
-
-    except Exception as e:
-
-        print("send(..) failed executing http.request(..):", e)
-
-def upload_file_from_url(url, bucket, key):
-    s3=boto3.client('s3')
-    http=urllib3.PoolManager()
-    s3.upload_fileobj(http.request('GET', url,preload_content=False), bucket, key)
-    s3.upload_fileobj
-
-def lambda_handler(event, context):
-    try:
-        # Call the upload_file_from_url function to upload two files to S3
-        if event['RequestType'] == 'Create':
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "migration_runner.zip")
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/locker-schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "locker-schema.sql")
-          send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
-        else:
-          send(event, context, SUCCESS, { "message" : "No action required"})
-    except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable
-        # Handle exceptions and return an error message
-        send(event, context, FAILED, {"message": str(e)})
-        return str(e)
-    # Return a success message
-    return '{ "status": 200, "message": "success" }'
-    `
-
-    const lambdaRole = new Role(scope, "SchemaUploadLambdaRole", {
+    this.lambdaRole = new Role(scope, "schemaUploadLambdaRole", {
       assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
     });
 
-    lambdaRole.addToPolicy(
+    this.lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: [
           "ec2:CreateNetworkInterface",
@@ -156,37 +100,13 @@ def lambda_handler(event, context):
           "logs:CreateLogStream",
           "logs:PutLogEvents",
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
         ],
-        resources: ["*", schemaBucket.bucketArn + "/*"],
+        resources: ["*", this.bucket.bucketArn + "/*"],
       })
     );
 
-    const lambdaSecurityGroup = new SecurityGroup(
-      scope,
-      "LambdaSecurityGroup",
-      {
-        vpc,
-        allowAllOutbound: true,
-      }
-    );
-
-    db_security_group.addIngressRule(
-      lambdaSecurityGroup,
-      Port.tcp(rds_config.port)
-    );
-
-    const initializeUploadFunction = new Function(scope, "initializeUploadFunction", {
-      runtime: Runtime.PYTHON_3_9,
-      handler: "index.lambda_handler",
-      code: Code.fromInline(uploadSchemaAndMigrationCode),
-      timeout: Duration.minutes(15),
-      role: lambdaRole,
-    });
-
-    this.password = rds_config.password;
-
-    const db_cluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
+    this.db_cluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
         instanceType: InstanceType.of(
           rds_config.writer_instance_class,
@@ -194,61 +114,72 @@ def lambda_handler(event, context):
         ),
         publiclyAccessible: true,
       }),
-      // readers: [
-      //   ClusterInstance.provisioned("Reader Instance", {
-      //     instanceType: InstanceType.of(
-      //       rds_config.reader_instance_class,
-      //       rds_config.reader_instance_size
-      //     ),
-      //   }),
-      // ],
+      // Should reader instance configs be Optional?
+      readers: [
+        ClusterInstance.provisioned("Reader Instance", {
+          instanceType: InstanceType.of(
+            rds_config.reader_instance_class,
+            rds_config.reader_instance_size
+          ),
+          publiclyAccessible: true,
+        }),
+      ],
       vpc,
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
       engine,
       port: rds_config.port,
-      securityGroups: [db_security_group],
-      defaultDatabaseName: db_name,
+      securityGroups: [this.sg],
+      defaultDatabaseName: rds_config.db_name,
       credentials: Credentials.fromSecret(secret),
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
     // Add ingress rule to allow traffic from any IP address
-    db_cluster.connections.allowFromAnyIpv4(Port.tcp(rds_config.port));
+    this.db_cluster.connections.allowFromAnyIpv4(Port.tcp(rds_config.port));
 
-    this.db_cluster = db_cluster;
+    const uploadSchemaAndMigrationCode = readFileSync(
+      "./dependencies/schema_upload.py",
+      "utf8"
+    ).replaceAll("{{BUCKET_NAME}}", this.bucket.bucketName);
 
-    const initializeDbTriggerCustomResource = new cdk.CustomResource(scope, 'InitializeDbTriggerCustomResource', {
-      serviceToken: initializeUploadFunction.functionArn,
+    const uploadSchemaFunction = new Function(scope, "uploadSchemaFunction", {
+      runtime: Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: Code.fromInline(uploadSchemaAndMigrationCode),
+      timeout: Duration.minutes(15),
+      role: this.lambdaRole,
     });
+
+    const uploadSchemaTriggerCustomResource = new cdk.CustomResource(
+      scope,
+      "uploadSchemaTriggerCustomResource",
+      {
+        serviceToken: uploadSchemaFunction.functionArn,
+      }
+    );
 
     const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
       runtime: Runtime.PYTHON_3_9,
       handler: "index.db_handler",
-      code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
+      code: Code.fromBucket(this.bucket, "migration_runner.zip"),
       environment: {
         DB_SECRET_ARN: secret.secretArn,
-        SCHEMA_BUCKET: schemaBucket.bucketName,
+        SCHEMA_BUCKET: this.bucket.bucketName,
         SCHEMA_FILE_KEY: "schema.sql",
       },
       vpc: vpc,
       securityGroups: [lambdaSecurityGroup],
       timeout: Duration.minutes(15),
-      role: lambdaRole,
+      role: this.lambdaRole,
     });
-
-    // new triggers.Trigger(scope, "initializeUploadTrigger", {
-    //   handler: initializeUploadFunction,
-    //   timeout: Duration.minutes(15),
-    //   invocationType: triggers.InvocationType.EVENT,
-    // }).executeBefore();
 
     new triggers.Trigger(scope, "InitializeDBTrigger", {
       handler: initializeDBFunction,
       timeout: Duration.minutes(15),
       invocationType: triggers.InvocationType.REQUEST_RESPONSE,
-    }).executeAfter(db_cluster);
+    }).executeAfter(this.db_cluster);
 
-    initializeDBFunction.node.addDependency(initializeDbTriggerCustomResource);
+    initializeDBFunction.node.addDependency(uploadSchemaTriggerCustomResource);
   }
 
   addClient(
