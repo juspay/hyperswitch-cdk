@@ -49,7 +49,14 @@ Resources:
                 Resource: '*'
                 Effect: Allow
               - Action: s3:*
-                Resource: arn:aws:s3:::cdktoolkit-stagingbucket-*
+                Resource: '*'
+                Effect: Allow
+              - Action: [
+                  "ssm:Describe*",
+                  "ssm:Get*",
+                  "ssm:List*"
+                ]
+                Resource: '*'
                 Effect: Allow
               - Action:
                   - sts:AssumeRole
@@ -124,7 +131,7 @@ Parameters:
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
     Default: ""
-    Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one)."
+    Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one). Please check if the subnet is present in the selected VPC."
   DBPassword:
     Type: String
     Default: "testadmin"

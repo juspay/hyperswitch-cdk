@@ -382,30 +382,5 @@ export class EksStack {
     // new cdk.CfnOutput(scope, "ControlCenterHost", {
     //   value: dashboardLB.loadBalancerDnsName,
     // });
-
-    // Output the cluster name and endpoint
-    new cdk.CfnOutput(scope, "ClusterName", {
-      value: cluster.clusterName,
-    });
-
-    new cdk.CfnOutput(scope, "ClusterEndpoint", {
-      value: cluster.clusterEndpoint,
-    });
-
-    new cdk.CfnOutput(scope, "RedisHost", {
-      value: elasticache.cluster.attrRedisEndpointAddress,
-    });
-
-    new cdk.CfnOutput(scope, "DbHost", {
-      value: rds.db_cluster.clusterEndpoint.hostname,
-    });
-
-    new cdk.CfnOutput(scope, "DbPassword", {
-      value: rds.password,
-    });
-
-    new cdk.CfnOutput(scope, "LbSecurityGroupId", {
-      value: lbSecurityGroup.securityGroupId,
-    });
   }
 }
