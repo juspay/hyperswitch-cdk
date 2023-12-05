@@ -34,10 +34,6 @@ export class Vpc {
       ],
     });
 
-    new cdk.CfnOutput(scope, "VPC id: ", {
-      value: vpc.vpcId,
-    });
-
     this.vpc = vpc;
   }
 }

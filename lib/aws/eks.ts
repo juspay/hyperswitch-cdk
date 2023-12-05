@@ -178,7 +178,7 @@ export class EksStack {
         application: {
           server: {
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:standalone",
+            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
@@ -206,7 +206,7 @@ export class EksStack {
             },
           },
           sdk: {
-            image: "juspaydotin/hyperswitch-web:v1.0.1",
+            image: "juspaydotin/hyperswitch-web:v1.0.4",
             env: {
               hyperswitchPublishableKey: "pk_test_123",
               hyperswitchSecretKey: "sk_test_123",
@@ -382,30 +382,5 @@ export class EksStack {
     // new cdk.CfnOutput(scope, "ControlCenterHost", {
     //   value: dashboardLB.loadBalancerDnsName,
     // });
-
-    // Output the cluster name and endpoint
-    new cdk.CfnOutput(scope, "ClusterName", {
-      value: cluster.clusterName,
-    });
-
-    new cdk.CfnOutput(scope, "ClusterEndpoint", {
-      value: cluster.clusterEndpoint,
-    });
-
-    new cdk.CfnOutput(scope, "RedisHost", {
-      value: elasticache.cluster.attrRedisEndpointAddress,
-    });
-
-    new cdk.CfnOutput(scope, "DbHost", {
-      value: rds.db_cluster.clusterEndpoint.hostname,
-    });
-
-    new cdk.CfnOutput(scope, "DbPassword", {
-      value: rds.password,
-    });
-
-    new cdk.CfnOutput(scope, "LbSecurityGroupId", {
-      value: lbSecurityGroup.securityGroupId,
-    });
   }
 }

@@ -91,11 +91,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_HOST=$(kubectl get ingress hyperswitch-sdk-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  REDIS_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='RedisHost'].OutputValue" --output text)
-  DB_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DbHost'].OutputValue" --output text)
-  LB_SG=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='LbSecurityGroupId'].OutputValue" --output text)
   SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
-  SDK_IMAGE="juspaydotin/hyperswitch-web:v1.0.1"
   # Deploy the hyperswitch application with the load balancer host name
   helm repo add hs https://juspay.github.io/hyperswitch-helm
   export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
@@ -130,11 +126,14 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echoLog "$BOLD Service                           Host$RESET"
   echoLog "--------------------------------------------------------------------------------"
   echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
+  echoLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
   echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
   echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
   echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
   echoLog "--------------------------------------------------------------------------------"
   echoLog "##########################################"
+  echo "$BLUE Please run 'cat cdk.services.log' to view the services details again"$RESET
   exit 0
+else
+  aws cloudformation delete-stack --stack-name CDKToolkit
 fi
