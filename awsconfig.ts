@@ -34,6 +34,7 @@ export class Configuration {
         writer_instance_size: ec2.InstanceSize.MEDIUM,
         reader_instance_class: ec2.InstanceClass.T3,
         reader_instance_size: ec2.InstanceSize.MEDIUM,
+        secret_name: "hypers-db-master-user-secret",
       },
       hyperswitch_ec2: {
         id: "hyperswitch",

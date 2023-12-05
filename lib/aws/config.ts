@@ -58,6 +58,7 @@ export type RDSConfig = {
   writer_instance_size: ec2.InstanceSize;
   reader_instance_class: ec2.InstanceClass;
   reader_instance_size: ec2.InstanceSize;
+  secret_name: string;
 };
 
 export type EC2 = {
