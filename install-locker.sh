@@ -1,7 +1,10 @@
 #!/bin/bash
 # shellcheck disable=2155
 
+
 source deps.sh
+
+set -e
 
 ask_yes_no() {
     local prompt="$1 [y/n]: "
@@ -31,12 +34,42 @@ if [[ $AWS_ARN == *":root"* ]]; then
 fi
 echo "##########################################"
 
-echo -e "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
-read -r -p "Enter the VPC ID to use: " VPC_ID
 
-echo -e "$(tput bold)$(tput setaf 3)To generated the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
-echo -e "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
+
+echo "$(tput bold)$(tput setaf 3)The VPC ID is optional, if absent a VPC will be created for this standalone deployment$(tput sgr0)"
+read -r -p "Enter the VPC ID to use (optional): " VPC_ID
+
+if [[ -n "$VPC_ID" ]]; then
+    LOCKER_FLAGS="-c vpc_id=$VPC_ID"
+
+    echo "$(tput bold)$(tput setaf 3)The following Subnet IDs are optional and can be skipped in case:$(tput sgr0)"
+    echo "$(tput bold)$(tput setaf 3)- You have a private subnet with egress$(tput sgr0)"
+    echo "$(tput bold)$(tput setaf 3)- You don't want to manually configure$(tput sgr0)"
+    echo
+    echo "$(tput bold)$(tput setaf 3)Otherwise, the input format for the subnet ids is <subnet-id>,<availability-zone> (e.g. subnet-00000000000000000,us-east-1a)$(tput sgr0)"
+
+    read -r -p "Enter the Locker Subnet ID to use (optional): " LOCKER_SUBNET_ID
+
+    if [ -n "$LOCKER_SUBNET_ID" ]; then
+        LOCKER_FLAGS+="-c locker_subnet_id=$LOCKER_SUBNET_ID "
+    fi
+
+    echo "$(tput bold)$(tput setaf 3)In case of database please provide 2 subnets with different availability zones,"
+    echo "(e.g. subnet-00000000000000000,us-east-1a,subnet-11111111111111111,us-east-1b)$(tput sgr0)"
+    read -r -p "Enter the Locker DB Subnet ID to use (optional): " LOCKER_DB_SUBNET_ID
+
+
+    if [ -n "$LOCKER_DB_SUBNET_ID" ]; then
+        LOCKER_FLAGS+="-c locker_db_subnet_id=$LOCKER_DB_SUBNET_ID "
+    fi
+
+fi
+
+
+echo "$(tput bold)$(tput setaf 3)To generated the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
 
 read -r -s -p "Enter the generated master key: " MASTER_KEY
 
@@ -46,7 +79,7 @@ read -r -s -p "Enter the database password to be used: " DB_PASS
 
 echo
 
-echo -e "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:\n- AWS_DEFAULT_REGION\n- AWS_PROFILE$(tput sgr0)"
+echo "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:\n- AWS_DEFAULT_REGION\n- AWS_PROFILE$(tput sgr0)"
 
 if ! ask_yes_no "Continue with the installation?"; then
     exit 1
@@ -63,36 +96,35 @@ export TEMP_FILE=$(mktemp)
 export STACK="card-vault"
 
 
+AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 cdk bootstrap aws://"$AWS_ACCOUNT"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
 
-cdk deploy --require-approval never -c vpc_id="$VPC_ID" -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER > "$TEMP_FILE"
+cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS  > "$TEMP_FILE"
 
+export JUMP_COMMAND=$(grep 'GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/.*GetJumpLockerSSHKey = \(.*\)/\1/g')
 
-export JUMP_COMMAND=$(grep ''$STACK'.GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/'$STACK'.GetJumpLockerSSHKey = \(.*\)/\1/g')
+export JUMP_IP=$(grep 'JumpLockerPublicIP' < "$TEMP_FILE" | sed 's/.*JumpLockerPublicIP = \(.*\)/\1/g')
 
-export JUMP_IP=$(grep ''$STACK'.JumpLockerPublicIP' < "$TEMP_FILE" | sed 's/'$STACK'.JumpLockerPublicIP = \(.*\)/\1/g')
+export LOCKER_COMMAND=$(grep 'GetLockerSSHKey' < "$TEMP_FILE" | sed 's/.*GetLockerSSHKey.* = \(.*\)/\1/g')
 
-export LOCKER_COMMAND=$(grep ''$STACK'.GetLockerSSHKey' < "$TEMP_FILE" | sed 's/'$STACK'.GetLockerSSHKey = \(.*\)/\1/g')
-
-export LOCKER_IP=$(grep ''$STACK'.Lockerec2IP' < "$TEMP_FILE"| sed 's/'$STACK'.Lockerec2IP = \(.*\)/\1/g')
+export LOCKER_IP=$(grep 'LockerIP' < "$TEMP_FILE"| sed 's/.*LockerIP.* = \(.*\)/\1/g')
 
 
 echo "
 $JUMP_COMMAND
-chmod 400 locker-jump.pem
 $LOCKER_COMMAND
+chmod 400 locker-jump.pem
 
-scp -i locker-jump.pem ./locker.pem ec2-user@$JUMP_IP:/home/ec2-user/locker.pem
-ssh -i locker-jump.pem ec2-user@JUMP_IP 'bash -c \"echo export LOCKER_IP=$LOCKER_IP >> /home/ec2-user/.bashrc && chmod 400 /home/ec2-user/locker.pem\"'
 ssh -i locker-jump.pem ec2-user@$JUMP_IP
 
-ssh -i locker.pem ec2-user@\$LOCKER_IP
 
 unset HISTFILE
 
-curl -X 'POST' 'localhost:8080/custodian/key1' -H 'Content-Type: application/json' --data '{ \"key\": \"<ENTER_YOUR_KEY1_HERE>\" }'
-curl -X 'POST' 'localhost:8080/custodian/key2' -H 'Content-Type: application/json' --data '{ \"key\": \"<ENTER_YOUR_KEY2_HERE>\" }'
-curl -X 'POST' 'localhost:8080/custodian/decrypt'
+curl -X 'POST' '$LOCKER_IP:8080/custodian/key1' -H 'Content-Type: application/json' --data '{ \"key\": \"<ENTER_YOUR_KEY1_HERE>\" }'
+curl -X 'POST' '$LOCKER_IP:8080/custodian/key2' -H 'Content-Type: application/json' --data '{ \"key\": \"<ENTER_YOUR_KEY2_HERE>\" }'
+curl -X 'POST' '$LOCKER_IP:8080/custodian/decrypt'
+
+curl -X 'POST' '$LOCKER_IP:8080/health'
 "
 
 echo
