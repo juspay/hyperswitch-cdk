@@ -8,7 +8,6 @@ import { generateKeyPairSync } from "crypto";
 import { SubnetNames } from "../networking";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as ssm from "aws-cdk-lib/aws-ssm";
 import {
   AuroraPostgresEngineVersion,
   ClusterInstance,
@@ -430,7 +429,7 @@ export class LockerSetup extends Construct {
       "TenantPrivateKeySP",
       {
         parameterName: "/tenant/private_key",
-        stringValue: this.locker_ec2.hyperswitch.private_key,
+        stringValue: this.locker_ec2.tenant.private_key,
       },
     );
 

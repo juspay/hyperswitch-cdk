@@ -42,7 +42,7 @@ echo "$(tput bold)$(tput setaf 3)The VPC ID is optional, if absent a VPC will be
 read -r -p "Enter the VPC ID to use (optional): " VPC_ID
 
 if [[ -n "$VPC_ID" ]]; then
-    LOCKER_FLAGS="-c vpc_id=$VPC_ID"
+    LOCKER_FLAGS="-c vpc_id=$VPC_ID "
 
     echo "$(tput bold)$(tput setaf 3)The following Subnet IDs are optional and can be skipped in case:$(tput sgr0)"
     echo "$(tput bold)$(tput setaf 3)- You have a private subnet with egress$(tput sgr0)"
