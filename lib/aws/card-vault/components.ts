@@ -2,6 +2,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import * as cdk from "aws-cdk-lib";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 import { generateKeyPairSync } from "crypto";
 import { SubnetNames } from "../networking";
@@ -41,12 +42,16 @@ export class LockerEc2 extends Construct {
   readonly instance: ec2.Instance;
   sg: ec2.SecurityGroup;
   readonly locker_pair: RsaKeyPair;
-  readonly hyperswitch: RsaKeyPair;
+  readonly tenant: RsaKeyPair;
   readonly kms_key: kms.Key;
   readonly locker_ssh_key: ec2.CfnKeyPair;
 
   constructor(scope: Construct, vpc: ec2.IVpc, locker_data: LockerData) {
     super(scope, "LockerEc2");
+
+    const lockerSubnetId: string | undefined =
+      scope.node.tryGetContext("locker_subnet_id");
+
     const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -114,7 +119,7 @@ export class LockerEc2 extends Construct {
         modulusLength: 2048,
       });
 
-    this.hyperswitch = {
+    this.tenant = {
       public_key: tenant_public_key
         .export({ type: "spki", format: "pem" })
         .toString(),
@@ -136,9 +141,7 @@ export class LockerEc2 extends Construct {
         private_key: cdk.SecretValue.unsafePlainText(
           this.locker_pair.private_key,
         ),
-        public_key: cdk.SecretValue.unsafePlainText(
-          this.hyperswitch.public_key,
-        ),
+        public_key: cdk.SecretValue.unsafePlainText(this.tenant.public_key),
         kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
         region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
       },
@@ -206,6 +209,23 @@ export class LockerEc2 extends Construct {
       .replaceAll("{{BUCKET_NAME}}", envBucket.bucketName)
       .replaceAll("{{ENV_FILE}}", env_file);
 
+    let vpcSubnets: ec2.SubnetSelection;
+    if (lockerSubnetId) {
+      vpcSubnets = {
+        subnets: [
+          // ec2.Subnet.fromSubnetId(this, "instanceSubnet", lockerSubnetId),
+          ec2.Subnet.fromSubnetAttributes(this, "instanceSubnet", {
+            availabilityZone: lockerSubnetId.split(",")[1],
+            subnetId: lockerSubnetId.split(",")[0],
+          }),
+        ],
+      };
+    } else {
+      vpcSubnets = {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      };
+    }
+
     this.instance = new ec2.Instance(this, "locker-ec2", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -213,10 +233,7 @@ export class LockerEc2 extends Construct {
       ),
       machineImage: new ec2.AmazonLinuxImage(),
       vpc,
-      vpcSubnets: {
-        // subnetGroupName: SubnetNames.IsolatedSubnet,
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
+      vpcSubnets,
       securityGroup: sg,
       keyName: aws_key_pair.keyName,
       userData: ec2.UserData.custom(customData),
@@ -225,7 +242,7 @@ export class LockerEc2 extends Construct {
 
     envBucket.grantRead(this.instance);
 
-    new cdk.CfnOutput(this, "Locker-ec2-IP", {
+    new cdk.CfnOutput(this, "LockerIP", {
       value: `${this.instance.instancePrivateIp}`,
       description: "Locker Private IP",
     });
@@ -255,6 +272,10 @@ export class LockerSetup extends Construct {
     rdsSchemaBucket: s3.Bucket,
   ) {
     super(scope, "LockerSetup");
+    // Provide Subnet For Locker from Context
+    const lockerdbSubnetId: string | undefined = scope.node.tryGetContext(
+      "locker_db_subnet_id",
+    );
 
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
@@ -325,6 +346,27 @@ export class LockerSetup extends Construct {
 
     db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
+    let vpcSubnetsDb: ec2.SubnetSelection;
+    if (lockerdbSubnetId) {
+      vpcSubnetsDb = {
+        subnets: [
+          ec2.Subnet.fromSubnetAttributes(this, "instancedbSubnet1", {
+            subnetId: lockerdbSubnetId.split(",")[0],
+            availabilityZone: lockerdbSubnetId.split(",")[1],
+          }),
+
+          ec2.Subnet.fromSubnetAttributes(this, "instancedbSubnet2", {
+            subnetId: lockerdbSubnetId.split(",")[2],
+            availabilityZone: lockerdbSubnetId.split(",")[3],
+          }),
+        ],
+      };
+    } else {
+      vpcSubnetsDb = {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      };
+    }
+
     const db_cluster = new DatabaseCluster(this, "locker-db-cluster", {
       writer: ClusterInstance.provisioned("Writer Instance", {
         instanceType: ec2.InstanceType.of(
@@ -333,7 +375,7 @@ export class LockerSetup extends Construct {
         ),
       }),
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      vpcSubnets: vpcSubnetsDb,
       engine,
       port: 5432,
       securityGroups: [db_security_group],

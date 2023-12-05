@@ -17,5 +17,4 @@ fi
 if ! command -v kubectl &> /dev/null
 then
     brew install kubectl
-    brew link kubectl
 fi

@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import { IVpc, InstanceType, SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, InstanceType, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -7,14 +7,17 @@ import { Function, Code, Runtime } from "aws-cdk-lib/aws-lambda";
 
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 import { Construct } from "constructs";
 import { readFileSync } from "fs";
 import { LockerSetup } from "./components";
 import { EC2Instance } from "../ec2";
+import { Vpc } from "../networking";
+import { SubnetStack } from "../subnet";
 
 export type StandaloneLockerConfig = {
-  vpc_id: string;
+  vpc_id: string | undefined;
   name: string;
   master_key: string;
   db_user: string;
@@ -35,9 +38,18 @@ export class JusVault extends cdk.Stack {
       stackName: config.name,
     });
 
-    this.vpc = Vpc.fromLookup(this, "TheVpc", {
-      vpcId: config.vpc_id,
-    });
+    if (config.vpc_id) {
+      this.vpc = ec2.Vpc.fromLookup(this, "TheVpc", {
+        vpcId: config.vpc_id,
+      });
+    } else {
+      const vpc = new Vpc(this, {
+        name: "locker-standalone",
+        availabilityZones: [],
+      });
+
+      this.vpc = vpc.vpc;
+    }
 
     const schemaBucket = new Bucket(this, "SchemaBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -122,6 +134,32 @@ export class JusVault extends cdk.Stack {
     locker.node.addDependency(initializeDbTriggerCustomResource);
 
     this.locker = locker;
+
+    const hyperswitch_private_key = new ssm.StringParameter(
+      this,
+      "TenantPrivateKeySP",
+      {
+        parameterName: "/tenant/private_key",
+        stringValue: this.locker.locker_ec2.tenant.private_key,
+      },
+    );
+
+    const locker_public_key = new ssm.StringParameter(
+      this,
+      "LockerPublicKeySP",
+      {
+        parameterName: "/locker/public_key",
+        stringValue: this.locker.locker_ec2.locker_pair.public_key,
+      },
+    );
+
+    new cdk.CfnOutput(this, "LockerPublicKey", {
+      value: `aws ssm get-parameter --name ${locker_public_key.parameterName}:1 --query 'Parameter.Value' --output text`,
+    });
+
+    new cdk.CfnOutput(this, "TenantPrivateKey", {
+      value: `aws ssm get-parameter --name ${hyperswitch_private_key.parameterName}:1 --query 'Parameter.Value' --output text`,
+    });
 
     if (
       this.node.tryGetContext("locker_jump") == undefined ||
