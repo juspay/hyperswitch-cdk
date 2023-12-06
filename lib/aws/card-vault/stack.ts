@@ -129,7 +129,7 @@ export class JusVault extends cdk.Stack {
         master_key: config.master_key,
       },
       this.schemaBucket,
-      config.vpc_id ? false : true,
+      true,
     );
 
     locker.node.addDependency(initializeDbTriggerCustomResource);

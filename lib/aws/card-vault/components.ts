@@ -51,45 +51,6 @@ export class LockerEc2 extends Construct {
     const lockerSubnetId: string | undefined =
       scope.node.tryGetContext("locker_subnet_id");
 
-    if (lockerSubnetId) {
-      // const availabilityZone = lockerSubnetId.split(",")[1];
-      const subnetId = lockerSubnetId.split(",")[0];
-
-      const elasticIp = new ec2.CfnEIP(this, "ElasticIp", {});
-
-      const natGateway = new ec2.CfnNatGateway(this, "LockerNatGateway", {
-        subnetId,
-        allocationId: elasticIp.attrAllocationId,
-      });
-
-      natGateway.node.addDependency(elasticIp);
-
-      const routeTable = new ec2.CfnRouteTable(this, "LockerRouteTable", {
-        vpcId: vpc.vpcId,
-      });
-
-      routeTable.node.addDependency(natGateway);
-
-      const route = new ec2.CfnRoute(this, "NatRoute", {
-        routeTableId: routeTable.attrRouteTableId,
-        natGatewayId: natGateway.attrNatGatewayId,
-        destinationCidrBlock: "0.0.0.0/0",
-      });
-
-      route.node.addDependency(routeTable);
-
-      const associateion = new ec2.CfnSubnetRouteTableAssociation(
-        this,
-        "SubnetAssociation",
-        {
-          subnetId,
-          routeTableId: routeTable.attrRouteTableId,
-        },
-      );
-
-      associateion.node.addDependency(routeTable);
-    }
-
     const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
