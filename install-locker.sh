@@ -99,6 +99,7 @@ export STACK="card-vault"
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 cdk bootstrap aws://"$AWS_ACCOUNT"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
 
+echo cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS
 cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS  > "$TEMP_FILE"
 
 export JUMP_COMMAND=$(grep 'GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/.*GetJumpLockerSSHKey = \(.*\)/\1/g')

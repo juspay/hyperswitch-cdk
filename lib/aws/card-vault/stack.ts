@@ -129,37 +129,18 @@ export class JusVault extends cdk.Stack {
         master_key: config.master_key,
       },
       this.schemaBucket,
+      config.vpc_id ? false : true,
     );
 
     locker.node.addDependency(initializeDbTriggerCustomResource);
 
     this.locker = locker;
 
-    const hyperswitch_private_key = new ssm.StringParameter(
-      this,
-      "TenantPrivateKeySP",
-      {
-        parameterName: "/tenant/private_key",
-        stringValue: this.locker.locker_ec2.tenant.private_key,
-      },
-    );
-
-    const locker_public_key = new ssm.StringParameter(
-      this,
-      "LockerPublicKeySP",
-      {
-        parameterName: "/locker/public_key",
-        stringValue: this.locker.locker_ec2.locker_pair.public_key,
-      },
-    );
-
-    new cdk.CfnOutput(this, "LockerPublicKey", {
-      value: `aws ssm get-parameter --name ${locker_public_key.parameterName}:1 --query 'Parameter.Value' --output text`,
+    const display_rds_endpoint = new cdk.CfnOutput(this, "RdsEndpoint", {
+      value: this.locker.db_cluster.clusterEndpoint.hostname,
     });
 
-    new cdk.CfnOutput(this, "TenantPrivateKey", {
-      value: `aws ssm get-parameter --name ${hyperswitch_private_key.parameterName}:1 --query 'Parameter.Value' --output text`,
-    });
+    display_rds_endpoint.node.addDependency(this.locker);
 
     if (
       this.node.tryGetContext("locker_jump") == undefined ||
@@ -190,6 +171,7 @@ export class JusVault extends cdk.Stack {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
         },
+        associatePublicIpAddress: true,
         securityGroup: jump_sg,
         keyName: jump_key.keyName,
       });
@@ -198,9 +180,11 @@ export class JusVault extends cdk.Stack {
         value: `aws ssm get-parameter --name /ec2/keypair/$(aws ec2 describe-key-pairs --filters Name=key-name,Values=${jump_key.keyName} --query "KeyPairs[*].KeyPairId" --output text) --with-decryption --query Parameter.Value --output text > locker-jump.pem`,
       });
 
-      new cdk.CfnOutput(this, "JumpLockerPublicIP", {
+      const value = new cdk.CfnOutput(this, "JumpLockerPublicIP", {
         value: `${jump_server.instancePublicIp}`,
       });
+
+      value.node.addDependency(jump_server);
     }
   }
 }

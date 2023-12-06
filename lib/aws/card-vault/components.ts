@@ -51,6 +51,45 @@ export class LockerEc2 extends Construct {
     const lockerSubnetId: string | undefined =
       scope.node.tryGetContext("locker_subnet_id");
 
+    if (lockerSubnetId) {
+      // const availabilityZone = lockerSubnetId.split(",")[1];
+      const subnetId = lockerSubnetId.split(",")[0];
+
+      const elasticIp = new ec2.CfnEIP(this, "ElasticIp", {});
+
+      const natGateway = new ec2.CfnNatGateway(this, "LockerNatGateway", {
+        subnetId,
+        allocationId: elasticIp.attrAllocationId,
+      });
+
+      natGateway.node.addDependency(elasticIp);
+
+      const routeTable = new ec2.CfnRouteTable(this, "LockerRouteTable", {
+        vpcId: vpc.vpcId,
+      });
+
+      routeTable.node.addDependency(natGateway);
+
+      const route = new ec2.CfnRoute(this, "NatRoute", {
+        routeTableId: routeTable.attrRouteTableId,
+        natGatewayId: natGateway.attrNatGatewayId,
+        destinationCidrBlock: "0.0.0.0/0",
+      });
+
+      route.node.addDependency(routeTable);
+
+      const associateion = new ec2.CfnSubnetRouteTableAssociation(
+        this,
+        "SubnetAssociation",
+        {
+          subnetId,
+          routeTableId: routeTable.attrRouteTableId,
+        },
+      );
+
+      associateion.node.addDependency(routeTable);
+    }
+
     const kms_key = new kms.Key(this, "locker-kms-key", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       pendingWindow: cdk.Duration.days(7),
@@ -230,11 +269,15 @@ export class LockerEc2 extends Construct {
         ec2.InstanceClass.T3,
         ec2.InstanceSize.MEDIUM,
       ),
-      machineImage: new ec2.AmazonLinuxImage(),
+      // machineImage: new ec2.AmazonLinuxImage(),
+      machineImage: new ec2.AmazonLinuxImage({
+        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+      }),
       vpc,
       vpcSubnets,
       securityGroup: sg,
       keyName: aws_key_pair.keyName,
+      allowAllOutbound: true,
       userData: ec2.UserData.custom(customData),
       role: locker_role,
     });
@@ -269,6 +312,7 @@ export class LockerSetup extends Construct {
     vpc: ec2.IVpc,
     config: LockerConfig,
     rdsSchemaBucket: s3.Bucket,
+    runMigration: boolean,
   ) {
     super(scope, "LockerSetup");
     // Provide Subnet For Locker from Context
@@ -388,30 +432,33 @@ export class LockerSetup extends Construct {
 
     this.db_cluster = db_cluster;
 
-    const initializeDBFunction = new Function(
-      this,
-      "InitializeLockerDBFunction",
-      {
-        runtime: Runtime.PYTHON_3_9,
-        handler: "index.db_handler",
-        code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
-        environment: {
-          DB_SECRET_ARN: secret.secretArn,
-          SCHEMA_BUCKET: schemaBucket.bucketName,
-          SCHEMA_FILE_KEY: "locker-schema.sql",
+    if (runMigration) {
+      const initializeDBFunction = new Function(
+        this,
+        "InitializeLockerDBFunction",
+        {
+          runtime: Runtime.PYTHON_3_9,
+          handler: "index.db_handler",
+          code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
+          environment: {
+            DB_SECRET_ARN: secret.secretArn,
+            SCHEMA_BUCKET: schemaBucket.bucketName,
+            SCHEMA_FILE_KEY: "locker-schema.sql",
+          },
+          vpc: vpc,
+          vpcSubnets: vpcSubnetsDb,
+          securityGroups: [lambdaSecurityGroup],
+          timeout: cdk.Duration.minutes(15),
+          role: lambdaRole,
         },
-        vpc: vpc,
-        securityGroups: [lambdaSecurityGroup],
-        timeout: cdk.Duration.minutes(15),
-        role: lambdaRole,
-      },
-    );
+      );
 
-    new cdk.triggers.Trigger(this, "InitializeLockerDBTrigger", {
-      handler: initializeDBFunction,
-      timeout: cdk.Duration.minutes(15),
-      invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
-    }).executeAfter(db_cluster);
+      new cdk.triggers.Trigger(this, "InitializeLockerDBTrigger", {
+        handler: initializeDBFunction,
+        timeout: cdk.Duration.minutes(15),
+        invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
+      }).executeAfter(db_cluster);
+    }
 
     this.locker_ec2 = new LockerEc2(this, vpc, {
       master_key: config.master_key,
@@ -424,11 +471,13 @@ export class LockerSetup extends Construct {
 
     this.locker_ec2.addServer(this.db_sg, ec2.Port.tcp(5432));
 
+    const unixTs = new Date().valueOf();
+
     const hyperswitch_private_key = new ssm.StringParameter(
       this,
       "TenantPrivateKeySP",
       {
-        parameterName: "/tenant/private_key",
+        parameterName: `/tenant/private_key-${unixTs}`,
         stringValue: this.locker_ec2.tenant.private_key,
       },
     );
@@ -437,9 +486,17 @@ export class LockerSetup extends Construct {
       this,
       "LockerPublicKeySP",
       {
-        parameterName: "/locker/public_key",
+        parameterName: `/locker/public_key-${unixTs}`,
         stringValue: this.locker_ec2.locker_pair.public_key,
       },
     );
+
+    new cdk.CfnOutput(this, "LockerPublicKey", {
+      value: `aws ssm get-parameter --name ${locker_public_key.parameterName}:1 --query 'Parameter.Value' --output text`,
+    });
+
+    new cdk.CfnOutput(this, "TenantPrivateKey", {
+      value: `aws ssm get-parameter --name ${hyperswitch_private_key.parameterName}:1 --query 'Parameter.Value' --output text`,
+    });
   }
 }
