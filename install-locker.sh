@@ -37,6 +37,14 @@ echo "##########################################"
 echo "$(tput bold)$(tput setaf 2)Install Locker Standalone Setup$(tput sgr0)"
 
 
+echo "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:"
+echo "- AWS_DEFAULT_REGION"
+echo "- AWS_PROFILE$(tput sgr0)"
+
+if ! ask_yes_no "Continue with the installation?"; then
+    exit 1
+fi
+
 
 echo "$(tput bold)$(tput setaf 3)The VPC ID is optional, if absent a VPC will be created for this standalone deployment$(tput sgr0)"
 read -r -p "Enter the VPC ID to use (optional): " VPC_ID
@@ -79,12 +87,6 @@ read -r -s -p "Enter the database password to be used: " DB_PASS
 
 echo
 
-echo "$(tput bold)$(tput setaf 3)Please make sure that the following environment variables are set properly:\n- AWS_DEFAULT_REGION\n- AWS_PROFILE$(tput sgr0)"
-
-if ! ask_yes_no "Continue with the installation?"; then
-    exit 1
-fi
-
 if ask_yes_no "Should we include a jump server in the installation?"; then
     JUMP_SERVER="true"
 else
@@ -99,7 +101,6 @@ export STACK="card-vault"
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 cdk bootstrap aws://"$AWS_ACCOUNT"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
 
-echo cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS
 cdk deploy --require-approval never -c master_key="$MASTER_KEY" -c db_pass="$DB_PASS" -c stack="card-vault" -c locker_jump=$JUMP_SERVER $LOCKER_FLAGS  > "$TEMP_FILE"
 
 export JUMP_COMMAND=$(grep 'GetJumpLockerSSHKey' < "$TEMP_FILE" | sed 's/.*GetJumpLockerSSHKey = \(.*\)/\1/g')
