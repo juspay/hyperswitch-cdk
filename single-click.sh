@@ -12,7 +12,6 @@ curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stabl
 chmod +x kubectl
 mv ./kubectl /usr/local/bin/kubectl
 kubectl version --client
-AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
 unzip main.zip

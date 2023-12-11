@@ -102,6 +102,7 @@ Resources:
           export ADMIN_API_KEY="${AdminApiKey}"
           export MASTER_KEY="${CardVaultMasterKEY}"
           export LOCKER_DB_PASS="${CardVaultDBPass}"
+          export AWS_ARN="${AWSArn}"
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
@@ -126,11 +127,9 @@ Parameters:
     Description: Hyperswitch Enterprise Edition Mode
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
-    Default: ""
     Description: "(Optional) Select a VPC where the resources will be deployed. Leave blank to use default VPC (if you have one)."
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
-    Default: ""
     Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one). Please check if the subnet is present in the selected VPC."
   DBPassword:
     Type: String
@@ -146,5 +145,8 @@ Parameters:
     Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
   CardVaultDBPass:
     Type: String
-    Default: ""
+    Default: "testadmin"
     Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
+  AWSArn:
+    Type: String
+    Description: "run `aws sts get-caller-identity` and copy the arn value. This is will be helpful in future updates of services"
