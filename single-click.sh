@@ -17,13 +17,14 @@ wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
 unzip main.zip
 cd $(unzip -Z -1 main.zip| head -1)
 npm install
+AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
 LOCKER=""
 if [[ -n "$MASTER_KEY" ]]; then
   LOCKER+="-c master_key=$MASTER_KEY "
   LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
 fi
-cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER
+cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c additional_aws_arn=$ADMIN_AWS_ARN $LOCKER
 aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
 export KUBECONFIG=~/.kube/config
 sleep 10

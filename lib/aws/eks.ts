@@ -32,20 +32,22 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
-    const awsArn = scope.node.tryGetContext("aws_arn");
-    const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
-
-    if (isRole) {
-      const role = iam.Role.fromRoleName(
-        scope,
-        "AdminRole",
-        awsArn.split("/")[1],
-      );
-      cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
-    } else {
-      const user = iam.User.fromUserArn(scope, "User", awsArn);
-      cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
+    const addClusterRole = (awsArn: string) => {
+      const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
+      if (isRole) {
+        const role = iam.Role.fromRoleName(
+          scope,
+          "AdminRole",
+          awsArn.split("/")[1],
+        );
+        cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
+      } else {
+        const user = iam.User.fromUserArn(scope, "User", awsArn);
+        cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
+      }
     }
+    addClusterRole(scope.node.tryGetContext("aws_arn"));
+    addClusterRole(scope.node.tryGetContext("additional_aws_arn"));
 
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
