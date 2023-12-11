@@ -127,13 +127,16 @@ Parameters:
     Description: Hyperswitch Enterprise Edition Mode
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
+    AllowedPattern : ".{10,}"
     Description: "(Optional) Select a VPC where the resources will be deployed. Leave blank to use default VPC (if you have one)."
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
+    AllowedPattern : ".{10,}"
     Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one). Please check if the subnet is present in the selected VPC."
   DBPassword:
     Type: String
     Default: "testadmin"
+    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
     Description: "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9])"
   AdminApiKey:
     Type: String
@@ -146,7 +149,9 @@ Parameters:
   CardVaultDBPass:
     Type: String
     Default: "testadmin"
+    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
     Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
   AWSArn:
     Type: String
+    AllowedPattern: "^arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:[a-z0-9-]*:[0-9]*:[a-zA-Z0-9:/._+-]+$"
     Description: "run `aws sts get-caller-identity` and copy the arn value. This is will be helpful in future updates of services"
