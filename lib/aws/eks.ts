@@ -340,13 +340,17 @@ export class EksStack {
         },
         promtail: {
           enabled: true,
-          extraRelabelConfigs: [
-            {
-              action: "keep",
-              regex: "hyperswitch-.*",
-              sourceLabels: ["__meta_kubernetes_pod_label_app"],
-            },
-          ],
+          config: {
+            snippets: {
+              extraRelabelConfigs: [
+                {
+                  action: "keep",
+                  regex: "hyperswitch-.*",
+                  source_labels: ["__meta_kubernetes_pod_label_app"],
+                },
+              ],
+            }
+          }
         }
       },
     });
