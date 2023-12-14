@@ -227,7 +227,7 @@ export class EksStack {
         },
         db: {
           host: rds.db_cluster.clusterEndpoint.hostname,
-          reader_host: rds.db_cluster.clusterReadEndpoint.hostname,
+          replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
           name: "hyperswitch",
           user_name: "db_user",
           password: rds.password,
