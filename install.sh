@@ -66,8 +66,12 @@ echo "$(tput bold)$(tput setaf 1)If you need Card Vault, please create master ke
 echo "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
 echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
 
+echo "Please input the AES256 compatible master encryption key"
+read -s MASTER_ENC_KEY
+
 echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY
+
 LOCKER=""
 if [[ -n "$MASTER_KEY" ]]; then
   LOCKER+="-c master_key=$MASTER_KEY "
@@ -81,7 +85,7 @@ echo "##########################################\nDeploying Hyperswitch Services
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
-if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER ; then
+if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
   aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
   # Deploy Load balancer and Ingress
@@ -92,7 +96,10 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_HOST=$(kubectl get ingress hyperswitch-sdk-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
-  # Deploy the hyperswitch application with the load balancer host name
+  echo "Please input the encrypted master key (optional): "
+  read -s MASTER_KEY
+
+# Deploy the hyperswitch application with the load balancer host name
   helm repo add hs https://juspay.github.io/hyperswitch-helm
   export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
   --header 'Content-Type: application/json' \
