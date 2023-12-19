@@ -194,14 +194,14 @@ def lambda_handler(event, context):
         ),
         publiclyAccessible: true,
       }),
-      // readers: [
-      //   ClusterInstance.provisioned("Reader Instance", {
-      //     instanceType: InstanceType.of(
-      //       rds_config.reader_instance_class,
-      //       rds_config.reader_instance_size
-      //     ),
-      //   }),
-      // ],
+      readers: [
+        ClusterInstance.provisioned("Reader Instance", {
+          instanceType: InstanceType.of(
+            rds_config.reader_instance_class,
+            rds_config.reader_instance_size
+          ),
+        }),
+      ],
       vpc,
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
       engine,

@@ -27,6 +27,7 @@ def worker():
     output = {}
     output["db_password"] = enc_pl("db_password")
     output["master_key"] = enc_pl("master_key")
+    output["admin_api_key"] = enc_pl("admin_api_key")
     return output
 
 
