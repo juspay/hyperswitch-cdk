@@ -54,11 +54,41 @@ export class EksStack {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
 
+    // create a policy with complete access to cloudwatch metrics and logs
+    const cloudwatchPolicy = new iam.Policy(scope, "HSCloudWatchPolicy", {
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "cloudwatch:DescribeAlarmsForMetric",
+            "cloudwatch:DescribeAlarmHistory",
+            "cloudwatch:DescribeAlarms",
+            "cloudwatch:ListMetrics",
+            "cloudwatch:GetMetricData",
+            "cloudwatch:GetInsightRuleReport",
+            "logs:DescribeLogGroups",
+            "logs:GetLogGroupFields",
+            "logs:StartQuery",
+            "logs:StopQuery",
+            "logs:GetQueryResults",
+            "logs:GetLogEvents",
+            "ec2:DescribeTags",
+            "ec2:DescribeInstances",
+            "ec2:DescribeRegions",
+            "tag:GetResources",
+          ],
+          effect: iam.Effect.ALLOW,
+          resources: ["*"],
+        }),
+      ],
+    });
+
     // Attach the required policy to the nodegroup role
     const managedPolicies = [
       "AmazonEKSWorkerNodePolicy",
       "AmazonEKS_CNI_Policy",
       "AmazonEC2ContainerRegistryReadOnly",
+      "CloudWatchAgentServerPolicy",
+      "AWSXrayWriteOnlyAccess",
     ];
 
     for (const policyName of managedPolicies) {
@@ -118,6 +148,8 @@ export class EksStack {
       .catch((error) => {
         console.error("Error fetching or creating policy document:", error);
       });
+
+    nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
