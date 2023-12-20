@@ -9,6 +9,13 @@ function isValidPass() {
   fi
 }
 
+function isValidMasterKey() {
+    if [[ ! $1 =~ ^[0-9a-fA-F]{64}$ ]]; then
+        echo "Error: Input is not AES256 compatible please enter a 32 bit (64 characters) key"
+        exit 1
+    fi
+}
+
 echo "##########################################\nInstalling dependencies\n##########################################"
 # Install dependencies
 if ! command -v node &> /dev/null
@@ -68,6 +75,7 @@ echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(carg
 
 echo "Please input the AES256 compatible master encryption key"
 read -s MASTER_ENC_KEY
+isValidMasterKey $MASTER_ENC_KEY
 
 echo "Please input the encrypted master key (optional): "
 read -s MASTER_KEY

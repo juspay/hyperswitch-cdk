@@ -176,20 +176,23 @@ export class EksStack {
             "lib/aws/encryption.py",
         ).toString();
 
-    let secret = new Secret(scope, "locker-kms-userdata-secret", {
-            secretName: "LockerKmsDataSecret",
-            description: "Database master user credentials",
+    let secret = new Secret(scope, "hyperswitch-kms-userdata-secret", {
+            secretName: "HyperswitchKmsDataSecret",
+            description: "KMS encryptable secrets for Hyperswitch",
             secretObjectValue: {
                 db_password: cdk.SecretValue.unsafePlainText(
                     rds.password,
                 ),
+                jwt_secret: cdk.SecretValue.unsafePlainText("test_admin"),
                 master_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.master_enc_key),
                 admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
+                kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
+                region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
             },
         });
 
-     const kms_encrypt_function = new Function(scope, "kms-encrypt", {
-            functionName: "KmsEncryptionLambda",
+     const kms_encrypt_function = new Function(scope, "hyperswitch-kms-encrypt", {
+            functionName: "HyperswitchKmsEncryptionLambda",
             runtime: Runtime.PYTHON_3_9,
             handler: "index.lambda_handler",
             code: Code.fromInline(encryption_code),
@@ -201,14 +204,18 @@ export class EksStack {
             logRetention: RetentionDays.INFINITE,
         });
 
-    // TODO: Read admin_api_key, db_password, master_enc_key from here
     const triggerKMSEncryption = new cdk.CustomResource(
             scope,
-            "KmsEncryptionCR",
+            "HyperswitchKmsEncryptionCR",
             {
                 serviceToken: kms_encrypt_function.functionArn,
             },
         );
+
+    const kms_encrypted_db_pass = triggerKMSEncryption.getAtt("db_pass").toString();
+    const kms_encrypted_master_key = triggerKMSEncryption.getAtt("master_key").toString();
+    const kms_encrypted_admin_api_key = triggerKMSEncryption.getAtt("admin_api_key").toString();
+    const kms_encrypted_jwt_secret = triggerKMSEncryption.getAtt("jwt_secret").toString();
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -256,18 +263,19 @@ export class EksStack {
         application: {
           server: {
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
+            image: "juspaydotin/hyperswitch-router:v1.87.0",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
                   "10.23.6.12/32",
               },
-              kms_admin_api_key: "test_admin",
-              kms_jwt_secret: "test_admin",
+              kms_admin_api_key: kms_encrypted_admin_api_key,
+              kms_jwt_secret: kms_encrypted_jwt_secret,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
             },
+            master_enc_key: kms_encrypted_master_key,
             locker: {
               host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
               locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
@@ -305,7 +313,7 @@ export class EksStack {
           replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
           name: "hyperswitch",
           user_name: "db_user",
-          password: rds.password,
+          password: kms_encrypted_db_pass,
         },
         autoscaling: {
           enabled: true,
@@ -316,7 +324,7 @@ export class EksStack {
       },
     });
 
-    hypersChart.node.addDependency(albControllerChart);
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
     const provider = cluster.openIdConnectProvider;
 
