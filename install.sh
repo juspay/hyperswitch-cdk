@@ -83,6 +83,7 @@ npm install
 cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
 if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
+  echo `aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability`
   aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
   # Deploy Load balancer and Ingress
   echo "##########################################"
