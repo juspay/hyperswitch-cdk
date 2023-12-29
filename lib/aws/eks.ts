@@ -271,6 +271,8 @@ export class EksStack {
               },
               kms_admin_api_key: kms_encrypted_admin_api_key,
               kms_jwt_secret: kms_encrypted_jwt_secret,
+              kms_key_id: kms_key.keyId,
+              kms_key_region: kms_key.stack.region,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
@@ -324,7 +326,11 @@ export class EksStack {
       },
     });
 
-    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
+    hypersChart.node.addDependency(albControllerChart);
+
+        new cdk.CfnOutput(scope, 'Hyperswitch Services', {
+      value: "https://"+rds.bucket.bucketDomainName+"/cdk.services.html",
+    });
 
     const provider = cluster.openIdConnectProvider;
 
