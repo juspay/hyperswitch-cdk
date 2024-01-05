@@ -360,9 +360,6 @@ export class EksStack {
 
     hypersChart.node.addDependency(albControllerChart);
 
-        new cdk.CfnOutput(scope, 'Hyperswitch Services', {
-      value: "https://"+rds.bucket.bucketDomainName+"/cdk.services.html",
-    });
 
     const provider = cluster.openIdConnectProvider;
 
