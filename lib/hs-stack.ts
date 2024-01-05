@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from "constructs";
-import { Config } from "./aws/config";
+import { Config, ImageBuilderConfig } from "./aws/config";
 import { AWSStack } from "./aws/stack";
 import { ImageBuilderStack } from "./aws/image_builder_stack";
 import { JusVault, StandaloneLockerConfig } from "../lib/aws/card-vault/stack";
@@ -15,7 +16,7 @@ export class HyperswitchStack {
     private stack: Construct;
 
     constructor(scope: Construct, config: Config, cloudProvider: Cloud) {
-        const stack: string = scope.node.tryGetContext("stack") || "hyperswitch";
+        const stack: string = scope.node.tryGetContext("stack") || "imagebuilder";
         console.log(stack);
 
         switch (stack) {
@@ -23,7 +24,6 @@ export class HyperswitchStack {
                 console.log("Deploying the Hyperswitch Stack!!");
                 switch (cloudProvider) {
                     case Cloud.AWS:
-                        new ImageBuilderStack(scope, config, "")
                         this.stack = new AWSStack(scope, config);
                         break;
                     case Cloud.GCP:
@@ -49,6 +49,12 @@ export class HyperswitchStack {
                 };
 
                 this.stack = new JusVault(scope, lockerConfig);
+                break;
+            case "imagebuilder":
+                const imageBuilderConfig: ImageBuilderConfig = {
+                    name: scope.node.tryGetContext("stack") || "imagebuilder"
+                };
+                this.stack = new ImageBuilderStack(scope, imageBuilderConfig)
                 break;
         }
     }

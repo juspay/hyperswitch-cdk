@@ -84,6 +84,10 @@ export type Config = {
   rds: RDSConfig;
 };
 
+export type ImageBuilderConfig = {
+    name: string
+}
+
 export type EC2Config = {
   id          : string;   // id of the instance
   machineImage: ec2.IMachineImage;
