@@ -88,6 +88,60 @@ export class EksStack {
       ],
     });
 
+    const provider = cluster.openIdConnectProvider;
+
+    const kmsConditions = new cdk.CfnJson(scope, "ConditionJson", {
+      value: {
+        [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+        [`${provider.openIdConnectProviderIssuer}:sub`]:
+          "system:serviceaccount:hyperswitch:hyperswitch-router-role",
+      },
+    });
+
+    const hyperswitchServiceAccountRole = new iam.Role(
+      scope,
+      "GrafanaServiceAccountRole",
+      {
+        assumedBy: new iam.FederatedPrincipal(
+          provider.openIdConnectProviderArn,
+          {
+            StringEquals: kmsConditions,
+          },
+          "sts:AssumeRoleWithWebIdentity",
+        ),
+      },
+    );
+
+    // Create a KMS key
+    const kms_key = new kms.Key(scope, "hyperswitch-kms-key", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pendingWindow: cdk.Duration.days(7),
+      keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
+      keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
+      alias: "alias/hyperswitch-kms-key",
+      description: "KMS key for encrypting the objects in an S3 bucket",
+      enableKeyRotation: false,
+    });
+
+    const kms_policy_document = new iam.PolicyDocument({
+    statements: [
+        new iam.PolicyStatement({
+            actions: ["kms:*"],
+            resources: [kms_key.keyArn],
+        }),
+        new iam.PolicyStatement({
+            actions: ["secretsmanager:*"],
+            resources: ["*"],
+        }),
+      ],
+    });
+
+    hyperswitchServiceAccountRole.attachInlinePolicy(
+      new iam.Policy(scope, "HSAWSKMSKeyPolicy", {
+        document: kms_policy_document,
+      }),
+    );
+
     // Attach the required policy to the nodegroup role
     const managedPolicies = [
       "AmazonEKSWorkerNodePolicy",
@@ -173,34 +227,10 @@ export class EksStack {
       nodeRole: nodegroupRole,
     });
 
-    // Create a KMS key
-    const kms_key = new kms.Key(scope, "hyperswitch-kms-key", {
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-            pendingWindow: cdk.Duration.days(7),
-            keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
-            keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
-            alias: "alias/hyperswitch-kms-key",
-            description: "KMS key for encrypting the objects in an S3 bucket",
-            enableKeyRotation: false,
-        });
-
-    const kms_policy = new iam.PolicyDocument({
-            statements: [
-                new iam.PolicyStatement({
-                    actions: ["kms:*"],
-                    resources: [kms_key.keyArn],
-                }),
-                new iam.PolicyStatement({
-                    actions: ["secretsmanager:*"],
-                    resources: ["*"],
-                }),
-            ],
-    });
-
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
             assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
             inlinePolicies: {
-                "use-kms-sm-s3": kms_policy,
+                "use-kms-sm-s3": kms_policy_document,
             },
         });
 
@@ -296,6 +326,9 @@ export class EksStack {
         clusterName: cluster.clusterName,
         application: {
           server: {
+            serviceAccountAnnotations: {
+              "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
+            },
             server_base_url: "https://sandbox.hyperswitch.io",
             image: "juspaydotin/hyperswitch-router:v1.87.0",
             secrets: {
@@ -361,9 +394,6 @@ export class EksStack {
     });
 
     hypersChart.node.addDependency(albControllerChart);
-
-
-    const provider = cluster.openIdConnectProvider;
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {
