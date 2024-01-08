@@ -248,6 +248,8 @@ export class EksStack {
     const kms_encrypted_master_key = triggerKMSEncryption.getAtt("master_key").toString();
     const kms_encrypted_admin_api_key = triggerKMSEncryption.getAtt("admin_api_key").toString();
     const kms_encrypted_jwt_secret = triggerKMSEncryption.getAtt("jwt_secret").toString();
+    const kms_key_id = triggerKMSEncryption.getAtt("kms_key_id").toString();
+    const kms_region = triggerKMSEncryption.getAtt("kms_region").toString();
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -303,8 +305,8 @@ export class EksStack {
               },
               kms_admin_api_key: kms_encrypted_admin_api_key,
               kms_jwt_secret: kms_encrypted_jwt_secret,
-              kms_key_id: kms_key.keyId,
-              kms_key_region: kms_key.stack.region,
+              kms_key_id: kms_key_id,
+              kms_key_region: kms_region,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",

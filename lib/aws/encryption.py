@@ -28,7 +28,9 @@ def worker():
     master_key = enc_pl("master_key")
     admin_api_key = enc_pl("admin_api_key")
     jwt_secret = enc_pl("jwt_secret")
-    return db_pass, master_key, admin_api_key, jwt_secret
+    kms_key_id = base64.b64encode(credentials["kms_id"])
+    kms_region = base64.b64encode(credentials["region"])
+    return db_pass, master_key, admin_api_key, jwt_secret, kms_key_id, kms_region
 
 
 def kms_encryptor(key_id: str, region: str, kms_client):
@@ -75,7 +77,7 @@ def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             try:
-                db_pass, master_key, admin_api_key, jwt_secret = worker()
+                db_pass, master_key, admin_api_key, jwt_secret, kms_key_id, kms_region = worker()
                 message = "Completed Successfully"
                 status = "SUCCESS"
             except Exception as e:
@@ -83,7 +85,7 @@ def lambda_handler(event, context):
                 status = "FAILED"
 
             send(event, context, status, {
-                "message": message, "db_pass": db_pass, "master_key": master_key, "admin_api_key": admin_api_key, "jwt_secret": jwt_secret})
+                "message": message, "db_pass": db_pass, "master_key": master_key, "admin_api_key": admin_api_key, "jwt_secret": jwt_secret, "kms_key_id": kms_key_id, "kms_region": kms_region})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
     except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable
