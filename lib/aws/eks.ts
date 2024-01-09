@@ -90,7 +90,7 @@ export class EksStack {
 
     const provider = cluster.openIdConnectProvider;
 
-    const kmsConditions = new cdk.CfnJson(scope, "ConditionJson", {
+    const kmsConditions = new cdk.CfnJson(scope, "AppConditionJson", {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
@@ -100,7 +100,7 @@ export class EksStack {
 
     const hyperswitchServiceAccountRole = new iam.Role(
       scope,
-      "GrafanaServiceAccountRole",
+      "HyperswitchServiceAccountRole",
       {
         assumedBy: new iam.FederatedPrincipal(
           provider.openIdConnectProviderArn,
@@ -250,6 +250,7 @@ export class EksStack {
                 admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
                 kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
                 region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
+                rust_locker_encryption_key: cdk.SecretValue.unsafePlainText(config.rust_locker_encryption_key)
             },
         });
 
@@ -274,10 +275,7 @@ export class EksStack {
             },
         );
 
-    const kms_encrypted_db_pass = triggerKMSEncryption.getAtt("db_pass").toString();
-    const kms_encrypted_master_key = triggerKMSEncryption.getAtt("master_key").toString();
-    const kms_encrypted_admin_api_key = triggerKMSEncryption.getAtt("admin_api_key").toString();
-    const kms_encrypted_jwt_secret = triggerKMSEncryption.getAtt("jwt_secret").toString();
+    const kmsSecrets = new KmsSecrets(triggerKMSEncryption);
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -304,7 +302,7 @@ export class EksStack {
 
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
-      wait: true,
+      wait: false,
       chart: "aws-load-balancer-controller",
       release: "hs-lb-v1",
       repository: "https://aws.github.io/eks-charts",
@@ -319,7 +317,7 @@ export class EksStack {
       repository: "https://juspay.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: "hypers-v1",
-      wait: true,
+      wait: false,
       values: {
         clusterName: cluster.clusterName,
         application: {
@@ -328,24 +326,37 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
             },
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:v1.87.0",
+            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
                   "10.23.6.12/32",
               },
-              kms_admin_api_key: kms_encrypted_admin_api_key,
-              kms_jwt_secret: kms_encrypted_jwt_secret,
+              kms_admin_api_key: kmsSecrets.kms_admin_api_key,
+              kms_jwt_secret: kmsSecrets.kms_jwt_secret,
+              kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
+              kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
+              kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
+              kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
+              kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
+              kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
+              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
+              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
+              kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
+              kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
+              kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
+              kms_connector_onboarding_paypal_client_secet: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
+              kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
               kms_key_id: kms_key.keyId,
               kms_key_region: kms_key.stack.region,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
             },
-            master_enc_key: kms_encrypted_master_key,
+            master_enc_key: kmsSecrets.kms_encrypted_master_key,
             locker: {
               host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
-              locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+              locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
               hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
             },
             basilisk: {
@@ -380,7 +391,7 @@ export class EksStack {
           replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
           name: "hyperswitch",
           user_name: "db_user",
-          password: kms_encrypted_db_pass,
+          password: kmsSecrets.kms_encrypted_db_pass,
         },
         autoscaling: {
           enabled: true,
@@ -549,4 +560,43 @@ export class EksStack {
     //   value: dashboardLB.loadBalancerDnsName,
     // });
   }
+}
+
+class KmsSecrets {
+    readonly kms_admin_api_key: string;
+    readonly kms_jwt_secret: string;
+    readonly kms_encrypted_db_pass: string;
+    readonly kms_encrypted_master_key: string;
+    readonly kms_jwekey_locker_identifier1: string;
+    readonly kms_jwekey_locker_identifier2: string;
+    readonly kms_jwekey_locker_encryption_key1: string;
+    readonly kms_jwekey_locker_encryption_key2: string;
+    readonly kms_jwekey_locker_decryption_key1: string;
+    readonly kms_jwekey_locker_decryption_key2: string;
+    readonly kms_jwekey_vault_encryption_key: string;
+    readonly kms_jwekey_vault_private_key: string;
+    readonly kms_jwekey_tunnel_private_key: string;
+    readonly kms_jwekey_rust_locker_encryption_key: string;
+    readonly kms_connector_onboarding_paypal_client_id: string;
+    readonly kms_connector_onboarding_paypal_client_secret: string;
+    readonly kms_connector_onboarding_paypal_partner_id: string;
+
+    constructor(kms: cdk.CustomResource) {
+        this.kms_admin_api_key = kms.getAtt("db_pass").toString();;
+        this.kms_jwt_secret = kms.getAtt("jwt_secret").toString();
+        this.kms_jwekey_locker_identifier1 = kms.getAtt("kms_locker_identifier1").toString();
+        this.kms_jwekey_locker_identifier2 = kms.getAtt("kms_locker_identifier2").toString();
+        this.kms_jwekey_locker_encryption_key1 = kms.getAtt("kms_locker_encryption_key1").toString();
+        this.kms_jwekey_locker_encryption_key2 = kms.getAtt("kms_locker_encryption_key2").toString();
+        this.kms_jwekey_locker_decryption_key1 = kms.getAtt("kms_locker_decryption_key1").toString();
+        this.kms_jwekey_locker_decryption_key2 = kms.getAtt("kms_locker_decryption_key2").toString();
+        this.kms_jwekey_vault_encryption_key = kms.getAtt("kms_vault_encryption_key").toString();
+        this.kms_jwekey_vault_private_key = kms.getAtt("kms_vault_private_key").toString();
+        this.kms_jwekey_tunnel_private_key = kms.getAtt("kms_tunnel_private_key").toString();
+        this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("rust_locker_encryption_key").toString();
+        this.kms_connector_onboarding_paypal_client_id = kms.getAtt("kms_connector_onboarding_paypal_client_id").toString();
+        this.kms_connector_onboarding_paypal_client_secret = kms.getAtt("kms_connector_onboarding_paypal_client_secret").toString();
+        this.kms_connector_onboarding_paypal_partner_id = kms.getAtt("kms_connector_onboarding_paypal_partner_id").toString();
+
+    }
 }
