@@ -107,7 +107,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
 
 # Deploy the hyperswitch application with the load balancer host name
-  helm repo add hs https://juspay.github.io/hyperswitch-helm
+  helm repo add hs https://dracarys18.github.io/hyperswitch-helm
   export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
   --header 'Content-Type: application/json' \
   --data-raw '{

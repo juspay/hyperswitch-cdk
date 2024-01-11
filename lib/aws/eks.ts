@@ -250,7 +250,7 @@ export class EksStack {
                 admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
                 kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
                 region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
-                rust_locker_encryption_key: cdk.SecretValue.unsafePlainText(config.rust_locker_encryption_key)
+                rust_locker_encryption_key: cdk.SecretValue.unsafePlainText("dummy_val"),
             },
         });
 
@@ -314,7 +314,7 @@ export class EksStack {
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
-      repository: "https://juspay.github.io/hyperswitch-helm",
+      repository: "https://dracarys18.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -326,7 +326,7 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
             },
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
+            image: "juspaydotin/hyperswitch-router:v1.87.0",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
@@ -347,8 +347,9 @@ export class EksStack {
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
               kms_connector_onboarding_paypal_client_secet: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
               kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-              kms_key_id: kms_key.keyId,
-              kms_key_region: kms_key.stack.region,
+              kms_key_id: kmsSecrets.kms_id,
+              kms_key_region: kmsSecrets.kms_region,
+              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
@@ -379,19 +380,27 @@ export class EksStack {
             },
           },
         },
+        postgresql: {
+            global: {
+                postgresql: {
+                    auth: {
+                        host: rds.db_cluster.clusterEndpoint.hostname,
+                        replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
+                        usename: "db_user",
+                        database: "hyperswitch",
+                        password: kmsSecrets.kms_encrypted_db_pass,
+                    },
+                },
+            },
+        },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
         redis: {
-          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          master: {
+              host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          },
           replicaCount: 1,
-        },
-        db: {
-          host: rds.db_cluster.clusterEndpoint.hostname,
-          replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
-          name: "hyperswitch",
-          user_name: "db_user",
-          password: kmsSecrets.kms_encrypted_db_pass,
         },
         autoscaling: {
           enabled: true,
@@ -567,6 +576,8 @@ class KmsSecrets {
     readonly kms_jwt_secret: string;
     readonly kms_encrypted_db_pass: string;
     readonly kms_encrypted_master_key: string;
+    readonly kms_id: string;
+    readonly kms_region: string;
     readonly kms_jwekey_locker_identifier1: string;
     readonly kms_jwekey_locker_identifier2: string;
     readonly kms_jwekey_locker_encryption_key1: string;
@@ -580,23 +591,28 @@ class KmsSecrets {
     readonly kms_connector_onboarding_paypal_client_id: string;
     readonly kms_connector_onboarding_paypal_client_secret: string;
     readonly kms_connector_onboarding_paypal_partner_id: string;
+    readonly kms_encrypted_api_hash_key: string;
 
     constructor(kms: cdk.CustomResource) {
-        this.kms_admin_api_key = kms.getAtt("db_pass").toString();;
+        this.kms_admin_api_key = kms.getAtt("admin_api_key").toString();
         this.kms_jwt_secret = kms.getAtt("jwt_secret").toString();
-        this.kms_jwekey_locker_identifier1 = kms.getAtt("kms_locker_identifier1").toString();
-        this.kms_jwekey_locker_identifier2 = kms.getAtt("kms_locker_identifier2").toString();
-        this.kms_jwekey_locker_encryption_key1 = kms.getAtt("kms_locker_encryption_key1").toString();
-        this.kms_jwekey_locker_encryption_key2 = kms.getAtt("kms_locker_encryption_key2").toString();
-        this.kms_jwekey_locker_decryption_key1 = kms.getAtt("kms_locker_decryption_key1").toString();
-        this.kms_jwekey_locker_decryption_key2 = kms.getAtt("kms_locker_decryption_key2").toString();
-        this.kms_jwekey_vault_encryption_key = kms.getAtt("kms_vault_encryption_key").toString();
-        this.kms_jwekey_vault_private_key = kms.getAtt("kms_vault_private_key").toString();
-        this.kms_jwekey_tunnel_private_key = kms.getAtt("kms_tunnel_private_key").toString();
-        this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("rust_locker_encryption_key").toString();
-        this.kms_connector_onboarding_paypal_client_id = kms.getAtt("kms_connector_onboarding_paypal_client_id").toString();
-        this.kms_connector_onboarding_paypal_client_secret = kms.getAtt("kms_connector_onboarding_paypal_client_secret").toString();
-        this.kms_connector_onboarding_paypal_partner_id = kms.getAtt("kms_connector_onboarding_paypal_partner_id").toString();
-
+        this.kms_encrypted_db_pass = kms.getAtt("db_pass").toString();
+        this.kms_encrypted_master_key = kms.getAtt("master_key").toString();
+        this.kms_id = kms.getAtt("kms_id").toString();
+        this.kms_region = kms.getAtt("kms_region").toString();
+        this.kms_jwekey_locker_identifier1 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_locker_identifier2 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_locker_encryption_key1 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_locker_encryption_key2 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_locker_decryption_key1 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_locker_decryption_key2 = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_vault_encryption_key = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_vault_private_key = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_tunnel_private_key = kms.getAtt("dummy_val").toString();
+        this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("dummy_val").toString();
+        this.kms_connector_onboarding_paypal_client_id = kms.getAtt("dummy_val").toString();
+        this.kms_connector_onboarding_paypal_client_secret = kms.getAtt("dummy_val").toString();
+        this.kms_connector_onboarding_paypal_partner_id = kms.getAtt("dummy_val").toString();
+        this.kms_encrypted_api_hash_key = kms.getAtt("api_hash_key").toString();
     }
 }

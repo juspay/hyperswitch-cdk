@@ -14,25 +14,17 @@ class KmsSecrets:
     master_key: str
     admin_api_key: str
     jwt_secret: str
-    locker_identifier1: str
-    locker_identifier2: str
-    locker_encryption_key1: str
-    locker_encryption_key2: str
-    locker_decryption_key1: str
-    locker_decryption_key2: str
-    vault_encryption_key: str
-    vault_private_key: str
-    tunnel_private_key: str
-    rust_locker_encryption_key: str
-    paypal_onboard_client_id: str
-    paypal_onboard_client_secret: str
-    paypal_onboard_partner_id: str
+    dummy_val: str
+    kms_id: str
+    kms_region: str
+    api_hash_key: str
 
 
 def worker():
 
     dummy_val = "dummy_val"
 
+    api_hash_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     secrets_manager = boto3.client('secretsmanager')
     kms_client = boto3.client('kms')
 
@@ -41,52 +33,43 @@ def worker():
         SecretId=secret_arn)
     credentials = json.loads(secret_value_response['SecretString'])
 
+    kms_fun_secret = kms_encryptor_secret(
+        credentials["kms_id"], credentials["region"], kms_client)
+
     kms_fun = kms_encryptor(
         credentials["kms_id"], credentials["region"], kms_client)
 
+    def enc_pl_secret(x): return kms_fun_secret(credentials[x])
     def enc_pl(x): return kms_fun(credentials[x])
     def pl(x): return credentials[x]
 
     db_pass = enc_pl("db_password")
-    master_key = enc_pl("master_key")
-    admin_api_key = enc_pl("admin_api_key")
-    jwt_secret = enc_pl("jwt_secret")
-    rust_locker_encryption_key = enc_pl("rust_locker_encryption_key")
+    master_key = enc_pl_secret("master_key")
+    admin_api_key = enc_pl_secret("admin_api_key")
+    jwt_secret = enc_pl_secret("jwt_secret")
+    kms_id = base64.b64encode(credentials["kms_id"].encode()).decode("utf-8")
+    kms_region = base64.b64encode(
+        credentials["region"].encode()).decode("utf-8")
 
-    locker_identifier1 = kms_fun(dummy_val)
-    locker_identifier2 = kms_fun(dummy_val)
-    locker_encryption_key1 = kms_fun(dummy_val)
-    locker_decryption_key1 = kms_fun(dummy_val)
-    locker_encryption_key2 = kms_fun(dummy_val)
-    locker_decryption_key2 = kms_fun(dummy_val)
-    vault_encryption_key = kms_fun(dummy_val)
-    vault_private_key = kms_fun(dummy_val)
-    tunnel_private_key = kms_fun(dummy_val)
-    paypal_onboard_client_id = kms_fun(dummy_val)
-    paypal_onboard_client_secret = kms_fun(dummy_val)
-    paypal_onboard_partner_id = kms_fun(dummy_val)
+    dummy_val = kms_fun_secret(dummy_val)
+    kms_encrypted_api_hash_key = kms_fun_secret(api_hash_key)
 
     return KmsSecrets(db_pass,
                       master_key,
                       admin_api_key,
                       jwt_secret,
-                      locker_identifier1,
-                      locker_identifier2,
-                      locker_encryption_key1,
-                      locker_encryption_key2,
-                      locker_decryption_key1,
-                      locker_decryption_key2,
-                      vault_encryption_key,
-                      vault_private_key,
-                      tunnel_private_key,
-                      rust_locker_encryption_key,
-                      paypal_onboard_client_id,
-                      paypal_onboard_client_secret,
-                      paypal_onboard_partner_id)
+                      dummy_val,
+                      kms_id,
+                      kms_region,
+                      kms_encrypted_api_hash_key
+                      )
 
 
 def kms_encryptor(key_id: str, region: str, kms_client):
     return lambda data: base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"]).decode("utf-8")
+
+def kms_encryptor_secret(key_id: str, region: str, kms_client):
+    return lambda data: base64.b64encode(base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"])).decode("utf-8")
 
 
 def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
@@ -143,19 +126,10 @@ def lambda_handler(event, context):
                      "master_key": kms_secrets.master_key,
                      "admin_api_key": kms_secrets.admin_api_key,
                      "jwt_secret": kms_secrets.jwt_secret,
-                     "kms_locker_identifier1": kms_secrets.locker_identifier1,
-                     "kms_locker_identifier2": kms_secrets.locker_identifier2,
-                     "kms_locker_encryption_key1": kms_secrets.locker_encryption_key1,
-                     "kms_locker_encryption_key2": kms_secrets.locker_encryption_key2,
-                     "kms_locker_decryption_key1": kms_secrets.locker_decryption_key1,
-                     "kms_locker_decryption_key2": kms_secrets.locker_decryption_key2,
-                     "kms_vault_private_key": kms_secrets.vault_private_key,
-                     "kms_vault_encryption_key": kms_secrets.vault_encryption_key,
-                     "kms_tunnel_private_key": kms_secrets.tunnel_private_key,
-                     "rust_locker_encryption_key": kms_secrets.rust_locker_encryption_key,
-                     "kms_connector_onboarding_paypal_client_id": kms_secrets.paypal_onboard_client_id,
-                     "kms_connector_onboarding_paypal_partner_id": kms_secrets.paypal_onboard_partner_id,
-                     "kms_connector_onboarding_paypal_client_secret": kms_secrets.paypal_onboard_client_secret,
+                     "kms_id": kms_secrets.kms_id,
+                     "kms_region": kms_secrets.kms_region,
+                     "dummy_val": kms_secrets.dummy_val,
+                     "api_hash_key": kms_secrets.api_hash_key,
                  })
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
