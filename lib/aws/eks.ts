@@ -320,13 +320,23 @@ export class EksStack {
       wait: false,
       values: {
         clusterName: cluster.clusterName,
+        services: {
+            router: {
+              image: "juspaydotin/hyperswitch-router:v1.105.0",
+            },
+            producer: {
+              image: "juspaydotin/hyperswitch-producer:v1.105.0"
+            },
+            consumer: {
+                image: "juspaydotin/hyperswitch-consumer:v1.105.0"
+            }
+        },
         application: {
           server: {
             serviceAccountAnnotations: {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
             },
             server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:v1.87.0",
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
@@ -345,7 +355,7 @@ export class EksStack {
               kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
               kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
-              kms_connector_onboarding_paypal_client_secet: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
+              kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
               kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
               kms_key_id: kmsSecrets.kms_id,
               kms_key_region: kmsSecrets.kms_region,
