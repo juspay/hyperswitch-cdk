@@ -302,7 +302,7 @@ export class EksStack {
 
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
-      wait: false,
+      wait: true,
       chart: "aws-load-balancer-controller",
       release: "hs-lb-v1",
       repository: "https://aws.github.io/eks-charts",
@@ -317,7 +317,7 @@ export class EksStack {
       repository: "https://dracarys18.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: "hypers-v1",
-      wait: false,
+      wait: true,
       values: {
         clusterName: cluster.clusterName,
         services: {
