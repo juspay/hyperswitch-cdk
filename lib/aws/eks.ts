@@ -19,10 +19,10 @@ export class EksStack {
     scope: Construct,
     config: Config,
     vpc: ec2.Vpc,
-    rds: DataBaseConstruct,
-    elasticache: ElasticacheStack,
+    // rds: DataBaseConstruct,
+    // elasticache: ElasticacheStack,
     admin_api_key: string,
-    locker: LockerSetup | undefined,
+    // locker: LockerSetup | undefined,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -202,200 +202,200 @@ export class EksStack {
       },
     });
 
-    const hypersChart = cluster.addHelmChart("HyperswitchServices", {
-      chart: "hyperswitch-helm",
-      repository: "https://juspay.github.io/hyperswitch-helm",
-      namespace: "hyperswitch",
-      release: "hypers-v1",
-      wait: true,
-      values: {
-        clusterName: cluster.clusterName,
-        application: {
-          server: {
-            server_base_url: "https://sandbox.hyperswitch.io",
-            image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
-            secrets: {
-              podAnnotations: {
-                traffic_sidecar_istio_io_excludeOutboundIPRanges:
-                  "10.23.6.12/32",
-              },
-              kms_admin_api_key: "test_admin",
-              kms_jwt_secret: "test_admin",
-              admin_api_key: admin_api_key,
-              jwt_secret: "test_admin",
-              recon_admin_api_key: "test_admin",
-            },
-            locker: {
-              host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
-              locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
-              hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
-            },
-            basilisk: {
-              host: "basilisk-host",
-            },
-          },
-          dashboard: {
-            env: {
-              apiBaseUrl: "http://localhost:8080",
-              sdkBaseUrl: "http://localhost:8080",
-            },
-          },
-          sdk: {
-            image: "juspaydotin/hyperswitch-web:v1.0.4",
-            env: {
-              hyperswitchPublishableKey: "pk_test_123",
-              hyperswitchSecretKey: "sk_test_123",
-              hyperswitchServerUrl: "http://localhost:8080",
-              hyperSwitchClientUrl: "http://localhost:8080",
-            },
-          },
-        },
-        loadBalancer: {
-          targetSecurityGroup: lbSecurityGroup.securityGroupId,
-        },
-        redis: {
-          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          replicaCount: 1,
-        },
-        db: {
-          host: rds.db_cluster.clusterEndpoint.hostname,
-          replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
-          name: "hyperswitch",
-          user_name: "db_user",
-          password: rds.password,
-        },
-        autoscaling: {
-          enabled: true,
-          minReplicas: 3,
-          maxReplicas: 5,
-          targetCPUUtilizationPercentage: 80,
-        },
-      },
-    });
+    // const hypersChart = cluster.addHelmChart("HyperswitchServices", {
+    //   chart: "hyperswitch-helm",
+    //   repository: "https://juspay.github.io/hyperswitch-helm",
+    //   namespace: "hyperswitch",
+    //   release: "hypers-v1",
+    //   wait: true,
+    //   values: {
+    //     clusterName: cluster.clusterName,
+    //     application: {
+    //       server: {
+    //         server_base_url: "https://sandbox.hyperswitch.io",
+    //         image: "juspaydotin/hyperswitch-router:v1.87.0-standalone",
+    //         secrets: {
+    //           podAnnotations: {
+    //             traffic_sidecar_istio_io_excludeOutboundIPRanges:
+    //               "10.23.6.12/32",
+    //           },
+    //           kms_admin_api_key: "test_admin",
+    //           kms_jwt_secret: "test_admin",
+    //           admin_api_key: admin_api_key,
+    //           jwt_secret: "test_admin",
+    //           recon_admin_api_key: "test_admin",
+    //         },
+    //         locker: {
+    //           host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
+    //           locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+    //           hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
+    //         },
+    //         basilisk: {
+    //           host: "basilisk-host",
+    //         },
+    //       },
+    //       dashboard: {
+    //         env: {
+    //           apiBaseUrl: "http://localhost:8080",
+    //           sdkBaseUrl: "http://localhost:8080",
+    //         },
+    //       },
+    //       sdk: {
+    //         image: "juspaydotin/hyperswitch-web:v1.0.4",
+    //         env: {
+    //           hyperswitchPublishableKey: "pk_test_123",
+    //           hyperswitchSecretKey: "sk_test_123",
+    //           hyperswitchServerUrl: "http://localhost:8080",
+    //           hyperSwitchClientUrl: "http://localhost:8080",
+    //         },
+    //       },
+    //     },
+    //     loadBalancer: {
+    //       targetSecurityGroup: lbSecurityGroup.securityGroupId,
+    //     },
+    //     redis: {
+    //       host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+    //       replicaCount: 1,
+    //     },
+    //     db: {
+    //       host: rds.db_cluster.clusterEndpoint.hostname,
+    //       replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
+    //       name: "hyperswitch",
+    //       user_name: "db_user",
+    //       password: rds.password,
+    //     },
+    //     autoscaling: {
+    //       enabled: true,
+    //       minReplicas: 3,
+    //       maxReplicas: 5,
+    //       targetCPUUtilizationPercentage: 80,
+    //     },
+    //   },
+    // });
 
-    hypersChart.node.addDependency(albControllerChart);
+    // hypersChart.node.addDependency(albControllerChart);
 
-    const provider = cluster.openIdConnectProvider;
+    // const provider = cluster.openIdConnectProvider;
 
-    const conditions = new cdk.CfnJson(scope, "ConditionJson", {
-      value: {
-        [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
-        [`${provider.openIdConnectProviderIssuer}:sub`]:
-          "system:serviceaccount:hyperswitch:loki-grafana",
-      },
-    });
+    // const conditions = new cdk.CfnJson(scope, "ConditionJson", {
+    //   value: {
+    //     [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+    //     [`${provider.openIdConnectProviderIssuer}:sub`]:
+    //       "system:serviceaccount:hyperswitch:loki-grafana",
+    //   },
+    // });
 
-    const grafanaServiceAccountRole = new iam.Role(
-      scope,
-      "GrafanaServiceAccountRole",
-      {
-        assumedBy: new iam.FederatedPrincipal(
-          provider.openIdConnectProviderArn,
-          {
-            StringEquals: conditions,
-          },
-          "sts:AssumeRoleWithWebIdentity",
-        ),
-      },
-    );
+    // const grafanaServiceAccountRole = new iam.Role(
+    //   scope,
+    //   "GrafanaServiceAccountRole",
+    //   {
+    //     assumedBy: new iam.FederatedPrincipal(
+    //       provider.openIdConnectProviderArn,
+    //       {
+    //         StringEquals: conditions,
+    //       },
+    //       "sts:AssumeRoleWithWebIdentity",
+    //     ),
+    //   },
+    // );
 
-    const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Sid: "AllowReadingMetricsFromCloudWatch",
-          Effect: "Allow",
-          Action: [
-            "cloudwatch:DescribeAlarmsForMetric",
-            "cloudwatch:DescribeAlarmHistory",
-            "cloudwatch:DescribeAlarms",
-            "cloudwatch:ListMetrics",
-            "cloudwatch:GetMetricData",
-            "cloudwatch:GetInsightRuleReport",
-          ],
-          Resource: "*",
-        },
-        {
-          Sid: "AllowReadingLogsFromCloudWatch",
-          Effect: "Allow",
-          Action: [
-            "logs:DescribeLogGroups",
-            "logs:GetLogGroupFields",
-            "logs:StartQuery",
-            "logs:StopQuery",
-            "logs:GetQueryResults",
-            "logs:GetLogEvents",
-          ],
-          Resource: "*",
-        },
-        {
-          Sid: "AllowReadingTagsInstancesRegionsFromEC2",
-          Effect: "Allow",
-          Action: [
-            "ec2:DescribeTags",
-            "ec2:DescribeInstances",
-            "ec2:DescribeRegions",
-          ],
-          Resource: "*",
-        },
-        {
-          Sid: "AllowReadingResourcesForTags",
-          Effect: "Allow",
-          Action: "tag:GetResources",
-          Resource: "*",
-        },
-      ],
-    });
+    // const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
+    //   Version: "2012-10-17",
+    //   Statement: [
+    //     {
+    //       Sid: "AllowReadingMetricsFromCloudWatch",
+    //       Effect: "Allow",
+    //       Action: [
+    //         "cloudwatch:DescribeAlarmsForMetric",
+    //         "cloudwatch:DescribeAlarmHistory",
+    //         "cloudwatch:DescribeAlarms",
+    //         "cloudwatch:ListMetrics",
+    //         "cloudwatch:GetMetricData",
+    //         "cloudwatch:GetInsightRuleReport",
+    //       ],
+    //       Resource: "*",
+    //     },
+    //     {
+    //       Sid: "AllowReadingLogsFromCloudWatch",
+    //       Effect: "Allow",
+    //       Action: [
+    //         "logs:DescribeLogGroups",
+    //         "logs:GetLogGroupFields",
+    //         "logs:StartQuery",
+    //         "logs:StopQuery",
+    //         "logs:GetQueryResults",
+    //         "logs:GetLogEvents",
+    //       ],
+    //       Resource: "*",
+    //     },
+    //     {
+    //       Sid: "AllowReadingTagsInstancesRegionsFromEC2",
+    //       Effect: "Allow",
+    //       Action: [
+    //         "ec2:DescribeTags",
+    //         "ec2:DescribeInstances",
+    //         "ec2:DescribeRegions",
+    //       ],
+    //       Resource: "*",
+    //     },
+    //     {
+    //       Sid: "AllowReadingResourcesForTags",
+    //       Effect: "Allow",
+    //       Action: "tag:GetResources",
+    //       Resource: "*",
+    //     },
+    //   ],
+    // });
 
-    grafanaServiceAccountRole.attachInlinePolicy(
-      new iam.Policy(scope, "GrafanaPolicy", {
-        document: grafanaPolicyDocument,
-      }),
-    );
+    // grafanaServiceAccountRole.attachInlinePolicy(
+    //   new iam.Policy(scope, "GrafanaPolicy", {
+    //     document: grafanaPolicyDocument,
+    //   }),
+    // );
 
-    const lokiChart = cluster.addHelmChart("LokiController", {
-      chart: "loki-stack",
-      repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
-      release: "loki",
-      values: {
-        grafana: {
-          image: {
-            tag: "10.0.1",
-          },
-          enabled: true,
-          adminPassword: "admin",
-          serviceAccount: {
-            annotations: {
-              "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
-            },
-          },
-        },
-        promtail: {
-          enabled: true,
-          config: {
-            snippets: {
-              extraRelabelConfigs: [
-                {
-                  action: "keep",
-                  regex: "hyperswitch-.*",
-                  source_labels: ["__meta_kubernetes_pod_label_app"],
-                },
-              ],
-            }
-          }
-        }
-      },
-    });
-    lokiChart.node.addDependency(hypersChart);
-    this.lokiChart = lokiChart;
+    // const lokiChart = cluster.addHelmChart("LokiController", {
+    //   chart: "loki-stack",
+    //   repository: "https://grafana.github.io/helm-charts/",
+    //   namespace: "hyperswitch",
+    //   release: "loki",
+    //   values: {
+    //     grafana: {
+    //       image: {
+    //         tag: "10.0.1",
+    //       },
+    //       enabled: true,
+    //       adminPassword: "admin",
+    //       serviceAccount: {
+    //         annotations: {
+    //           "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
+    //         },
+    //       },
+    //     },
+    //     promtail: {
+    //       enabled: true,
+    //       config: {
+    //         snippets: {
+    //           extraRelabelConfigs: [
+    //             {
+    //               action: "keep",
+    //               regex: "hyperswitch-.*",
+    //               source_labels: ["__meta_kubernetes_pod_label_app"],
+    //             },
+    //           ],
+    //         }
+    //       }
+    //     }
+    //   },
+    // });
+    // lokiChart.node.addDependency(hypersChart);
+    // this.lokiChart = lokiChart;
 
-    cluster.addHelmChart("MetricsServer", {
-      chart: "metrics-server",
-      repository: "https://kubernetes-sigs.github.io/metrics-server/",
-      namespace: "kube-system",
-      release: "metrics-server",
-    });
+    // cluster.addHelmChart("MetricsServer", {
+    //   chart: "metrics-server",
+    //   repository: "https://kubernetes-sigs.github.io/metrics-server/",
+    //   namespace: "kube-system",
+    //   release: "metrics-server",
+    // });
 
     // // Import an existing load balancer by its ARN
     // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {

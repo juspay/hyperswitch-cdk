@@ -266,7 +266,7 @@ export class LockerSetup extends Construct {
   locker_ec2: LockerEc2;
   db_cluster: DatabaseCluster;
   db_sg: SecurityGroup;
-  db_bucket: s3.Bucket;
+  // db_bucket: s3.Bucket;
 
   constructor(
     scope: Construct,
@@ -308,47 +308,47 @@ export class LockerSetup extends Construct {
       },
     });
 
-    let schemaBucket = rdsSchemaBucket;
+    // let schemaBucket = rdsSchemaBucket;
 
-    this.db_bucket = schemaBucket;
+    // this.db_bucket = schemaBucket;
 
-    let migrationCode = readFileSync("lib/aws/card-vault/migration.py", "utf8")
-      .replaceAll("{{ACCOUNT}}", process.env.CDK_DEFAULT_ACCOUNT!)
-      .replaceAll("{{REGION}}", process.env.CDK_DEFAULT_REGION!);
+    // let migrationCode = readFileSync("lib/aws/card-vault/migration.py", "utf8")
+    //   .replaceAll("{{ACCOUNT}}", process.env.CDK_DEFAULT_ACCOUNT!)
+    //   .replaceAll("{{REGION}}", process.env.CDK_DEFAULT_REGION!);
 
-    const lambdaRole = new iam.Role(this, "SchemaUploadLambdaRole2", {
-      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-    });
+    // const lambdaRole = new iam.Role(this, "SchemaUploadLambdaRole2", {
+    //   assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    // });
 
-    lambdaRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface",
-          "secretsmanager:GetSecretValue",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "s3:GetObject",
-          "s3:PutObject",
-        ],
-        resources: ["*", schemaBucket.bucketArn + "/*"],
-      }),
-    );
+    // lambdaRole.addToPolicy(
+    //   new iam.PolicyStatement({
+    //     actions: [
+    //       "ec2:CreateNetworkInterface",
+    //       "ec2:DescribeNetworkInterfaces",
+    //       "ec2:DeleteNetworkInterface",
+    //       "ec2:AttachNetworkInterface",
+    //       "ec2:DetachNetworkInterface",
+    //       "secretsmanager:GetSecretValue",
+    //       "logs:CreateLogGroup",
+    //       "logs:CreateLogStream",
+    //       "logs:PutLogEvents",
+    //       "s3:GetObject",
+    //       "s3:PutObject",
+    //     ],
+    //     resources: ["*", schemaBucket.bucketArn + "/*"],
+    //   }),
+    // );
 
-    const lambdaSecurityGroup = new SecurityGroup(
-      this,
-      "LambdaSecurityGroup2",
-      {
-        vpc,
-        allowAllOutbound: true,
-      },
-    );
+    // const lambdaSecurityGroup = new SecurityGroup(
+    //   this,
+    //   "LambdaSecurityGroup2",
+    //   {
+    //     vpc,
+    //     allowAllOutbound: true,
+    //   },
+    // );
 
-    db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
+    // db_security_group.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432));
 
     let vpcSubnetsDb: ec2.SubnetSelection;
     if (lockerdbSubnetId) {
@@ -393,33 +393,33 @@ export class LockerSetup extends Construct {
 
     this.db_cluster = db_cluster;
 
-    if (runMigration) {
-      const initializeDBFunction = new Function(
-        this,
-        "InitializeLockerDBFunction",
-        {
-          runtime: Runtime.PYTHON_3_9,
-          handler: "index.db_handler",
-          code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
-          environment: {
-            DB_SECRET_ARN: secret.secretArn,
-            SCHEMA_BUCKET: schemaBucket.bucketName,
-            SCHEMA_FILE_KEY: "locker-schema.sql",
-          },
-          vpc: vpc,
-          vpcSubnets: vpcSubnetsDb,
-          securityGroups: [lambdaSecurityGroup],
-          timeout: cdk.Duration.minutes(15),
-          role: lambdaRole,
-        },
-      );
+    // if (runMigration) {
+    //   const initializeDBFunction = new Function(
+    //     this,
+    //     "InitializeLockerDBFunction",
+    //     {
+    //       runtime: Runtime.PYTHON_3_9,
+    //       handler: "index.db_handler",
+    //       code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
+    //       environment: {
+    //         DB_SECRET_ARN: secret.secretArn,
+    //         SCHEMA_BUCKET: schemaBucket.bucketName,
+    //         SCHEMA_FILE_KEY: "locker-schema.sql",
+    //       },
+    //       vpc: vpc,
+    //       vpcSubnets: vpcSubnetsDb,
+    //       securityGroups: [lambdaSecurityGroup],
+    //       timeout: cdk.Duration.minutes(15),
+    //       role: lambdaRole,
+    //     },
+    //   );
 
-      new cdk.triggers.Trigger(this, "InitializeLockerDBTrigger", {
-        handler: initializeDBFunction,
-        timeout: cdk.Duration.minutes(15),
-        invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
-      }).executeAfter(db_cluster);
-    }
+    //   new cdk.triggers.Trigger(this, "InitializeLockerDBTrigger", {
+    //     handler: initializeDBFunction,
+    //     timeout: cdk.Duration.minutes(15),
+    //     invocationType: cdk.triggers.InvocationType.REQUEST_RESPONSE,
+    //   }).executeAfter(db_cluster);
+    // }
 
     this.locker_ec2 = new LockerEc2(this, vpc, {
       master_key: config.master_key,

@@ -1,0 +1,40 @@
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mNone/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1734153629.us-east-2.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-1205228184.us-east-2.elb.amazonaws.com(B[m, Login with [33m username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1040239178.us-east-2.elb.amazonaws.com(B[m, Login with [33m Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-1229558302.us-east-2.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://hyperswitch-schema-225681119357-us-west-1.s3.amazonaws.com/0.5.6/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-725108108.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-1097840825.us-west-1.elb.amazonaws.com(B[m, Login with [33m username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1299252587.us-west-1.elb.amazonaws.com(B[m, Login with [33m Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-241501373.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://hyperswitch-schema-225681119357-us-east-2.s3.amazonaws.com/0.5.6/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-689249650.us-east-2.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-1540619081.us-east-2.elb.amazonaws.com(B[m, Login with [33m username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-760066218.us-east-2.elb.amazonaws.com(B[m, Login with [33m Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-151968224.us-east-2.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mNone/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://(B[m
+[32m Logs server running on            [34mhttp://(B[m, Login with [33m username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://(B[m, Login with [33m Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://(B[m
+--------------------------------------------------------------------------------
+##########################################
