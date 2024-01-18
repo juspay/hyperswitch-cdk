@@ -1,13 +1,14 @@
 import * as cdk from "aws-cdk-lib";
-import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as image_builder from "aws-cdk-lib/aws-imagebuilder"
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import { MachineImage } from 'aws-cdk-lib/aws-ec2';
 
+import { Vpc } from './networking';
 import { Construct } from "constructs";
-import { ImageBuilderConfig } from "./config";
+import { ImageBuilderConfig, VpcConfig } from "./config";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import { readFileSync } from "fs";
 
 export class ImageBuilderStack extends cdk.Stack {
     constructor(scope: Construct, config: ImageBuilderConfig) {
@@ -19,35 +20,27 @@ export class ImageBuilderStack extends cdk.Stack {
             stackName: config.name,
         });
 
-        const base_image_arn = codebuild.LinuxBuildImage.AMAZON_LINUX_2_5.imageId;
+        let vpcConfig: VpcConfig = {
+            name: "imagebuilder-vpc",
+            availabilityZones: [process.env.CDK_DEFAULT_REGION + "a", process.env.CDK_DEFAULT_REGION + "b"]
+        };
 
-        // Upload images to S3
-        const bucket = new Bucket(this, "hyperswitch_image_components", { enforceSSL: true });
+        let vpc = new Vpc(this, vpcConfig);
+        let role = new iam.Role(this, "StationRole", { roleName: "StationRole", assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com") })
 
-        const source = Source.asset('./components')
-        new BucketDeployment(this, "hyperswitch_component_deployment", {
-            sources: [source],
-            destinationBucket: bucket
-        })
+        role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
+        role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("EC2InstanceProfileForImageBuilder"))
 
-        // Squid Image Pipeline
-        const bucket_url = 's3://hyperswitch_image_components/components'
-        const squid_uri = bucket_url + 'squid.yml'
+        const base_image_arn = MachineImage.latestAmazonLinux2().getImage(this).imageId;
 
         const component = new image_builder.CfnComponent(this, "install_squid_component", {
             name: "HyperswitchSquidImageBuilder",
             description: "Image builder for squid",
             platform: "Linux",
             version: "1.0.1",
-            uri: squid_uri
+            data: readFileSync("./components/squid.yml").toString(),
         })
-
-        let role = new iam.Role(this, "SquidStationRole", { roleName: "SquidStationRole", assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com") })
-
-        role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
-        role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("EC2InstanceProfileForImageBuilder"))
-
-        let instance_profile = new iam.CfnInstanceProfile(this, "SquidStationProfile", { instanceProfileName: "SquidStationInstanceProfile", roles: ["SquidStationRole"] })
+        let instance_profile = new iam.CfnInstanceProfile(this, "SquidStationProfile", { instanceProfileName: "SquidStationInstanceProfile", roles: ["StationRole"] })
 
         const squid_recipe = new image_builder.CfnImageRecipe(this, "SquidImageRecipe", {
             name: "SquidImageRecipe",
@@ -73,16 +66,12 @@ export class ImageBuilderStack extends cdk.Stack {
 
         pipeline.addDependency(squid_infra_config)
 
-
-        // Envoy Image Pipeline
-        const envoy_uri = bucket_url + 'envoy.yml'
-
         const envoy_component = new image_builder.CfnComponent(this, "install_envoy_component", {
-            name: "HyperswitchSquidImageBuilder",
-            description: "Image builder for squid",
+            name: "HyperswitchEnvoyImageBuilder",
+            description: "Image builder for Envoy",
             platform: "Linux",
             version: "1.0.1",
-            uri: envoy_uri
+            data: readFileSync("./components/envoy.yml").toString(),
         })
 
         const envoy_recipe = new image_builder.CfnImageRecipe(this, "EnvoyImageRecipe", {
@@ -94,19 +83,14 @@ export class ImageBuilderStack extends cdk.Stack {
             parentImage: base_image_arn
         })
 
-        let envoy_role = new iam.Role(this, "EnvoyStationRole", { roleName: "EnvoyStationRole", assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com") })
-
-        envoy_role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
-        envoy_role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("EC2InstanceProfileForImageBuilder"))
-
-        let envoy_instance_profile = new iam.CfnInstanceProfile(this, "EnvoyStationProfile", { instanceProfileName: "EnvoyStationInstanceProfile", roles: ["EnvoyStationRole"] })
+        let envoy_instance_profile = new iam.CfnInstanceProfile(this, "EnvoyStationProfile", { instanceProfileName: "EnvoyStationInstanceProfile", roles: ["StationRole"] })
 
         let envoy_infra_config = new image_builder.CfnInfrastructureConfiguration(this, "EnvoyInfraConfig", {
             name: "EnvoyInfraConfig",
             instanceTypes: ["t3.medium"],
             instanceProfileName: "EnvoyStationInstanceProfile"
         })
-        squid_infra_config.addDependency(envoy_instance_profile)
+        envoy_infra_config.addDependency(envoy_instance_profile)
 
         let envoy_pipeline = new image_builder.CfnImagePipeline(this, "EnvoyImagePipeline", {
             name: "EnvoyImagePipeLine",

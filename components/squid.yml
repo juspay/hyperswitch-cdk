@@ -9,6 +9,7 @@ phases:
           action: ExecuteBash
           inputs:
             commands:
-                - sudo apt-get update -y
-                - sudo apt install squid
-
+                - sudo yum update -y
+                - sudo yum install -y squid
+                - sudo systemctl enable squid
+                - sudo systemctl start squid
