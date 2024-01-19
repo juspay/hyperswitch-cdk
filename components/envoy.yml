@@ -1,5 +1,5 @@
 name: InstallEnvoy
-description: this document installs node on ubuntu
+description: This document installs envoy and wazuh on top of Amazon Linux 2
 schemaVersion: 1.0
 
 phases:

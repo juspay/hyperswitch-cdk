@@ -1,5 +1,5 @@
 name: InstallSquid
-description: this document installs node on ubuntu
+description: This document installs Squid and Wazuh on top of Amazon Linux 2
 schemaVersion: 1.0
 
 phases:

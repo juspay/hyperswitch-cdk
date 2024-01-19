@@ -16,7 +16,7 @@ export class HyperswitchStack {
     private stack: Construct;
 
     constructor(scope: Construct, config: Config, cloudProvider: Cloud) {
-        const stack: string = scope.node.tryGetContext("stack") || "imagebuilder";
+        const stack: string = scope.node.tryGetContext("stack") || "hyperswitch";
         console.log(stack);
 
         switch (stack) {
