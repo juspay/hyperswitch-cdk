@@ -1,6 +1,7 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import { EC2Config } from './config';
+import * as cdk from "aws-cdk-lib";
 export class EC2Instance {
     private readonly instance: ec2.Instance;
     sg: ec2.SecurityGroup;
@@ -45,6 +46,7 @@ export class EC2Instance {
             associatePublicIpAddress: config.associatePublicIpAddress,
         });
 
+        // make this identifier name to be 'StandaloneUrl' - refer to install.sh
         // new cdk.CfnOutput(scope, '', {
         //     value: "http://"+this.instance.instancePublicIp+"/health",
         //     description: 'try health api',
