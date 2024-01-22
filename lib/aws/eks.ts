@@ -314,7 +314,7 @@ export class EksStack {
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
-      repository: "https://dracarys18.github.io/hyperswitch-helm",
+      repository: "https://juspay.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: true,
@@ -390,27 +390,30 @@ export class EksStack {
             },
           },
         },
-        postgresql: {
-            global: {
-                postgresql: {
-                    auth: {
-                        host: rds.db_cluster.clusterEndpoint.hostname,
-                        replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
-                        usename: "db_user",
-                        database: "hyperswitch",
-                        password: kmsSecrets.kms_encrypted_db_pass,
-                    },
+        externalPostgresql: {
+            primary: {
+                host: rds.db_cluster.clusterEndpoint.hostname,
+                auth: {
+                    usename: "db_user",
+                    database: "hyperswitch",
+                    password: kmsSecrets.kms_encrypted_db_pass,
                 },
             },
+            replica: {
+                host: rds.db_cluster.clusterReadEndpoint.hostname,
+                auth: {
+                    usename: "db_user",
+                    database: "hyperswitch",
+                    password: kmsSecrets.kms_encrypted_db_pass,
+                },
+
+            }
         },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        redis: {
-          master: {
-              host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          },
-          replicaCount: 1,
+        externalRedis: {
+          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
         },
         autoscaling: {
           enabled: true,
