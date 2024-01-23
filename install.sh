@@ -1,9 +1,11 @@
-#!/bin/bash
+#! /usr/bin/env bash
+set -uo pipefail
 
 # Setting up color and style variables
 bold=$(tput bold)
 blue=$(tput setaf 4)
 green=$(tput setaf 2)
+yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 white=$(tput setaf 7)
@@ -27,8 +29,7 @@ else
 fi
 
 # Trying to retrieve AWS account owner's details
-AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1)
-if [[ $? -ne 0 ]]; then
+if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
     display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
     display_error "Check your AWS credentials and permissions."
     exit 1
@@ -47,20 +48,20 @@ print_line() {
 
 # Displaying AWS account information in a "box"
 echo "${padding}${box_line}"
-print_line
+echo
 print_line "${bold}AWS Account Information:${reset}"
-print_line
+echo
 print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
 print_line "User ID: ${bold}$AWS_USER_ID${reset}"
 print_line "Role: ${bold}$AWS_ROLE${reset}"
-print_line
+echo
 echo "${padding}${box_line}"
 
 
 echo
 # Ask consent to proceed with the aws account
 while true; do
-    read -p "Do you want to proceed with the above AWS account? [y/n]: " yn
+    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
     case $yn in
         [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
         [Nn]* ) echo "Exiting..."; exit;;
@@ -96,7 +97,7 @@ show_install_options() {
 # Function to read user input until a valid choice is made
 get_user_choice() {
     while true; do
-        read -p "Enter your choice [1-2]: " INSTALLATION_MODE
+        read -r -p "Enter your choice [1-2]: " INSTALLATION_MODE
         case $INSTALLATION_MODE in
             1) echo "Free Tier option selected."; break;;
             2) echo "Production Ready option selected."; break;;
@@ -124,23 +125,23 @@ check_if_element_is_preset_in_array() {
 # Prompt for region and check if it's enabled
 while true; do
   echo "Please enter the AWS region to deploy the services: "
-  read AWS_DEFAULT_REGION
+  read -r AWS_DEFAULT_REGION
 
   # Attempt to describe regions and capture any error message
   AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
 
   if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
-    echo "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
-    echo "Contact your AWS administrator to obtain the necessary permissions."
+    display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
+    display_error "Contact your AWS administrator to obtain the necessary permissions."
     exit 1
   elif [[ $AVAILABLE_REGIONS_JSON == *"supported format"* ]]; then
-    echo "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
+    display_error "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
   else
     # Convert the region list into an array
     AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
 
     # Check if AWS_DEFAULT_REGION is in the list of available regions
-    if [[ " ${AVAILABLE_REGIONS[@]} " =~ " $AWS_DEFAULT_REGION " ]]; then
+    if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then
       echo "Region $AWS_DEFAULT_REGION is enabled for your account."
       break
     else
@@ -234,15 +235,16 @@ case "$os" in
     ;;
 esac
 
-echo "Dependency installation completed.\n"
+echo "Dependency installation completed."
 
+echo
 echo "${blue}##########################################${reset}"
 echo "${blue}    Checking neccessary permissions${reset}"
 echo "${blue}##########################################${reset}\n"
+echo
 
 check_root_user() {
   AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
-  echo $AWS_ARN
   if [[ $AWS_ARN == *":root"* ]]; then
     echo "ROOT user is not recommended. Please create a new user with AdministratorAccess and use their Access Token."
     exit 1
@@ -255,8 +257,7 @@ echo "Checking if the current AWS user is root..."
 (check_root_user) & show_loader "Verifying root user status"
 
 check_iam_policies() {
-  USER_POLICIES=$(aws iam list-attached-role-policies --role-name $AWS_ROLE --output json | jq -r '.AttachedPolicies[].PolicyName')
-  echo $USER_POLICIES
+  USER_POLICIES=$(aws iam list-attached-role-policies --role-name "$AWS_ROLE" --output json | jq -r '.AttachedPolicies[].PolicyName')
   for policy in "${REQUIRED_POLICIES[@]}"; do
     if ! echo "$USER_POLICIES" | grep -q "$policy"; then
       echo "Required policy $policy is not attached to your user. Please attach this policy."
@@ -273,7 +274,8 @@ echo "Checking for necessary IAM policies..."
 echo
 echo "${blue}##########################################${reset}"
 echo "${blue} Configure Credentials of the Application ${reset}"
-echo "${blue}##########################################${reset}\n"
+echo "${blue}##########################################${reset}"
+echo
 
 # Function to validate the password
 validate_password() {
@@ -287,7 +289,7 @@ validate_password() {
 # Prompt for DB Password
 while true; do
     echo "Please enter the password for your RDS instance (Minimum 8 characters; includes [A-Z], [a-z], [0-9]): "
-    read -s DB_PASS
+    read -r -s DB_PASS
     if validate_password "$DB_PASS"; then
         break
     fi
@@ -304,14 +306,14 @@ validate_api_key() {
 # Prompt for Admin API Key
 while true; do
     echo "Please enter the Admin API key (required to access Hyperswitch APIs): "
-    read -s ADMIN_API_KEY
+    read -r -s ADMIN_API_KEY
     if validate_api_key "$ADMIN_API_KEY"; then
         break
     fi
 done
 
 
-if $INSTALLATION_MODE == 2; then
+if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
 # Instructions for Card Vault Master Key
   echo "${bold}${red}If you require the Card Vault, create a master key as described below. Leave it empty if not needed.${reset}"
@@ -320,12 +322,12 @@ if $INSTALLATION_MODE == 2; then
 
 # Prompt for Encrypted Master Key
 echo "Enter your encrypted master key (optional): "
-read -s MASTER_KEY
+read -r -s MASTER_KEY
 LOCKER=""
 if [[ -n "$MASTER_KEY" ]]; then
     LOCKER+="-c master_key=$MASTER_KEY "
     echo "Enter the database password to be used for the locker: "
-    read -s LOCKER_DB_PASS
+    read -r -s LOCKER_DB_PASS
     if ! validate_password "$LOCKER_DB_PASS"; then
         exit 1
     fi
@@ -337,11 +339,11 @@ echo "${blue}      Deploying Hyperswitch Services${reset}"
 echo "${blue}#########################################${reset}"
 # Deploy the EKS Cluster
 npm install
-cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
-if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER ; then
+cdk bootstrap aws://"$AWS_ACCOUNT_ID"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
+if cdk deploy --require-approval never -c db_pass="$DB_PASS" -c admin_api_key="$ADMIN_API_KEY" -c aws_arn="$AWS_ARN" "$LOCKER" ; then
   # Wait for the EKS Cluster to be deployed
   echo `aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability`
-  aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
+  aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
   # Deploy Load balancer and Ingress
   echo "##########################################"
   sleep 10
@@ -372,7 +374,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   --header 'Accept: application/json' \
   --header 'api-key: '$ADMIN_API_KEY \
   --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}' )
-  echo "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
+  printf "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
   helm get values -n hyperswitch hypers-v1 > values.yaml
   helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
   sleep 240
