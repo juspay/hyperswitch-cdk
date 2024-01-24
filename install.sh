@@ -190,17 +190,6 @@ if [ "$version" -lt 18 ]; then
 fi
 echo "Node.js version is valid."
 
-# Check and Install AWS CLI
-echo "Checking for AWS CLI..."
-if aws --version; then
-    echo "AWS CLI is already installed."
-else
-    echo "Installing AWS CLI..."
-    curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-    sudo installer -pkg AWSCLIV2.pkg -target / & show_loader "Installing AWS CLI.."
-    echo "AWS CLI is installed."
-fi
-
 
 # Install AWS CDK
 echo "Installing AWS CDK..."
