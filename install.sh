@@ -121,21 +121,23 @@ check_if_element_is_preset_in_array() {
   return 1
 }
 
-# if AWS_DEFAULT_REGION is already present ask if he wants to continue with the same region
-# If yes, proceed with the same region
-# If no, ask for the region
 if [[ -z "$AWS_DEFAULT_REGION" ]]; then
-  echo "AWS_DEFAULT_REGION is not set. Please enter the AWS region to deploy the services: "
-  read -r AWS_DEFAULT_REGION
+    echo "AWS_DEFAULT_REGION is not set. Please enter the AWS region to deploy the services: "
+    read -r AWS_DEFAULT_REGION
 else
-  echo "AWS_DEFAULT_REGION is set to $AWS_DEFAULT_REGION. Do you want to continue with the same region? [y/n]: "
-  read -r yn
-  case $yn in
-      [Yy]* ) echo "Proceeding with AWS region $AWS_DEFAULT_REGION";;
-      [Nn]* ) echo "Please enter the AWS region to deploy the services: "
-              read -r AWS_DEFAULT_REGION;;
-      * ) echo "Please answer yes or no [y/n].";;
-  esac
+    while true; do
+        echo "AWS_DEFAULT_REGION is set to $AWS_DEFAULT_REGION. Do you want to continue with the same region? [y/n]: "
+        read -r yn
+
+        case $yn in
+            [Yy]* ) echo "Proceeding with AWS region $AWS_DEFAULT_REGION"
+                    break;;
+            [Nn]* ) echo "Please enter the AWS region to deploy the services: "
+                    read -r AWS_DEFAULT_REGION
+                    break;;
+            * ) echo "Please answer yes or no [y/n].";;
+        esac
+    done
 fi
 
 # Prompt for region and check if it's enabled
@@ -308,7 +310,7 @@ validate_password() {
     fi
 
     # Check for forbidden characters
-    if [[ $password =~ [/\'\"@ ] ]]; then
+    if [[ $password =~ [/\'\"@[:space:]] ]]; then
         display_error "Error: Password cannot include /, ', \", @, or space."
         return 1
     fi
