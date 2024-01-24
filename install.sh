@@ -21,7 +21,7 @@ display_error() {
 }
 
 # Checking for AWS credentials
-if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]] || [[ -z "$AWS_SESSION_TOKEN" ]]; then
+if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
     display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
     exit 1
 else
@@ -31,7 +31,7 @@ fi
 # Trying to retrieve AWS account owner's details
 if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
     display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
-    display_error "Check your AWS credentials and permissions."
+    display_error "Check if your AWS credentials are expired and you have appropriate permissions."
     exit 1
 fi
 
@@ -201,11 +201,6 @@ else
     echo "AWS CLI is installed."
 fi
 
-# Check if AWS CLI installation was successful
-if ! command -v aws &> /dev/null; then
-    echo "AWS CLI could not be found. Please rerun 'sh install.sh' with Sudo access."
-    exit 1
-fi
 
 # Install AWS CDK
 echo "Installing AWS CDK..."
@@ -214,7 +209,7 @@ echo "AWS CDK is installed successfully."
 
 # Check for AWS CDK
 if ! command -v cdk &> /dev/null; then
-    echo "AWS CDK could not be found. Please rerun 'sh install.sh' with Sudo access."
+    echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
     exit 1
 fi
 
@@ -223,17 +218,23 @@ os=$(uname)
 case "$os" in
   "Linux")
     echo "Detecting operating system: Linux"
-    (sh linux_deps.sh & show_loader "Running Linux dependencies script...")
+    (bash linux_deps.sh & show_loader "Running Linux dependencies script...")
     ;;
   "Darwin")
     echo "Detecting operating system: macOS"
-    (sh mac_deps.sh & show_loader "Running macOS dependencies script...")
+    (bash mac_deps.sh & show_loader "Running macOS dependencies script...")
     ;;
   *)
     echo "Unsupported operating system."
     exit 1
     ;;
 esac
+
+# Check if AWS CLI installation was successful
+if ! command -v aws &> /dev/null; then
+    echo "AWS CLI could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the $PATH"
+    exit 1
+fi
 
 echo "Dependency installation completed."
 
@@ -279,10 +280,26 @@ echo
 
 # Function to validate the password
 validate_password() {
-    if [[ ! $1 =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
-        display_error "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
+    local password=$1
+
+    # Check length (at least 8 characters)
+    if [[ ${#password} -lt 8 ]]; then
+        display_error "Error: Password must be at least 8 characters."
         return 1
     fi
+
+    # Check if it starts with an alphabet
+    if [[ ! $password =~ ^[A-Za-z] ]]; then
+        display_error "Error: Password must start with a letter."
+        return 1
+    fi
+
+    # Check for at least one uppercase letter, one lowercase letter, one digit, and one special character
+    if [[ ! $password =~ [A-Z] || ! $password =~ [a-z] || ! $password =~ [0-9]  || ! $password =~ [^A-Za-z0-9] ]]; then
+        display_error "Error: Password must include uppercase and lowercase letters, a number, and a special character."
+        return 1
+    fi
+
     return 0
 }
 
@@ -296,7 +313,7 @@ while true; do
 done
 
 validate_api_key() {
-    if [[ ! $1 =~ ^([A-Z]|[a-z]|[0-9]|_){8,}$ ]]; then
+    if [[ ! $1 =~ ^[A-Za-z0-9_]{8,}$ ]]; then
         display_error "Error: API Key must be at least 8 characters long and can include letters, numbers, and underscores."
         return 1
     fi
