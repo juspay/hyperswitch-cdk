@@ -122,22 +122,14 @@ check_if_element_is_preset_in_array() {
 }
 
 if [[ -z "$AWS_DEFAULT_REGION" ]]; then
-    echo "AWS_DEFAULT_REGION is not set. Please enter the AWS region to deploy the services: "
+    echo "Please enter the AWS region to deploy the services: "
     read -r AWS_DEFAULT_REGION
 else
-    while true; do
-        echo "AWS_DEFAULT_REGION is set to $AWS_DEFAULT_REGION. Do you want to continue with the same region? [y/n]: "
-        read -r yn
-
-        case $yn in
-            [Yy]* ) echo "Proceeding with AWS region $AWS_DEFAULT_REGION"
-                    break;;
-            [Nn]* ) echo "Please enter the AWS region to deploy the services: "
-                    read -r AWS_DEFAULT_REGION
-                    break;;
-            * ) echo "Please answer yes or no [y/n].";;
-        esac
-    done
+    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $AWS_DEFAULT_REGION): "
+    read -r input_region
+    if [[ -n "$input_region" ]]; then
+        AWS_DEFAULT_REGION=$input_region
+    fi
 fi
 
 # Prompt for region and check if it's enabled
@@ -287,7 +279,7 @@ echo "${blue} Configure Credentials of the Application ${reset}"
 echo "${blue}##########################################${reset}"
 echo
 
-# Function to validate the password
+
 validate_password() {
     local password=$1
 
@@ -303,21 +295,26 @@ validate_password() {
         return 1
     fi
 
-    # Check for at least one uppercase letter, one lowercase letter, one digit, and one special character
-    if [[ ! $password =~ [A-Z] || ! $password =~ [a-z] || ! $password =~ [0-9]  || ! $password =~ [^A-Za-z0-9] ]]; then
-        display_error "Error: Password must include uppercase and lowercase letters, a number, and a special character."
+    # Check for at least one uppercase letter and one lowercase letter
+    if [[ ! $password =~ [A-Z] || ! $password =~ [a-z] ]]; then
+        display_error "Error: Password must include at least one uppercase and one lowercase letter."
         return 1
     fi
 
-    # Check for forbidden characters
-    if [[ $password =~ [/\'\"@[:space:]] ]]; then
-        display_error "Error: Password cannot include /, ', \", @, or space."
+    # Check for at least one digit
+    if [[ ! $password =~ [0-9] ]]; then
+        display_error "Error: Password must include at least one digit."
+        return 1
+    fi
+
+    # Check for forbidden special characters
+    if [[ $password =~ [^A-Za-z0-9] ]]; then
+        display_error "Error: Password cannot include special characters."
         return 1
     fi
 
     return 0
 }
-
 
 # Prompt for DB Password
 while true; do
@@ -348,23 +345,29 @@ done
 
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
-# Instructions for Card Vault Master Key
-  echo "${bold}${red}If you require the Card Vault, create a master key as described below. Leave it empty if not needed.${reset}"
+echo "Do you want to deploy the Card Vault? [y/n]: "
+read -r -s CARD_VAULT
+if [[ "$CARD_VAULT" == "y" ]]; then
+  # Instructions for Card Vault Master Key
+  echo "${bold}${red}If you require the Card Vault, create a master key as described below.${reset}"
   echo "${bold}${yellow}To generate the master key, use the utility at: https://github.com/juspay/hyperswitch-card-vault${reset}"
   echo "${bold}${yellow}With cargo installed, run: cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin${reset}"
 
-# Prompt for Encrypted Master Key
-echo "Enter your encrypted master key (optional): "
-read -r -s MASTER_KEY
-LOCKER=""
-if [[ -n "$MASTER_KEY" ]]; then
-    LOCKER+="-c master_key=$MASTER_KEY "
-    echo "Enter the database password to be used for the locker: "
-    read -r -s LOCKER_DB_PASS
-    if ! validate_password "$LOCKER_DB_PASS"; then
-        exit 1
-    fi
-    LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
+  # Prompt for Encrypted Master Key
+  echo "Enter your encrypted master key:"
+  read -r -s MASTER_KEY
+  LOCKER=""
+  LOCKER+="-c master_key=$MASTER_KEY "
+  # Prompt for Locker DB Password
+  while true; do
+      echo "Please enter the password for your RDS instance (Minimum 8 characters; includes [A-Z], [a-z], [0-9]): "
+      read -r -s LOCKER_DB_PASS
+      if validate_password "$LOCKER_DB_PASS"; then
+          break
+      fi
+  done
+  LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
+  fi
 fi
 
 echo "${blue}#########################################${reset}"
