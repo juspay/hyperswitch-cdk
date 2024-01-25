@@ -313,6 +313,14 @@ validate_password() {
         return 1
     fi
 
+    # read password again to confirm
+    echo "Please re-enter the password: "
+    read -r -s password_confirm
+    if [[ "$password" != "$password_confirm" ]]; then
+        display_error "Error: Passwords do not match."
+        return 1
+    fi
+
     return 0
 }
 
@@ -326,8 +334,18 @@ while true; do
 done
 
 validate_api_key() {
-    if [[ ! $1 =~ ^[A-Za-z0-9_]{8,}$ ]]; then
+    local api_key=$1
+
+    if [[ ! $api_key =~ ^[A-Za-z0-9_]{8,}$ ]]; then
         display_error "Error: API Key must be at least 8 characters long and can include letters, numbers, and underscores."
+        return 1
+    fi
+
+    # read api_key again to confirm
+    echo "Please re-enter the api-key: "
+    read -r -s api_key_confirm
+    if [[ "$api_key" != "$api_confirm" ]]; then
+        display_error "Error: Api Keys do not match."
         return 1
     fi
     return 0
@@ -346,7 +364,8 @@ done
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
 echo "Do you want to deploy the Card Vault? [y/n]: "
-read -r -s CARD_VAULT
+read -r CARD_VAULT
+
 if [[ "$CARD_VAULT" == "y" ]]; then
   # Instructions for Card Vault Master Key
   echo "${bold}${red}If you require the Card Vault, create a master key as described below.${reset}"
@@ -367,7 +386,6 @@ if [[ "$CARD_VAULT" == "y" ]]; then
       fi
   done
   LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
-  fi
 fi
 
 echo "${blue}#########################################${reset}"
