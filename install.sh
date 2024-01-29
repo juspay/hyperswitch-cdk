@@ -90,7 +90,8 @@ INSTALLATION_MODE=1
 show_install_options() {
     echo
     echo "${bold}Choose an installation option:${reset}"
-    echo "${bold}${green}1. Free Tier      2. Production Ready ${reset}"
+    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Under Development, Stay Tuned!${reset}"
+    echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
 }
 
 # Function to read user input until a valid choice is made
@@ -125,7 +126,7 @@ if [[ -z "$AWS_DEFAULT_REGION" ]]; then
     echo "Please enter the AWS region to deploy the services: "
     read -r AWS_DEFAULT_REGION
 else
-    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $AWS_DEFAULT_REGION): "
+    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
     read -r input_region
     if [[ -n "$input_region" ]]; then
         AWS_DEFAULT_REGION=$input_region
@@ -255,7 +256,8 @@ check_root_user() {
 
 REQUIRED_POLICIES=("AdministratorAccess") # Add other necessary policies to this array
 # Check if the current user is a root user
-echo "Checking if the current AWS user is root..."
+echo "Verifying that you're not using the AWS root account..."
+echo "(For security reasons, it's best to avoid using the root account.)"
 (check_root_user) & show_loader "Verifying root user status"
 
 check_iam_policies() {
@@ -344,7 +346,7 @@ validate_api_key() {
     # read api_key again to confirm
     echo "Please re-enter the api-key: "
     read -r -s api_key_confirm
-    if [[ "$api_key" != "$api_confirm" ]]; then
+    if [[ "$api_key" != "$api_key_confirm" ]]; then
         display_error "Error: Api Keys do not match."
         return 1
     fi
