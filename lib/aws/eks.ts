@@ -32,23 +32,54 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
-    const awsArn = scope.node.tryGetContext("aws_arn");
-    const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
-
-    if (isRole) {
-      const role = iam.Role.fromRoleName(
-        scope,
-        "AdminRole",
-        awsArn.split("/")[1],
-      );
-      cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
-    } else {
-      const user = iam.User.fromUserArn(scope, "User", awsArn);
-      cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
+    const addClusterRole = (awsArn: string, name: string) => {
+      if(!awsArn) return;
+      const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
+      if (isRole) {
+        const role = iam.Role.fromRoleName(
+          scope,
+          name,
+          awsArn.split("/")[1],
+        );
+        cluster.awsAuth.addRoleMapping(role, { groups: ["system:masters"] });
+      } else {
+        const user = iam.User.fromUserArn(scope, name, awsArn);
+        cluster.awsAuth.addUserMapping(user, { groups: ["system:masters"] });
+      }
     }
+    addClusterRole(scope.node.tryGetContext("aws_arn"), "AdminRole1");
+    addClusterRole(scope.node.tryGetContext("additional_aws_arn"), "AdminRole2");
 
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+    });
+
+    // create a policy with complete access to cloudwatch metrics and logs
+    const cloudwatchPolicy = new iam.Policy(scope, "HSCloudWatchPolicy", {
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "cloudwatch:DescribeAlarmsForMetric",
+            "cloudwatch:DescribeAlarmHistory",
+            "cloudwatch:DescribeAlarms",
+            "cloudwatch:ListMetrics",
+            "cloudwatch:GetMetricData",
+            "cloudwatch:GetInsightRuleReport",
+            "logs:DescribeLogGroups",
+            "logs:GetLogGroupFields",
+            "logs:StartQuery",
+            "logs:StopQuery",
+            "logs:GetQueryResults",
+            "logs:GetLogEvents",
+            "ec2:DescribeTags",
+            "ec2:DescribeInstances",
+            "ec2:DescribeRegions",
+            "tag:GetResources",
+          ],
+          effect: iam.Effect.ALLOW,
+          resources: ["*"],
+        }),
+      ],
     });
 
     // Attach the required policy to the nodegroup role
@@ -56,6 +87,8 @@ export class EksStack {
       "AmazonEKSWorkerNodePolicy",
       "AmazonEKS_CNI_Policy",
       "AmazonEC2ContainerRegistryReadOnly",
+      "CloudWatchAgentServerPolicy",
+      "AWSXrayWriteOnlyAccess",
     ];
 
     for (const policyName of managedPolicies) {
@@ -115,6 +148,8 @@ export class EksStack {
       .catch((error) => {
         console.error("Error fetching or creating policy document:", error);
       });
+
+    nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
@@ -224,6 +259,7 @@ export class EksStack {
         },
         db: {
           host: rds.db_cluster.clusterEndpoint.hostname,
+          replica_host: rds.db_cluster.clusterReadEndpoint.hostname,
           name: "hyperswitch",
           user_name: "db_user",
           password: rds.password,
@@ -335,6 +371,20 @@ export class EksStack {
             },
           },
         },
+        promtail: {
+          enabled: true,
+          config: {
+            snippets: {
+              extraRelabelConfigs: [
+                {
+                  action: "keep",
+                  regex: "hyperswitch-.*",
+                  source_labels: ["__meta_kubernetes_pod_label_app"],
+                },
+              ],
+            }
+          }
+        }
       },
     });
     lokiChart.node.addDependency(hypersChart);

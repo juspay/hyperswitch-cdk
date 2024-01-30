@@ -24,7 +24,7 @@ if [[ -n "$MASTER_KEY" ]]; then
   LOCKER+="-c master_key=$MASTER_KEY "
   LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
 fi
-cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER
+cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c additional_aws_arn=$ADMIN_AWS_ARN $LOCKER
 aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
 export KUBECONFIG=~/.kube/config
 sleep 10
@@ -63,8 +63,8 @@ sleep 240
 SDK_URL=$SDK_URL/HyperLoader.js
 APP_HOST=http://$APP_HOST
 LOGS_HOST=http://$LOGS_HOST
-CONTROL_CENTER_HOST=http://CONTROL_CENTER_HOST
-SDK_HOST=http://SDK_HOST
+CONTROL_CENTER_HOST=http://$CONTROL_CENTER_HOST
+SDK_HOST=http://$SDK_HOST
 
 # Generate the HTML content
 HTML_CONTENT="
