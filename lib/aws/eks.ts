@@ -390,11 +390,15 @@ export class EksStack {
             },
           },
         },
+        postgresql: {
+            enabled: false
+        },
         externalPostgresql: {
+            enabled: true,
             primary: {
                 host: rds.db_cluster.clusterEndpoint.hostname,
                 auth: {
-                    usename: "db_user",
+                    username: "db_user",
                     database: "hyperswitch",
                     password: kmsSecrets.kms_encrypted_db_pass,
                 },
@@ -402,7 +406,7 @@ export class EksStack {
             replica: {
                 host: rds.db_cluster.clusterReadEndpoint.hostname,
                 auth: {
-                    usename: "db_user",
+                    username: "db_user",
                     database: "hyperswitch",
                     password: kmsSecrets.kms_encrypted_db_pass,
                 },
@@ -412,8 +416,13 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
+        redis: {
+            enabled: false
+        },
         externalRedis: {
+          enabled: true,
           host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          port: 6379
         },
         autoscaling: {
           enabled: true,
