@@ -13,8 +13,7 @@ export class Vpc {
   vpc: ec2.Vpc;
   constructor(scope: Construct, config: VpcConfig) {
     const vpc = new ec2.Vpc(scope, config.name, {
-      // availabilityZones: config.availabilityZones,
-      maxAzs: 2,
+      maxAzs: config.maxAzs,
       subnetConfiguration: [
         {
           name: SubnetNames.PublicSubnet,

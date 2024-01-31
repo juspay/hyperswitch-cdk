@@ -18,6 +18,7 @@ export class HyperswitchStack {
     constructor(scope: Construct, config: Config, cloudProvider: Cloud) {
         const stack: string = scope.node.tryGetContext("stack") || "hyperswitch";
         console.log(stack);
+        console.log(scope.node.tryGetContext("stack"))
 
         switch (stack) {
             case "hyperswitch":
@@ -52,7 +53,8 @@ export class HyperswitchStack {
                 break;
             case "imagebuilder":
                 const imageBuilderConfig: ImageBuilderConfig = {
-                    name: scope.node.tryGetContext("stack") || "imagebuilder"
+                    name: scope.node.tryGetContext("stack") || "imagebuilder",
+                    ami_id: scope.node.tryGetContext("ami_id"),
                 };
                 this.stack = new ImageBuilderStack(scope, imageBuilderConfig)
                 break;

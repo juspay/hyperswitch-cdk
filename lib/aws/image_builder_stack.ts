@@ -1,13 +1,12 @@
 import * as cdk from "aws-cdk-lib";
 import * as image_builder from "aws-cdk-lib/aws-imagebuilder"
 import * as iam from "aws-cdk-lib/aws-iam";
-import { MachineImage } from 'aws-cdk-lib/aws-ec2';
 
 import { Vpc } from './networking';
 import { Construct } from "constructs";
 import { ImageBuilderConfig, VpcConfig } from "./config";
-import { Bucket } from "aws-cdk-lib/aws-s3";
-import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import { MachineImage } from 'aws-cdk-lib/aws-ec2';
+
 import { readFileSync } from "fs";
 
 type ImageBuilderProperties = {
@@ -69,7 +68,7 @@ export class ImageBuilderStack extends cdk.Stack {
 
         let vpcConfig: VpcConfig = {
             name: "imagebuilder-vpc",
-            availabilityZones: [process.env.CDK_DEFAULT_REGION + "a", process.env.CDK_DEFAULT_REGION + "b"]
+            maxAzs: 2,
         };
 
         let vpc = new Vpc(this, vpcConfig);
@@ -78,7 +77,7 @@ export class ImageBuilderStack extends cdk.Stack {
         role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
         role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("EC2InstanceProfileForImageBuilder"))
 
-        const base_image_arn = MachineImage.latestAmazonLinux2().getImage(this).imageId;
+        const base_image_id = config.ami_id || MachineImage.latestAmazonLinux2().getImage(this).imageId
 
         let squid_properties = {
             pipeline_name: "SquidImagePipeline",
@@ -87,7 +86,7 @@ export class ImageBuilderStack extends cdk.Stack {
             comp_name: "HyperswitchSquidImageBuilder",
             comp_id: "install_squid_component",
             infra_config_name: "SquidInfraConfig",
-            baseimageArn: base_image_arn,
+            baseimageArn: base_image_id,
             description: "Image builder for squid",
             compFilePath: "./components/squid.yml",
         };
@@ -105,7 +104,7 @@ export class ImageBuilderStack extends cdk.Stack {
             comp_name: "HyperswitchEnvoyImageBuilder",
             comp_id: "install_envoy_component",
             infra_config_name: "EnvoyInfraConfig",
-            baseimageArn: base_image_arn,
+            baseimageArn: base_image_id,
             description: "Image builder for Envoy",
             compFilePath: "./components/envoy.yml",
         };

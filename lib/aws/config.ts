@@ -22,10 +22,10 @@ export type VpcConfig = {
    */
   name: string;
   /**
-   * Availability Zones that the VPC should contain.
-   * (eg. eu-central-1a)
+   * The number of Availability zones for the VPC.
+   * (eg. 2)
    */
-  availabilityZones: string[];
+   maxAzs: number;
 };
 
 /**
@@ -85,7 +85,8 @@ export type Config = {
 };
 
 export type ImageBuilderConfig = {
-    name: string
+    name: string;
+    ami_id: string;
 }
 
 export type EC2Config = {
