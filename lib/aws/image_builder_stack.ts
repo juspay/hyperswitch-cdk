@@ -24,7 +24,7 @@ type ImageBuilderProperties = {
 function CreateImagePipeline(
     stack: ImageBuilderStack,
     role: iam.Role,
-    props: ImageBuilderProperties
+    props: ImageBuilderProperties,
 ) {
     const component = new image_builder.CfnComponent(stack, props.comp_id, {
         name: props.comp_name,
@@ -47,7 +47,7 @@ function CreateImagePipeline(
     let squid_infra_config = new image_builder.CfnInfrastructureConfiguration(stack, props.infra_config_name, {
         name: props.infra_config_name,
         instanceTypes: ["t3.medium"],
-        instanceProfileName: props.profile_name
+        instanceProfileName: props.profile_name,
     })
     squid_infra_config.addDependency(instance_profile)
 
@@ -94,7 +94,7 @@ export class ImageBuilderStack extends cdk.Stack {
         CreateImagePipeline(
             this,
             role,
-            squid_properties
+            squid_properties,
         )
 
         let envoy_properties = {
@@ -112,7 +112,7 @@ export class ImageBuilderStack extends cdk.Stack {
         CreateImagePipeline(
             this,
             role,
-            envoy_properties
+            envoy_properties,
         )
     }
 }

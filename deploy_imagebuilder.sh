@@ -201,6 +201,17 @@ check_iam_policies() {
 echo "Checking for necessary IAM policies..."
 (check_iam_policies) & show_loader "Verifying IAM policies"
 
+check_default_vpc() {
+    echo `aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query 'Vpcs[*].VpcId'` >> /dev/null
+
+    if [ $? -ne 0 ]; then
+        echo
+        echo "${green}No default VPC found. Creating one...${reset}"
+        echo
+        aws ec2 create-default-vpc
+    fi
+}
+
 validate_ami() {
     output=$(aws ec2 describe-images --image-ids "$1" --query 'Images')
     if [ -z "$output" ]; then
@@ -212,6 +223,8 @@ validate_ami() {
 
 show_install_options
 get_user_choice
+
+(check_default_vpc) & show_loader "Checking if default VPC exist or not"
 
 npm install
 cdk bootstrap aws://"$AWS_ACCOUNT_ID"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN" -c stack=imagebuilder
