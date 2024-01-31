@@ -317,7 +317,7 @@ export class EksStack {
       repository: "https://juspay.github.io/hyperswitch-helm",
       namespace: "hyperswitch",
       release: "hypers-v1",
-      wait: true,
+      wait: false,
       values: {
         clusterName: cluster.clusterName,
         services: {
