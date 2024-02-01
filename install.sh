@@ -335,6 +335,23 @@ while true; do
     fi
 done
 
+validate_master_key() {
+    if [[ ! $1 =~ ^[0-9a-fA-F]{64}$ ]]; then
+        display_error "Error: Input is not AES256 compatible please enter a 32 bit (64 characters) key"
+        return 1
+    fi
+    return 0
+}
+
+#Prompt for Master Key
+while true; do
+    echo "Please enter the master AES256 encryption key to encrypt the PII data in the database; 32 bit(64 characters)"
+    read -s MASTER_ENC_KEY
+    if validate_master_key "$MASTER_ENC_KEY"; then
+        break
+    fi
+done
+
 validate_api_key() {
     local api_key=$1
 
@@ -368,6 +385,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
 echo "Do you want to deploy the Card Vault? [y/n]: "
 read -r CARD_VAULT
 
+LOCKER=""
 if [[ "$CARD_VAULT" == "y" ]]; then
   # Instructions for Card Vault Master Key
   echo "${bold}${red}If you require the Card Vault, create a master key as described below.${reset}"
@@ -377,7 +395,6 @@ if [[ "$CARD_VAULT" == "y" ]]; then
   # Prompt for Encrypted Master Key
   echo "Enter your encrypted master key:"
   read -r -s MASTER_KEY
-  LOCKER=""
   LOCKER+="-c master_key=$MASTER_KEY "
   # Prompt for Locker DB Password
   while true; do
@@ -395,8 +412,8 @@ echo "${blue}      Deploying Hyperswitch Services${reset}"
 echo "${blue}#########################################${reset}"
 # Deploy the EKS Cluster
 npm install
-cdk bootstrap aws://"$AWS_ACCOUNT_ID"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN"
-if cdk deploy --require-approval never -c db_pass="$DB_PASS" -c admin_api_key="$ADMIN_API_KEY" -c aws_arn="$AWS_ARN" "$LOCKER" ; then
+cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
+if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
   echo `aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability`
   aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
