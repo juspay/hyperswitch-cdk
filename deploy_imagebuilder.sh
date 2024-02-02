@@ -17,30 +17,14 @@ display_error() {
     echo "${bold}${red}$1${reset}"
 }
 
-# Function to display a simple loading animation
-show_loader() {
-    local message=$1
-    local pid=$!
-    local delay=0.3
-    local spinstr='|/-\\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf "\r%s [%c]  " "$message" "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-    done
-    printf "\r%s [Done]   \n" "$message"
+validate_ami() {
+    output=$(aws ec2 describe-images --image-ids "$1" --query 'Images')
+    if [ -z "$output" ]; then
+        return 1
+    else
+        return 0
+    fi
 }
-
-# Function to show installation options
-show_install_options() {
-    echo
-    echo "${bold}Choose the base image type:${reset}"
-    echo "${bold}${blue}1.${reset}${green}Hardened base Amazon Linux ${reset}"
-    echo -e "${bold}${blue}2.${reset}${green}Normal Amazon Linux Image${reset}\n"
-}
-
-AMI_OPTIONS=""
 
 get_user_ami_id() {
     while true; do
@@ -64,55 +48,30 @@ get_user_choice() {
     done
 }
 
-
-# Checking for AWS credentials
-if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
-    display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
-    exit 1
-else
-    echo "${bold}${green}AWS credentials detected successfully.${reset}"
-fi
-
-# Trying to retrieve AWS account owner's details
-if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
-    display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
-    display_error "Check if your AWS credentials are expired and you have appropriate permissions."
-    exit 1
-fi
-
-# Extracting and displaying account details
-AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
-AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
-AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
-AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
-
-# Function to print a line with padding
-print_line() {
-    echo "${padding}${blue}${white}$1${reset}"
+# Function to display a simple loading animation
+show_loader() {
+    local message=$1
+    local pid=$!
+    local delay=0.3
+    local spinstr='|/-\\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf "\r%s [%c]  " "$message" "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+    done
+    printf "\r%s [Done]   \n" "$message"
 }
 
-# Displaying AWS account information in a "box"
-echo "${padding}${box_line}"
-echo
-print_line "${bold}AWS Account Information:${reset}"
-echo
-print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
-print_line "User ID: ${bold}$AWS_USER_ID${reset}"
-print_line "Role: ${bold}$AWS_ROLE${reset}"
-echo
-echo "${padding}${box_line}"
-
-
-echo
-# Ask consent to proceed with the aws account
-while true; do
-    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
-    case $yn in
-        [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
-        [Nn]* ) echo "Exiting..."; exit;;
-        * ) echo "Please answer yes or no [y/n].";;
-    esac
-done
+# Function to show installation options
+show_install_options() {
+    echo
+    echo "${bold}Choose the base image type:${reset}"
+    echo "${bold}${blue}1.${reset}${green}Hardened base Amazon Linux ${reset}"
+    echo -e "${bold}${blue}2.${reset}${green}Normal Amazon Linux Image${reset}\n"
+}
+show_install_options
+get_user_choice
 
 # Check for Node.js
 echo "Checking for Node.js..."
@@ -165,11 +124,62 @@ if ! command -v aws &> /dev/null; then
 fi
 
 echo "Dependency installation completed."
+echo
+
+AMI_OPTIONS=""
+
+# Checking for AWS credentials
+if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
+    display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
+    exit 1
+else
+    echo "${bold}${green}AWS credentials detected successfully.${reset}"
+fi
+
+# Trying to retrieve AWS account owner's details
+if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
+    display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
+    display_error "Check if your AWS credentials are expired and you have appropriate permissions."
+    exit 1
+fi
+
+# Extracting and displaying account details
+AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
+AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
+AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
+AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
+
+# Function to print a line with padding
+print_line() {
+    echo "${padding}${blue}${white}$1${reset}"
+}
+
+# Displaying AWS account information in a "box"
+echo "${padding}${box_line}"
+echo
+print_line "${bold}AWS Account Information:${reset}"
+echo
+print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
+print_line "User ID: ${bold}$AWS_USER_ID${reset}"
+print_line "Role: ${bold}$AWS_ROLE${reset}"
+echo
+echo "${padding}${box_line}"
+
+
+# Ask consent to proceed with the aws account
+while true; do
+    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
+    case $yn in
+        [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
+        [Nn]* ) echo "Exiting..."; exit;;
+        * ) echo "Please answer yes or no [y/n].";;
+    esac
+done
 
 echo
 echo "${blue}##########################################${reset}"
 echo "${blue}    Checking neccessary permissions${reset}"
-echo -e "${blue}##########################################${reset}\n"
+echo "${blue}##########################################${reset}"
 echo
 
 check_root_user() {
@@ -211,18 +221,6 @@ check_default_vpc() {
         aws ec2 create-default-vpc
     fi
 }
-
-validate_ami() {
-    output=$(aws ec2 describe-images --image-ids "$1" --query 'Images')
-    if [ -z "$output" ]; then
-        return 1
-    else
-        return 0
-    fi
-}
-
-show_install_options
-get_user_choice
 
 (check_default_vpc) & show_loader "Checking if default VPC exist or not"
 
