@@ -68,7 +68,8 @@ show_install_options() {
     echo
     echo "${bold}Choose the base image type:${reset}"
     echo "${bold}${blue}1.${reset}${green}Hardened base Amazon Linux ${reset}"
-    echo -e "${bold}${blue}2.${reset}${green}Normal Amazon Linux Image${reset}\n"
+    echo "${bold}${blue}2.${reset}${green}Normal Amazon Linux Image${reset}"
+    echo
 }
 show_install_options
 get_user_choice
