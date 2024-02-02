@@ -10,7 +10,6 @@ import { readFileSync } from "fs";
 import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
-import { HyperswitchSDKStack } from "./hs_sdk";
 import { LockerSetup } from "./card-vault/components";
 
 export class AWSStack extends cdk.Stack {
@@ -37,8 +36,8 @@ export class AWSStack extends cdk.Stack {
 
     let locker: LockerSetup | undefined;
     if (config.locker.master_key) {
-      locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket, true);
-      locker.node.addDependency(rds.bucket);
+      locker = new LockerSetup(this, vpc.vpc, config.locker);
+      locker.node.addDependency(rds);
     }
 
     let isStandalone = scope.node.tryGetContext("test") || false;

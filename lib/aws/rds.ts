@@ -29,7 +29,6 @@ export class DataBaseConstruct {
   sg: SecurityGroup;
   db_cluster: DatabaseCluster;
   password: string;
-  bucket: cdk.aws_s3.Bucket;
 
   constructor(scope: Construct, rds_config: RDSConfig, vpc: Vpc) {
     const engine = DatabaseClusterEngine.auroraPostgres({
@@ -57,21 +56,6 @@ export class DataBaseConstruct {
         password: SecretValue.unsafePlainText(rds_config.password),
       },
     });
-
-    const schemaBucket = new Bucket(scope, "SchemaBucket", {
-      removalPolicy: RemovalPolicy.DESTROY,
-      blockPublicAccess: new s3.BlockPublicAccess({
-        blockPublicAcls: false,
-      }),
-      publicReadAccess: true,
-      autoDeleteObjects: true,
-      bucketName:
-        "hyperswitch-schema-" +
-        cdk.Aws.ACCOUNT_ID + "-" +
-        process.env.CDK_DEFAULT_REGION
-    });
-
-    this.bucket = schemaBucket;
 
     this.password = rds_config.password;
 
@@ -105,12 +89,6 @@ export class DataBaseConstruct {
     db_cluster.connections.allowFromAnyIpv4(Port.tcp(rds_config.port));
 
     this.db_cluster = db_cluster;
-
-    // new triggers.Trigger(scope, "initializeUploadTrigger", {
-    //   handler: initializeUploadFunction,
-    //   timeout: Duration.minutes(15),
-    //   invocationType: triggers.InvocationType.EVENT,
-    // }).executeBefore();
 
     }
 
