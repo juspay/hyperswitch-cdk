@@ -6,7 +6,7 @@ export class EC2Instance {
     private readonly instance: ec2.Instance;
     sg: ec2.SecurityGroup;
 
-    constructor(scope: Construct , vpc: ec2.Vpc,  config: EC2Config ) {
+    constructor(scope: Construct , vpc: ec2.Vpc,  config: EC2Config, executeAfter?: ec2.Instance ) {
         let id = config.id;
         let sg;
         let keyName;
@@ -18,7 +18,7 @@ export class EC2Instance {
             sg = new ec2.SecurityGroup(scope, sg_id, {
                 securityGroupName: sg_id,
                 vpc: vpc,
-                allowAllOutbound: false,
+                allowAllOutbound: true,
             });
         }
         this.sg = sg;
@@ -33,7 +33,6 @@ export class EC2Instance {
             keyName = awsKeyPair.keyName;
         }
 
-
         this.instance = new ec2.Instance(scope, id, {
             vpc,
             keyName: keyName,
@@ -45,6 +44,10 @@ export class EC2Instance {
             ssmSessionPermissions: config.ssmSessionPermissions,
             associatePublicIpAddress: config.associatePublicIpAddress,
         });
+
+        if (executeAfter){
+            this.instance.node.addDependency(executeAfter);
+        }
 
         // make this identifier name to be 'StandaloneUrl' - refer to install.sh
         // new cdk.CfnOutput(scope, '', {

@@ -41,6 +41,7 @@ export class AWSStack extends cdk.Stack {
 
     let isStandalone = scope.node.tryGetContext("test") || false;
     if (isStandalone) {
+      // Deploying Router and Control center application in a single EC2 instance
       let hyperswitch_ec2 = new EC2Instance(
         this,
         vpc.vpc,
@@ -50,14 +51,55 @@ export class AWSStack extends cdk.Stack {
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
-      hyperswitch_ec2.sg.addIngressRule(
+      hyperswitch_ec2.sg.addIngressRule( // To access the Router
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(80),
       );
-      hyperswitch_ec2.sg.addIngressRule(
+      hyperswitch_ec2.sg.addIngressRule( // To access the Control Center
+        ec2.Peer.ipv4("0.0.0.0/0"),
+        ec2.Port.tcp(9000),
+      );
+      hyperswitch_ec2.sg.addIngressRule( // To SSH into the instance
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
+
+      // Deploying SDK and Demo app in a single EC2 instance
+      let hyperswitch_sdk_ec2 = new EC2Instance(
+        this,
+        vpc.vpc,
+        get_standalone_sdk_ec2_config(config, hyperswitch_ec2),
+        hyperswitch_ec2.getInstance(),
+      );
+
+      // create an security group for the SDK and add rules to access the router and demo app with port 1234 after the hyperswitch_sdk_ec2 is created
+      hyperswitch_sdk_ec2.sg.addIngressRule( // To access the SDK
+        ec2.Peer.ipv4("0.0.0.0/0"),
+        ec2.Port.tcp(9090),
+      );
+      hyperswitch_sdk_ec2.sg.addIngressRule( // To Access Demo APP
+        ec2.Peer.ipv4("0.0.0.0/0"),
+        ec2.Port.tcp(5252),
+      );
+      hyperswitch_sdk_ec2.sg.addIngressRule( // To SSH into the instance
+        ec2.Peer.ipv4("0.0.0.0/0"),
+        ec2.Port.tcp(22),
+      );
+
+      new cdk.CfnOutput(this, "router url", {
+        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + "/health"
+      });
+      new cdk.CfnOutput(this, "control_center", {
+        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + ":9000" + "\nFor login, use email id as 'itisatest@gmail.com' and password is test1234"
+      });
+      new cdk.CfnOutput(this, "sdk assets link", {
+        value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":9090"
+      });
+      new cdk.CfnOutput(this, "demo app", {
+        value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":5252"
+      });
+
+
     } else {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
@@ -122,17 +164,36 @@ function update_config(config: Config, db_host: string, redis_host: string) {
 
 function get_standalone_ec2_config(config: Config) {
   let customData = readFileSync("lib/aws/userdata.sh", "utf8")
-    .replace("{{redis_host}}", config.hyperswitch_ec2.redis_host)
+    .replaceAll("{{redis_host}}", config.hyperswitch_ec2.redis_host)
     .replaceAll("{{db_host}}", config.hyperswitch_ec2.db_host)
-    .replace("{{password}}", config.rds.password)
-    .replace("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
-    .replace("{{db_username}}", config.rds.db_user)
-    .replace("{{db_name}}", config.rds.db_name);
+    .replaceAll("{{password}}", config.rds.password)
+    .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
+    .replaceAll("{{db_username}}", config.rds.db_user)
+    .replaceAll("{{db_name}}", config.rds.db_name);
   let ec2_config: EC2Config = {
-    id: "hyperswitch_standalone_ec2",
+    id: "hyperswitch_standalone_app_cc_ec2",
     instanceType: ec2.InstanceType.of(
-      ec2.InstanceClass.T3,
-      ec2.InstanceSize.MEDIUM,
+      ec2.InstanceClass.T2,
+      ec2.InstanceSize.MICRO,
+    ),
+    machineImage: new ec2.AmazonLinuxImage(),
+    vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+    userData: ec2.UserData.custom(customData),
+  };
+  return ec2_config;
+}
+
+function get_standalone_sdk_ec2_config(config: Config, hyperswitch_ec2: EC2Instance) {
+  let customData = readFileSync("lib/aws/sdk_userdata.sh", "utf8")
+    .replaceAll("{{router_host}}", hyperswitch_ec2.getInstance().instancePublicIp)
+    .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
+    .replaceAll("{{version}}", "0.16.7")
+    .replaceAll("{{sub_version}}", "v0");
+  let ec2_config: EC2Config = {
+    id: "hyperswitch_standalone_sdk_demo_ec2",
+    instanceType: ec2.InstanceType.of(
+      ec2.InstanceClass.T2,
+      ec2.InstanceSize.MICRO,
     ),
     machineImage: new ec2.AmazonLinuxImage(),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
