@@ -7,6 +7,7 @@ export class Configuration {
   constructor(scope: Construct) {
     let db_pass = scope.node.tryGetContext('db_pass') || "dbpassword";
     let admin_api_key = scope.node.tryGetContext('admin_api_key') || "test_admin"
+    let master_key = scope.node.tryGetContext('master_enc_key')
     let config: Config = {
       stack: {
         name: "hyperswitch",
@@ -14,7 +15,7 @@ export class Configuration {
       },
       vpc: {
         name: "hyperswitch-vpc",
-        availabilityZones: [process.env.CDK_DEFAULT_REGION + "a", process.env.CDK_DEFAULT_REGION + "b"]
+        maxAzs: 2,
       },
       subnet: {
         public: {
@@ -40,6 +41,7 @@ export class Configuration {
         admin_api_key: admin_api_key,
         redis_host: "",
         db_host: "",
+        master_enc_key: master_key
       },
       locker: {
         master_key: scope.node.tryGetContext('master_key'),

@@ -1,90 +1,451 @@
+#! /usr/bin/env bash
+
+# Setting up color and style variables
+bold=$(tput bold)
+blue=$(tput setaf 4)
+green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+red=$(tput setaf 1)
+reset=$(tput sgr0)
+white=$(tput setaf 7)
+term_width=$(tput cols)
+box_width=60
+padding="$(printf '%*s' $(( (term_width - box_width) / 2 )) '')"
+box_line="$(printf '%*s' $box_width '')"
+box_line="${box_line// /-}"
+
+# Checking for AWS credentials
+if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
+    display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
+    exit 1
+fi
+# Function to display error messages in red
+display_error() {
+    echo "${bold}${red}$1${reset}"
+}
+
+echo
+echo "${green}##########################################${reset}"
+echo "${green}       Installing Dependencies${reset}"
+echo "${green}##########################################${reset}"
+echo
+# Function to display a simple loading animation
+show_loader() {
+    local message=$1
+    local pid=$!
+    local delay=0.3
+    local spinstr='|/-\\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf "\r%s [%c]  " "$message" "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+    done
+    printf "\r%s [Done]   \n" "$message"
+}
+
+# Check for Node.js
+echo "Checking for Node.js..."
+if ! command -v node &> /dev/null; then
+    echo "Node.js could not be found. Please install node js 18 or above."
+    exit 1
+fi
+
+# Verify Node.js version
+version=$(node -v | cut -d'.' -f1 | tr -d 'v')
+if [ "$version" -lt 18 ]; then
+    echo "Invalid Node.js version. Expected 18 or above, but got $version."
+    exit 1
+fi
+echo "Node.js version is valid."
+
+
+# Install AWS CDK
+echo "Installing AWS CDK..."
+npm install -g aws-cdk & show_loader "Installing AWS CDK..."
+echo "AWS CDK is installed successfully."
+
+# Check for AWS CDK
+if ! command -v cdk &> /dev/null; then
+    echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
+    exit 1
+fi
+
+# Determine OS and run respective dependency script
+os=$(uname)
+case "$os" in
+  "Linux")
+    echo "Detecting operating system: Linux"
+    (bash linux_deps.sh & show_loader "Running Linux dependencies script...")
+    ;;
+  "Darwin")
+    echo "Detecting operating system: macOS"
+    (bash mac_deps.sh & show_loader "Running macOS dependencies script...")
+    ;;
+  *)
+    echo "Unsupported operating system."
+    exit 1
+    ;;
+esac
+
+# Check if AWS CLI installation was successful
+if ! command -v aws &> /dev/null; then
+    echo "AWS CLI could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the $PATH"
+    exit 1
+fi
+
+echo "Dependency installation completed."
+
+
+fetch_details(){
+    # Trying to retrieve AWS account owner's details
+    if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
+        display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
+        display_error "Check if your AWS credentials are expired and you have appropriate permissions."
+        exit 1
+    fi
+
+    # Extracting and displaying account details
+    AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
+    AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
+    AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
+    AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
+}
+
+show_loader "Fetching AWS account details" &
+fetch_details
+
+# Waiting for the fetch_details background process to complete
+wait
+
+# Check if fetch_details exited with an error
+if [ $? -ne 0 ]; then
+    echo "Error fetching AWS details. Exiting script."
+    exit 1
+fi
+
+# Function to print a line with padding
+print_line() {
+    echo "${padding}${blue}${white}$1${reset}"
+}
+
+# Displaying AWS account information in a "box"
+echo "${padding}${box_line}"
+echo
+print_line "${bold}AWS Account Information:${reset}"
+echo
+print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
+print_line "User ID: ${bold}$AWS_USER_ID${reset}"
+print_line "Role: ${bold}$AWS_ROLE${reset}"
+echo
+echo "${padding}${box_line}"
+
+
+echo
+# Ask consent to proceed with the aws account
+while true; do
+    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
+    case $yn in
+        [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
+        [Nn]* ) echo "Exiting..."; exit;;
+        * ) echo "Please answer yes or no [y/n].";;
+    esac
+done
+
+# Function to display the header
+echo "Checking dependencies..."
+
+# Check for Node.js
+if ! command -v node &> /dev/null; then
+    echo "Node.js could not be found. Please install node js 18 or above."
+    exit 1
+fi
+
+# Verify Node.js version
+version=$(node -v | cut -d'.' -f1 | tr -d 'v')
+if [ "$version" -lt 18 ]; then
+    echo "Invalid Node.js version. Expected 18 or above, but got $version."
+    exit 1
+fi
+echo "Node.js version is valid."
+
+# Function to display the header
+display_header() {
+    print_line "###########################################"
+    print_line " Welcome to Hyperswitch Services Installer"
+    print_line "###########################################"
+}
+
+# Function to list available services
+list_services() {
+    print_line "Hyperswitch Services Available for Installation:"
+    print_line "${green}1. Backend Services"
+    print_line "${green}2. Demo Store"
+    print_line "${green}3. Control Center"
+    print_line "${green}4. Card Vault"
+    print_line "${green}5. SDK"
+}
+
+INSTALLATION_MODE=1
+# Function to show installation options
+show_install_options() {
+    echo
+    echo "${bold}Choose an installation option:${reset}"
+    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Under Development, Stay Tuned!${reset}"
+    echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
+}
+
+# Function to read user input until a valid choice is made
+get_user_choice() {
+    while true; do
+        read -r -p "Enter your choice [1-2]: " INSTALLATION_MODE
+        case $INSTALLATION_MODE in
+            1) echo "Free Tier option selected."; break;;
+            2) echo "Production Ready option selected."; break;;
+            *) echo "Invalid choice. Please enter 1 or 2.";;
+        esac
+    done
+}
+
+clear
+display_header
+echo
+print_line "This installer will guide you through setting up Hyperswitch services on your AWS account."
+list_services
+echo
+show_install_options
+get_user_choice
+
+check_if_element_is_preset_in_array() {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
+if [[ -z "$AWS_DEFAULT_REGION" ]]; then
+    echo "Please enter the AWS region to deploy the services: "
+    read -r AWS_DEFAULT_REGION
+else
+    echo "Please enter the AWS region to deploy the services (Press enter to continue with the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
+    read -r input_region
+    if [[ -n "$input_region" ]]; then
+        AWS_DEFAULT_REGION=$input_region
+    fi
+fi
+
+# Prompt for region and check if it's enabled
+while true; do
+
+  AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
+
+  if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
+    display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
+    display_error "Contact your AWS administrator to obtain the necessary permissions."
+    exit 1
+  elif [[ $AVAILABLE_REGIONS_JSON == *"supported format"* ]]; then
+    display_error "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
+  else
+    # Convert the region list into an array
+    AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
+
+    # Check if AWS_DEFAULT_REGION is in the list of available regions
+    if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then
+      echo "Region $AWS_DEFAULT_REGION is enabled for your account."
+      break
+    else
+      display_error "Error: Region $AWS_DEFAULT_REGION is not enabled for your account or invalid region code."
+    fi
+  fi
+
+  # Prompt for region again
+  echo "Please enter the AWS region to deploy the services: "
+  read -r AWS_DEFAULT_REGION
+
+done
+
 export LOG_FILE="cdk.services.log"
 function echoLog() {
   echo "$1" | tee -a $LOG_FILE
 }
-function isValidPass() {
-  if [[ ! $1 =~ ^([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]){7,}$ ]]; then
-    echo "Error: Input does not match the pattern [A-Z][a-z][0-9] and should have at least 8 characters and start with alphabet."
+
+echo
+echo "${blue}##########################################${reset}"
+echo "${blue}    Checking neccessary permissions${reset}"
+echo "${blue}##########################################${reset}"
+echo
+
+check_root_user() {
+  AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
+  if [[ $AWS_ARN == *":root"* ]]; then
+    echo "ROOT user is not recommended. Please create a new user with AdministratorAccess and use their Access Token."
     exit 1
   fi
 }
 
-echo "##########################################\nInstalling dependencies\n##########################################"
-# Install dependencies
-if ! command -v node &> /dev/null
-then
-    echo "node could not be found. Please install Node.js 18 or above."
-    exit 1
-fi
-version=$(node -v | cut -d'.' -f1 | tr -d 'v')
-if [ "$version" -lt 18 ]
-then
-  echo "Invalid Node.js version. Expected 18 or above, but got $version."
-  exit 1
-fi
-if aws --version; then
-  echo "##########################################\nAWS CLI Installed\n##########################################"
-else
-  curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-  sudo installer -pkg AWSCLIV2.pkg -target /
-fi
-if ! command -v aws &> /dev/null
-then
-    echo "AWS CLI could not be found. Please rerun \`sh install.sh\` with Sudo access"
-    exit 1
-fi
-npm install -g aws-cdk
-if ! command -v cdk &> /dev/null
-then
-    echo "AWS CDK could not be found. Please rerun \`sh install.sh\` with Sudo access"
-    exit 1
-fi
-cdk --version
-os=$(uname)
-if [ "$os" = "Linux" ]; then
-  sh linux_deps.sh
-elif [ "$os" = "Darwin" ]; then
-  sh mac_deps.sh
-else
-  echo "Unsupported operating system."
-  exit 1
-fi
+REQUIRED_POLICIES=("AdministratorAccess") # Add other necessary policies to this array
+# Check if the current user is a root user
+echo "Verifying that you're not using the AWS root account..."
+echo "(For security reasons, it's best to avoid using the root account.)"
+(check_root_user) & show_loader "Verifying root user status"
 
-AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
-if [[ $AWS_ARN == *":root"* ]]; then
-  echo "ROOT user is not recommended. Please create new user with AdministratorAccess and use their Access Token"
-  exit 1
-fi
-echo "##########################################"
-# Read the DB Password and Admin API Key
-echo "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9]): "
-read -s DB_PASS
-isValidPass $DB_PASS
-echo "Please configure the Admin api key (Required to access Hyperswitch APIs): "
-read -s ADMIN_API_KEY
-echo "$(tput bold)$(tput setaf 1)If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it$(tput sgr0)"
-echo "$(tput bold)$(tput setaf 3)To generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)$(tput sgr0)"
-echo "$(tput bold)$(tput setaf 3)If you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)$(tput sgr0)"
+check_iam_policies() {
+  USER_POLICIES=$(aws iam list-attached-role-policies --role-name "$AWS_ROLE" --output json | jq -r '.AttachedPolicies[].PolicyName')
+  for policy in "${REQUIRED_POLICIES[@]}"; do
+    if ! echo "$USER_POLICIES" | grep -q "$policy"; then
+      echo "Required policy $policy is not attached to your user. Please attach this policy."
+      exit 1
+    fi
+  done
+  echo "All necessary permissions are in place."
+}
 
-echo "Please input the encrypted master key (optional): "
-read -s MASTER_KEY
+# Check for specific IAM policies
+echo "Checking for necessary IAM policies..."
+(check_iam_policies) & show_loader "Verifying IAM policies"
+
+echo
+echo "${blue}##########################################${reset}"
+echo "${blue} Configure Credentials of the Application ${reset}"
+echo "${blue}##########################################${reset}"
+echo
+
+
+validate_password() {
+    local password=$1
+
+    # Check length (at least 8 characters)
+    if [[ ${#password} -lt 8 ]]; then
+        display_error "Error: Password must be at least 8 characters."
+        return 1
+    fi
+
+    # Check if it starts with an alphabet
+    if [[ ! $password =~ ^[A-Za-z] ]]; then
+        display_error "Error: Password must start with a letter."
+        return 1
+    fi
+
+    # Check for at least one uppercase letter and one lowercase letter
+    if [[ ! $password =~ [A-Z] || ! $password =~ [a-z] ]]; then
+        display_error "Error: Password must include at least one uppercase and one lowercase letter."
+        return 1
+    fi
+
+    # Check for at least one digit
+    if [[ ! $password =~ [0-9] ]]; then
+        display_error "Error: Password must include at least one digit."
+        return 1
+    fi
+
+    # Check for forbidden special characters
+    if [[ $password =~ [^A-Za-z0-9] ]]; then
+        display_error "Error: Password cannot include special characters."
+        return 1
+    fi
+
+    # read password again to confirm
+    echo "Please re-enter the password: "
+    read -r -s password_confirm
+    if [[ "$password" != "$password_confirm" ]]; then
+        display_error "Error: Passwords do not match."
+        return 1
+    fi
+
+    return 0
+}
+
+# Prompt for DB Password
+while true; do
+    echo "Please enter the password for your RDS instance (Minimum 8 characters; includes [A-Z], [a-z], [0-9]): "
+    read -r -s DB_PASS
+    if validate_password "$DB_PASS"; then
+        break
+    fi
+done
+
+validate_master_key() {
+    if [[ ! $1 =~ ^[0-9a-fA-F]{64}$ ]]; then
+        display_error "Error: Input is not AES256 compatible please enter a 32 bit (64 characters) key"
+        return 1
+    fi
+    return 0
+}
+
+#Prompt for Master Key
+while true; do
+    echo "Please enter the master AES256 encryption key to encrypt the PII data in the database; 32 bit(64 characters)"
+    read -s MASTER_ENC_KEY
+    if validate_master_key "$MASTER_ENC_KEY"; then
+        break
+    fi
+done
+
+validate_api_key() {
+    local api_key=$1
+
+    if [[ ! $api_key =~ ^[A-Za-z0-9_]{8,}$ ]]; then
+        display_error "Error: API Key must be at least 8 characters long and can include letters, numbers, and underscores."
+        return 1
+    fi
+
+    # read api_key again to confirm
+    echo "Please re-enter the api-key: "
+    read -r -s api_key_confirm
+    if [[ "$api_key" != "$api_key_confirm" ]]; then
+        display_error "Error: Api Keys do not match."
+        return 1
+    fi
+    return 0
+}
+
+# Prompt for Admin API Key
+while true; do
+    echo "Please enter the Admin API key (required to access Hyperswitch APIs): "
+    read -r -s ADMIN_API_KEY
+    if validate_api_key "$ADMIN_API_KEY"; then
+        break
+    fi
+done
+
+
+if [[ "$INSTALLATION_MODE" == 2 ]]; then
+
+echo "Do you want to deploy the Card Vault? [y/n]: "
+read -r CARD_VAULT
+
 LOCKER=""
-if [[ -n "$MASTER_KEY" ]]; then
+if [[ "$CARD_VAULT" == "y" ]]; then
+  # Instructions for Card Vault Master Key
+  echo "${bold}${red}If you require the Card Vault, create a master key as described below.${reset}"
+  echo "${bold}${yellow}To generate the master key, use the utility at: https://github.com/juspay/hyperswitch-card-vault${reset}"
+  echo "${bold}${yellow}With cargo installed, run: cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin${reset}"
+
+  # Prompt for Encrypted Master Key
+  echo "Enter your encrypted master key:"
+  read -r -s MASTER_KEY
   LOCKER+="-c master_key=$MASTER_KEY "
-  echo "Please enter the database password to be used for locker: "
-  read -s LOCKER_DB_PASS
-  isValidPass $LOCKER_DB_PASS
+  # Prompt for Locker DB Password
+  while true; do
+      echo "Please enter the password for your RDS instance (Minimum 8 characters; includes [A-Z], [a-z], [0-9]): "
+      read -r -s LOCKER_DB_PASS
+      if validate_password "$LOCKER_DB_PASS"; then
+          break
+      fi
+  done
   LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
 fi
-echo "##########################################\nDeploying Hyperswitch Services\n##########################################"
+
+echo "${blue}#########################################${reset}"
+echo "${blue}      Deploying Hyperswitch Services${reset}"
+echo "${blue}#########################################${reset}"
 # Deploy the EKS Cluster
-AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
 npm install
-cdk bootstrap aws://$AWS_ACCOUNT/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
-if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN $LOCKER ; then
+cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
+if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
   echo `aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability`
-  aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name hs-eks-cluster
+  aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
   # Deploy Load balancer and Ingress
   echo "##########################################"
   sleep 10
@@ -93,6 +454,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
+
   # Deploy the hyperswitch application with the load balancer host name
   helm repo add hs https://juspay.github.io/hyperswitch-helm
   export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
@@ -114,27 +476,42 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   --header 'Accept: application/json' \
   --header 'api-key: '$ADMIN_API_KEY \
   --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}' )
-  echo "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
+  printf "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
   helm get values -n hyperswitch hypers-v1 > values.yaml
   helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
   sleep 240
-  export BOLD=$(tput bold)
-  export BLUE=$(tput setaf 4)
-  export GREEN=$(tput setaf 2)
-  export YELLOW=$(tput setaf 3)
-  export RESET=$(tput sgr0)
   echoLog "--------------------------------------------------------------------------------"
-  echoLog "$BOLD Service                           Host$RESET"
+  echoLog "$bold Service                           Host$reset"
   echoLog "--------------------------------------------------------------------------------"
-  echoLog "$GREEN HyperloaderJS Hosted at           $BLUE"$SDK_URL/HyperLoader.js"$RESET"
-  echoLog "$GREEN App server running on             $BLUE"http://$APP_HOST"$RESET"
-  echoLog "$GREEN Logs server running on            $BLUE"http://$LOGS_HOST"$RESET, Login with $YELLOW username: admin, password: admin$RESET , Please change on startup"
-  echoLog "$GREEN Control center server running on  $BLUE"http://$CONTROL_CENTER_HOST"$RESET, Login with $YELLOW Email: test@gmail.com, password: admin$RESET , Please change on startup"
-  echoLog "$GREEN Hyperswitch Demo Store running on $BLUE"http://$SDK_HOST"$RESET"
+  echoLog "$green HyperloaderJS Hosted at           $blue"$SDK_URL/HyperLoader.js"$reset"
+  echoLog "$green App server running on             $blue"http://$APP_HOST"$reset"
+  echoLog "$green Logs server running on            $blue"http://$LOGS_HOST"$reset, Login with $YELLOW username: admin, password: admin$reset , Please change on startup"
+  echoLog "$green Control center server running on  $blue"http://$CONTROL_CENTER_HOST"$reset, Login with $YELLOW Email: test@gmail.com, password: admin$reset , Please change on startup"
+  echoLog "$green Hyperswitch Demo Store running on $blue"http://$SDK_HOST"$reset"
   echoLog "--------------------------------------------------------------------------------"
   echoLog "##########################################"
-  echo "$BLUE Please run 'cat cdk.services.log' to view the services details again"$RESET
+  echo "$blue Please run 'cat cdk.services.log' to view the services details again"$reset
   exit 0
 else
   aws cloudformation delete-stack --stack-name CDKToolkit
+fi
+
+else
+
+echo "${blue}#########################################${reset}"
+echo "${blue}      Deploying Hyperswitch Services${reset}"
+echo "${blue}#########################################${reset}"
+echo
+echo "Hyperswitch is being deployed in standalone mode. Please wait for the deployment to complete."
+
+npm install
+cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
+if cdk deploy --require-approval never -c test=true ; then
+  STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneUrl'].OutputValue" --output text)
+  echoLog "--------------------------------------------------------------------------------"
+  echoLog "$bold EC2 Instance IP Host                          $blue"$STANDALONE_HOST"$reset"
+  echoLog "--------------------------------------------------------------------------------"
+else
+  aws cloudformation delete-stack --stack-name CDKToolkit
+fi
 fi
