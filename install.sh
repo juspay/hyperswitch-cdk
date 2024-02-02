@@ -272,7 +272,7 @@ function echoLog() {
 echo
 echo "${blue}##########################################${reset}"
 echo "${blue}    Checking neccessary permissions${reset}"
-echo "${blue}##########################################${reset}\n"
+echo "${blue}##########################################${reset}"
 echo
 
 check_root_user() {
