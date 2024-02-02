@@ -1,15 +1,41 @@
-# HyperSwitch Full Stack Deployment
+# HyperSwitch Full Stack Deployment Guide
 
-This project contains a script for deploying a full stack of HyperSwitch on AWS using the AWS Cloud Development Kit (CDK). The components installed by this script include:
+This guide outlines the process for deploying a comprehensive HyperSwitch stack on AWS, leveraging the power and flexibility of the AWS Cloud Development Kit (CDK). Follow our step-by-step [installation instructions](#installation) to get HyperSwitch up and running efficiently.
 
-- App Server
-- Scheduler Services
-- Admin Control Center
-- Demo App with SDK Integration
-- Card Vault
-- Monitoring Services
-- Automatically build and host SDK (Hyperloader.js)
-- Jump Servers
+## Table of Contents
+- [Installation](#installation)
+- [App Server](#app-server)
+- [Scheduler Services](#scheduler-services)
+- [Admin Control Center](#admin-control-center)
+- [Demo App with SDK Integration](#demo-app-with-sdk-integration)
+- [Card Vault](#card-vault)
+- [Monitoring Services](#monitoring-services)
+- [Automatically Build and Host SDK (Hyperloader.js)](#automatically-build-and-host-sdk)
+- [Jump Servers](#jump-servers)
+
+### App Server
+The cornerstone of the HyperSwitch architecture, the App Server facilitates backend operations. Built in Rust, HyperSwitch is an innovative, open-source payment switch offering a unified API for global payment ecosystem access in over 130 countries. [Learn more](https://github.com/juspay/hyperswitch).
+
+### Scheduler Services
+These services are responsible for the scheduling and execution of tasks, ensuring timely operations across the HyperSwitch stack.
+
+### Admin Control Center
+Manage and monitor your HyperSwitch environment with ease using the Admin Control Center, a unified dashboard for comprehensive control. [Learn more](https://github.com/juspay/hyperswitch-control-center).
+
+### Demo App with SDK Integration
+Explore the capabilities of HyperSwitch through our Demo App, which demonstrates the seamless integration of the HyperSwitch SDK.
+
+### Card Vault
+Our Card Vault provides a secure repository for storing sensitive card information, ensuring data safety and compliance.
+
+### Monitoring Services
+Dedicated to maintaining the health and performance of the HyperSwitch stack, these services ensure your system remains robust and reliable.
+
+### Automatically Build and Host SDK (Hyperloader.js)
+Hyperloader.js simplifies SDK deployment, offering automatic build and hosting capabilities for the HyperSwitch SDK. [Learn more](https://github.com/juspay/hyperswitch-web)
+
+### Jump Servers
+Enhance your security posture with Jump Servers, designed to provide secure access to the HyperSwitch stack.
 
 ## Installation
 
@@ -38,6 +64,7 @@ Before you can use this script, you need to have the following installed:
 
 - Git
 - Node.js and npm
+- AWS account with Administrator access
 
 You also need to have an AWS account and configure your AWS credentials.
 
@@ -62,11 +89,15 @@ export AWS_SESSION_TOKEN="<Your AWS_SESSION_TOKEN>" //optional
 
     <details>
       <summary><b>Install all the services provided by hyperswitch</b></summary>
-      <pre>sh install.sh</pre>
+      <pre>bash install.sh</pre>
     </details>
     <details>
       <summary><b>Install only card vault as a seperate service</b></summary>
-      <pre>sh install-locker.sh</pre>
+      <pre>bash install-locker.sh</pre>
+    </details>
+    <details>
+      <summary><b>Install only Image builder as a seperate service</b></summary>
+      <pre>bash deploy_imagebuilder.sh</pre>
     </details>
     <details>
       <summary><b>Standalone deployment script to deploy Hyperswitch on AWS quickly</b></summary>
@@ -109,44 +140,3 @@ For more information about each component and the full stack deployment, please 
 ### Support
 
 If you encounter any issues or need further assistance, please create an issue in this repository.
-
-### Todo
-
-- [ ] Networking
-  - [x] VPC
-  - [ ] Subnets
-  - [ ] NAT
-  - [ ] Route Table
-  - [ ] IGW
-- [ ] Load Balancers
-- [ ] Auto Scaling Groups
-- [ ] Launch Templates
-- [ ] RDS
-- [ ] ElastiCache
-- [ ] S3
-- [ ] EKS
-- [ ] Service Endpoints
-
-### Decisions
-
-- [ ] How should we have the subnet distribution?
-  1. Similar to how we currently have in production
-
-### Subnet design
-
-We can consist of 4 Subnets
-
-1. Public Incoming - (consisting of 1 subnet per AZ)
-2. DMZ - (consisting of 1 subnet per AZ) (non-public)
-3. Application - (consisting of 1 subnet per AZ) (isolated)
-4. Storage Layer - (consisting of 1 subnet per AZ) (isolated)
-5. Outbound - (consisting of 1 subnet per AZ) (connected to igw)
-
-#### Structure
-
-- api-public (exist in 1)
-- envoy (exist in 2)
-- external jump (exists in 2)
-- EKS exists in (3)
-- Internal Jump (3)
-- squid (4)
