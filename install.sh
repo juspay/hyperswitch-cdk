@@ -14,164 +14,20 @@ padding="$(printf '%*s' $(( (term_width - box_width) / 2 )) '')"
 box_line="$(printf '%*s' $box_width '')"
 box_line="${box_line// /-}"
 
+# Checking for AWS credentials
+if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
+    display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
+    exit 1
+fi
 # Function to display error messages in red
 display_error() {
     echo "${bold}${red}$1${reset}"
 }
 
-# Checking for AWS credentials
-if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
-    display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
-    exit 1
-else
-    echo "${bold}${green}AWS credentials detected successfully.${reset}"
-fi
-
-# Trying to retrieve AWS account owner's details
-if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
-    display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
-    display_error "Check if your AWS credentials are expired and you have appropriate permissions."
-    exit 1
-fi
-
-# Extracting and displaying account details
-AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
-AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
-AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
-AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
-
-# Function to print a line with padding
-print_line() {
-    echo "${padding}${blue}${white}$1${reset}"
-}
-
-# Displaying AWS account information in a "box"
-echo "${padding}${box_line}"
 echo
-print_line "${bold}AWS Account Information:${reset}"
-echo
-print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
-print_line "User ID: ${bold}$AWS_USER_ID${reset}"
-print_line "Role: ${bold}$AWS_ROLE${reset}"
-echo
-echo "${padding}${box_line}"
-
-
-echo
-# Ask consent to proceed with the aws account
-while true; do
-    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
-    case $yn in
-        [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
-        [Nn]* ) echo "Exiting..."; exit;;
-        * ) echo "Please answer yes or no [y/n].";;
-    esac
-done
-
-# Function to display the header
-display_header() {
-    print_line "###########################################"
-    print_line " Welcome to Hyperswitch Services Installer"
-    print_line "###########################################"
-}
-
-# Function to list available services
-list_services() {
-    print_line "Hyperswitch Services Available for Installation:"
-    print_line "${green}1. Backend Services"
-    print_line "${green}2. Demo Store"
-    print_line "${green}3. Control Center"
-    print_line "${green}4. Card Vault"
-    print_line "${green}5. SDK"
-}
-
-INSTALLATION_MODE=1
-# Function to show installation options
-show_install_options() {
-    echo
-    echo "${bold}Choose an installation option:${reset}"
-    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Under Development, Stay Tuned!${reset}"
-    echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
-}
-
-# Function to read user input until a valid choice is made
-get_user_choice() {
-    while true; do
-        read -r -p "Enter your choice [1-2]: " INSTALLATION_MODE
-        case $INSTALLATION_MODE in
-            1) echo "Free Tier option selected."; break;;
-            2) echo "Production Ready option selected."; break;;
-            *) echo "Invalid choice. Please enter 1 or 2.";;
-        esac
-    done
-}
-
-clear
-display_header
-echo
-print_line "This installer will guide you through setting up Hyperswitch services on your AWS account."
-list_services
-echo
-show_install_options
-get_user_choice
-
-check_if_element_is_preset_in_array() {
-  local e match="$1"
-  shift
-  for e; do [[ "$e" == "$match" ]] && return 0; done
-  return 1
-}
-
-if [[ -z "$AWS_DEFAULT_REGION" ]]; then
-    echo "Please enter the AWS region to deploy the services: "
-    read -r AWS_DEFAULT_REGION
-else
-    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
-    read -r input_region
-    if [[ -n "$input_region" ]]; then
-        AWS_DEFAULT_REGION=$input_region
-    fi
-fi
-
-# Prompt for region and check if it's enabled
-while true; do
-
-  AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
-
-  if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
-    display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
-    display_error "Contact your AWS administrator to obtain the necessary permissions."
-    exit 1
-  elif [[ $AVAILABLE_REGIONS_JSON == *"supported format"* ]]; then
-    display_error "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
-  else
-    # Convert the region list into an array
-    AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
-
-    # Check if AWS_DEFAULT_REGION is in the list of available regions
-    if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then
-      echo "Region $AWS_DEFAULT_REGION is enabled for your account."
-      break
-    else
-      display_error "Error: Region $AWS_DEFAULT_REGION is not enabled for your account or invalid region code."
-    fi
-  fi
-
-  # Prompt for region again
-  echo "Please enter the AWS region to deploy the services: "
-  read -r AWS_DEFAULT_REGION
-
-done
-
-export LOG_FILE="cdk.services.log"
-function echoLog() {
-  echo "$1" | tee -a $LOG_FILE
-}
-
-echo
-echo "${blue}##########################################${reset}"
-echo "${blue}       Installing Dependencies${reset}"
-echo "${blue}##########################################${reset}"
+echo "${green}##########################################${reset}"
+echo "${green}       Installing Dependencies${reset}"
+echo "${green}##########################################${reset}"
 echo
 # Function to display a simple loading animation
 show_loader() {
@@ -240,10 +96,183 @@ fi
 
 echo "Dependency installation completed."
 
+
+fetch_details(){
+    # Trying to retrieve AWS account owner's details
+    if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
+        display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
+        display_error "Check if your AWS credentials are expired and you have appropriate permissions."
+        exit 1
+    fi
+
+    # Extracting and displaying account details
+    AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
+    AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
+    AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
+    AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
+}
+
+show_loader "Fetching AWS account details" &
+fetch_details
+
+# Waiting for the fetch_details background process to complete
+wait
+
+# Check if fetch_details exited with an error
+if [ $? -ne 0 ]; then
+    echo "Error fetching AWS details. Exiting script."
+    exit 1
+fi
+
+# Function to print a line with padding
+print_line() {
+    echo "${padding}${blue}${white}$1${reset}"
+}
+
+# Displaying AWS account information in a "box"
+echo "${padding}${box_line}"
+echo
+print_line "${bold}AWS Account Information:${reset}"
+echo
+print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
+print_line "User ID: ${bold}$AWS_USER_ID${reset}"
+print_line "Role: ${bold}$AWS_ROLE${reset}"
+echo
+echo "${padding}${box_line}"
+
+
+echo
+# Ask consent to proceed with the aws account
+while true; do
+    read -r -p "Do you want to proceed with the above AWS account? [y/n]: " yn
+    case $yn in
+        [Yy]* ) echo "Proceeding with AWS account $AWS_ACCOUNT_ID"; break;;
+        [Nn]* ) echo "Exiting..."; exit;;
+        * ) echo "Please answer yes or no [y/n].";;
+    esac
+done
+
+# Function to display the header
+echo "Checking dependencies..."
+
+# Check for Node.js
+if ! command -v node &> /dev/null; then
+    echo "Node.js could not be found. Please install node js 18 or above."
+    exit 1
+fi
+
+# Verify Node.js version
+version=$(node -v | cut -d'.' -f1 | tr -d 'v')
+if [ "$version" -lt 18 ]; then
+    echo "Invalid Node.js version. Expected 18 or above, but got $version."
+    exit 1
+fi
+echo "Node.js version is valid."
+
+# Function to display the header
+display_header() {
+    print_line "###########################################"
+    print_line " Welcome to Hyperswitch Services Installer"
+    print_line "###########################################"
+}
+
+# Function to list available services
+list_services() {
+    print_line "Hyperswitch Services Available for Installation:"
+    print_line "${green}1. Backend Services"
+    print_line "${green}2. Demo Store"
+    print_line "${green}3. Control Center"
+    print_line "${green}4. Card Vault"
+    print_line "${green}5. SDK"
+}
+
+INSTALLATION_MODE=1
+# Function to show installation options
+show_install_options() {
+    echo
+    echo "${bold}Choose an installation option:${reset}"
+    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Under Development, Stay Tuned!${reset}"
+    echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
+}
+
+# Function to read user input until a valid choice is made
+get_user_choice() {
+    while true; do
+        read -r -p "Enter your choice [1-2]: " INSTALLATION_MODE
+        case $INSTALLATION_MODE in
+            1) echo "Free Tier option selected."; break;;
+            2) echo "Production Ready option selected."; break;;
+            *) echo "Invalid choice. Please enter 1 or 2.";;
+        esac
+    done
+}
+
+clear
+display_header
+echo
+print_line "This installer will guide you through setting up Hyperswitch services on your AWS account."
+list_services
+echo
+show_install_options
+get_user_choice
+
+check_if_element_is_preset_in_array() {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
+if [[ -z "$AWS_DEFAULT_REGION" ]]; then
+    echo "Please enter the AWS region to deploy the services: "
+    read -r AWS_DEFAULT_REGION
+else
+    echo "Please enter the AWS region to deploy the services (Press enter to continue with the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
+    read -r input_region
+    if [[ -n "$input_region" ]]; then
+        AWS_DEFAULT_REGION=$input_region
+    fi
+fi
+
+# Prompt for region and check if it's enabled
+while true; do
+
+  AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
+
+  if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
+    display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
+    display_error "Contact your AWS administrator to obtain the necessary permissions."
+    exit 1
+  elif [[ $AVAILABLE_REGIONS_JSON == *"supported format"* ]]; then
+    display_error "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
+  else
+    # Convert the region list into an array
+    AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
+
+    # Check if AWS_DEFAULT_REGION is in the list of available regions
+    if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then
+      echo "Region $AWS_DEFAULT_REGION is enabled for your account."
+      break
+    else
+      display_error "Error: Region $AWS_DEFAULT_REGION is not enabled for your account or invalid region code."
+    fi
+  fi
+
+  # Prompt for region again
+  echo "Please enter the AWS region to deploy the services: "
+  read -r AWS_DEFAULT_REGION
+
+done
+
+export LOG_FILE="cdk.services.log"
+function echoLog() {
+  echo "$1" | tee -a $LOG_FILE
+}
+
 echo
 echo "${blue}##########################################${reset}"
 echo "${blue}    Checking neccessary permissions${reset}"
-echo "${blue}##########################################${reset}\n"
+echo "${blue}##########################################${reset}"
 echo
 
 check_root_user() {
