@@ -1,0 +1,22 @@
+name: InstallSquid
+description: This document installs Squid and Wazuh on top of Amazon Linux 2
+schemaVersion: 1.0
+
+phases:
+    - name: build
+      steps:
+        - name: InstallSquid
+          action: ExecuteBash
+          inputs:
+            commands:
+                - sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+                - sudo echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" >> /etc/yum.repos.d/wazuh.repo
+                - WAZUH_MANAGER="10.0.0.2" sudo yum install -y wazuh-agent
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable wazuh-agent
+                - sudo systemctl start wazuh-agent
+                - sudo sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
+                - sudo yum update -y
+                - sudo yum install -y squid
+                - sudo systemctl enable squid
+                - sudo systemctl start squid

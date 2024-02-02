@@ -15,7 +15,7 @@ export class Configuration {
       },
       vpc: {
         name: "hyperswitch-vpc",
-        availabilityZones: [process.env.CDK_DEFAULT_REGION + "a", process.env.CDK_DEFAULT_REGION + "b"]
+        maxAzs: 2,
       },
       subnet: {
         public: {

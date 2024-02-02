@@ -45,7 +45,7 @@ export class JusVault extends cdk.Stack {
     } else {
       const vpc = new Vpc(this, {
         name: "locker-standalone",
-        availabilityZones: [],
+        maxAzs: 2
       });
 
       this.vpc = vpc.vpc;
