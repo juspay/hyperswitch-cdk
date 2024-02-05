@@ -98,18 +98,18 @@ echo "Dependency installation completed."
 
 
 fetch_details(){
-    # Trying to retrieve AWS account owner's details
-    if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
-        display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
-        display_error "Check if your AWS credentials are expired and you have appropriate permissions."
-        exit 1
-    fi
+# Trying to retrieve AWS account owner's details
+if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
+    display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
+    display_error "Check if your AWS credentials are expired and you have appropriate permissions."
+    exit 1
+fi
 
-    # Extracting and displaying account details
-    AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
-    AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
-    AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
-    AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
+# Extracting and displaying account details
+AWS_ACCOUNT_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Account')
+AWS_USER_ID=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.UserId')
+AWS_ARN=$(echo "$AWS_ACCOUNT_DETAILS_JSON" | jq -r '.Arn')
+AWS_ROLE=$(aws sts get-caller-identity --query 'Arn' --output text | cut -d '/' -f 2)
 }
 
 show_loader "Fetching AWS account details" &
@@ -227,7 +227,7 @@ if [[ -z "$AWS_DEFAULT_REGION" ]]; then
     echo "Please enter the AWS region to deploy the services: "
     read -r AWS_DEFAULT_REGION
 else
-    echo "Please enter the AWS region to deploy the services (Press enter to continue with the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
+    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
     read -r input_region
     if [[ -n "$input_region" ]]; then
         AWS_DEFAULT_REGION=$input_region
@@ -363,23 +363,7 @@ while true; do
         break
     fi
 done
-
-validate_master_key() {
-    if [[ ! $1 =~ ^[0-9a-fA-F]{64}$ ]]; then
-        display_error "Error: Input is not AES256 compatible please enter a 32 bit (64 characters) key"
-        return 1
-    fi
-    return 0
-}
-
-#Prompt for Master Key
-while true; do
-    echo "Please enter the master AES256 encryption key to encrypt the PII data in the database; 32 bit(64 characters)"
-    read -s MASTER_ENC_KEY
-    if validate_master_key "$MASTER_ENC_KEY"; then
-        break
-    fi
-done
+MASTER_ENC_KEY=$(openssl enc -aes-256-cbc -k secret -P -md sha1 | grep 'key' | cut -d '=' -f 2)
 
 validate_api_key() {
     local api_key=$1
@@ -441,7 +425,13 @@ echo "${blue}      Deploying Hyperswitch Services${reset}"
 echo "${blue}#########################################${reset}"
 # Deploy the EKS Cluster
 npm install
-cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
+export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=true
+if ! cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN; then
+    BUCKET_NAME=cdk-hnb659fds-assets-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION
+    aws s3 rm s3://$BUCKET_NAME --recursive 
+    aws s3api delete-bucket --bucket $BUCKET_NAME
+    cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
+fi
 if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER ; then
   # Wait for the EKS Cluster to be deployed
   echo `aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability`
@@ -493,6 +483,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echo "$blue Please run 'cat cdk.services.log' to view the services details again"$reset
   exit 0
 else
+  echo "Deleting cloud formation. Please re-run `sh install.sh`"
   aws cloudformation delete-stack --stack-name CDKToolkit
 fi
 

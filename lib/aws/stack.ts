@@ -37,7 +37,6 @@ export class AWSStack extends cdk.Stack {
     let locker: LockerSetup | undefined;
     if (config.locker.master_key) {
       locker = new LockerSetup(this, vpc.vpc, config.locker);
-      locker.node.addDependency(rds);
     }
 
     let isStandalone = scope.node.tryGetContext("test") || false;
@@ -71,7 +70,10 @@ export class AWSStack extends cdk.Stack {
         this,
         config,
         vpc.vpc,
+        rds,
+        elasticache,
         config.hyperswitch_ec2.admin_api_key,
+        locker
       );
       if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));

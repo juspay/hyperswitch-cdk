@@ -25,10 +25,10 @@ export class EksStack {
     scope: Construct,
     config: Config,
     vpc: ec2.Vpc,
-    // rds: DataBaseConstruct,
-    // elasticache: ElasticacheStack,
+    rds: DataBaseConstruct,
+    elasticache: ElasticacheStack,
     admin_api_key: string,
-    // locker: LockerSetup | undefined,
+    locker: LockerSetup | undefined,
   ) {
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
@@ -281,6 +281,7 @@ export class EksStack {
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
       vpc: cluster.vpc,
       allowAllOutbound: false,
+      securityGroupName: "hs-loadbalancer-sg",
     });
 
     this.sg = cluster.clusterSecurityGroup;
@@ -312,263 +313,303 @@ export class EksStack {
       },
     });
 
-    // const hypersChart = cluster.addHelmChart("HyperswitchServices", {
-    //   chart: "hyperswitch-helm",
-    //   repository: "https://juspay.github.io/hyperswitch-helm",
-    //   namespace: "hyperswitch",
-    //   release: "hypers-v1",
-    //   wait: false,
-    //   values: {
-    //     clusterName: cluster.clusterName,
-    //     services: {
-    //         router: {
-    //           image: "juspaydotin/hyperswitch-router:v1.105.0",
-    //         },
-    //         producer: {
-    //           image: "juspaydotin/hyperswitch-producer:v1.105.0"
-    //         },
-    //         consumer: {
-    //             image: "juspaydotin/hyperswitch-consumer:v1.105.0"
-    //         }
-    //     },
-    //     application: {
-    //       server: {
-    //         serviceAccountAnnotations: {
-    //           "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
-    //         },
-    //         server_base_url: "https://sandbox.hyperswitch.io",
-    //         secrets: {
-    //           podAnnotations: {
-    //             traffic_sidecar_istio_io_excludeOutboundIPRanges:
-    //               "10.23.6.12/32",
-    //           },
-    //           kms_admin_api_key: kmsSecrets.kms_admin_api_key,
-    //           kms_jwt_secret: kmsSecrets.kms_jwt_secret,
-    //           kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
-    //           kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
-    //           kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
-    //           kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
-    //           kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
-    //           kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-    //           kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
-    //           kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
-    //           kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
-    //           kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
-    //           kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
-    //           kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
-    //           kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-    //           kms_key_id: kmsSecrets.kms_id,
-    //           kms_key_region: kmsSecrets.kms_region,
-    //           kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
-    //           admin_api_key: admin_api_key,
-    //           jwt_secret: "test_admin",
-    //           recon_admin_api_key: "test_admin",
-    //         },
-    //         master_enc_key: kmsSecrets.kms_encrypted_master_key,
-    //         locker: {
-    //           host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
-    //           locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
-    //           hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
-    //         },
-    //         basilisk: {
-    //           host: "basilisk-host",
-    //         },
-    //       },
-    //       dashboard: {
-    //         env: {
-    //           apiBaseUrl: "http://localhost:8080",
-    //           sdkBaseUrl: "http://localhost:8080",
-    //         },
-    //       },
-    //       sdk: {
-    //         image: "juspaydotin/hyperswitch-web:v1.0.4",
-    //         env: {
-    //           hyperswitchPublishableKey: "pk_test_123",
-    //           hyperswitchSecretKey: "sk_test_123",
-    //           hyperswitchServerUrl: "http://localhost:8080",
-    //           hyperSwitchClientUrl: "http://localhost:8080",
-    //         },
-    //       },
-    //     },
-    //     postgresql: {
-    //         enabled: false
-    //     },
-    //     externalPostgresql: {
-    //         enabled: true,
-    //         primary: {
-    //             host: rds.db_cluster.clusterEndpoint.hostname,
-    //             auth: {
-    //                 username: "db_user",
-    //                 database: "hyperswitch",
-    //                 password: kmsSecrets.kms_encrypted_db_pass,
-    //             },
-    //         },
-    //         replica: {
-    //             host: rds.db_cluster.clusterReadEndpoint.hostname,
-    //             auth: {
-    //                 username: "db_user",
-    //                 database: "hyperswitch",
-    //                 password: kmsSecrets.kms_encrypted_db_pass,
-    //             },
 
-    //         }
-    //     },
-    //     loadBalancer: {
-    //       targetSecurityGroup: lbSecurityGroup.securityGroupId,
-    //     },
-    //     redis: {
-    //         enabled: false
-    //     },
-    //     externalRedis: {
-    //       enabled: true,
-    //       host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-    //       port: 6379
-    //     },
-    //     autoscaling: {
-    //       enabled: true,
-    //       minReplicas: 3,
-    //       maxReplicas: 5,
-    //       targetCPUUtilizationPercentage: 80,
-    //     },
-    //   },
-    // });
+    cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 
-    // hypersChart.node.addDependency(albControllerChart);
+    nodegroupRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy'));
+    cluster.addServiceAccount('EbsCsiControllerSa', {
+      name: 'ebs-csi-controller-sa'+process.env.CDK_DEFAULT_REGION,
+      namespace: 'kube-system',
+      annotations: {
+        'eks.amazonaws.com/role-arn': nodegroupRole.roleArn
+      }
+    });
+    // Add EBS CSI driver
+    const ebsCsiDriver = cluster.addHelmChart('EbsCsiDriver', {
+      chart: 'aws-ebs-csi-driver',
+      repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
+      namespace: 'kube-system',
+      values: {
+        clusterName: cluster.clusterName,
+      },
+    });
 
-    // const conditions = new cdk.CfnJson(scope, "ConditionJson", {
-    //   value: {
-    //     [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
-    //     [`${provider.openIdConnectProviderIssuer}:sub`]:
-    //       "system:serviceaccount:hyperswitch:loki-grafana",
-    //   },
-    // });
+    const hypersChart = cluster.addHelmChart("HyperswitchServices", {
+      chart: "hyperswitch-helm",
+      repository: "https://juspay.github.io/hyperswitch-helm",
+      namespace: "hyperswitch",
+      release: "hypers-v1",
+      wait: false,
+      values: {
+        clusterName: cluster.clusterName,
+        services: {
+            router: {
+              image: "juspaydotin/hyperswitch-router:v1.105.0",
+            },
+            producer: {
+              image: "juspaydotin/hyperswitch-producer:v1.105.0"
+            },
+            consumer: {
+                image: "juspaydotin/hyperswitch-consumer:v1.105.0"
+            }
+        },
+        application: {
+          server: {
+            serviceAccountAnnotations: {
+              "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
+            },
+            server_base_url: "https://sandbox.hyperswitch.io",
+            secrets: {
+              podAnnotations: {
+                traffic_sidecar_istio_io_excludeOutboundIPRanges:
+                  "10.23.6.12/32",
+              },
+              kms_admin_api_key: kmsSecrets.kms_admin_api_key,
+              kms_jwt_secret: kmsSecrets.kms_jwt_secret,
+              kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
+              kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
+              kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
+              kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
+              kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
+              kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
+              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
+              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
+              kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
+              kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
+              kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
+              kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
+              kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
+              kms_key_id: kmsSecrets.kms_id,
+              kms_key_region: kmsSecrets.kms_region,
+              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
+              admin_api_key: admin_api_key,
+              jwt_secret: "test_admin",
+              recon_admin_api_key: "test_admin",
+            },
+            master_enc_key: kmsSecrets.kms_encrypted_master_key,
+            "hyperswitch-card-vault": {
+              enabled: locker ? true : false,
+              postgresql: {
+                enabled: locker ? true : false,
+              } 
+            },
+            locker: {
+              host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
+              locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+              hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
+            },
+            basilisk: {
+              host: "basilisk-host",
+            },
+          },
+          dashboard: {
+            env: {
+              apiBaseUrl: "http://localhost:8080",
+              sdkBaseUrl: "http://localhost:8080",
+            },
+          },
+          sdk: {
+            image: "juspaydotin/hyperswitch-web:v1.0.4",
+            env: {
+              hyperswitchPublishableKey: "pk_test_123",
+              hyperswitchSecretKey: "sk_test_123",
+              hyperswitchServerUrl: "http://localhost:8080",
+              hyperSwitchClientUrl: "http://localhost:8080",
+            },
+          },
+        },
+        postgresql: {
+            enabled: false
+        },
+        externalPostgresql: {
+            enabled: true,
+            primary: {
+                host: rds.db_cluster.clusterEndpoint.hostname,
+                auth: {
+                    username: "db_user",
+                    database: "hyperswitch",
+                    password: kmsSecrets.kms_encrypted_db_pass,
+                },
+            },
+            replica: {
+                host: rds.db_cluster.clusterReadEndpoint.hostname,
+                auth: {
+                    username: "db_user",
+                    database: "hyperswitch",
+                    password: kmsSecrets.kms_encrypted_db_pass,
+                },
 
-    // const grafanaServiceAccountRole = new iam.Role(
-    //   scope,
-    //   "GrafanaServiceAccountRole",
-    //   {
-    //     assumedBy: new iam.FederatedPrincipal(
-    //       provider.openIdConnectProviderArn,
-    //       {
-    //         StringEquals: conditions,
-    //       },
-    //       "sts:AssumeRoleWithWebIdentity",
-    //     ),
-    //   },
-    // );
+            }
+        },
+        loadBalancer: {
+          targetSecurityGroup: lbSecurityGroup.securityGroupId,
+        },
+        redis: {
+            enabled: false
+        },
+        externalRedis: {
+          enabled: true,
+          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          port: 6379
+        },
+        autoscaling: {
+          enabled: true,
+          minReplicas: 3,
+          maxReplicas: 5,
+          targetCPUUtilizationPercentage: 80,
+        },
+      },
+    });
 
-    // const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
-    //   Version: "2012-10-17",
-    //   Statement: [
-    //     {
-    //       Sid: "AllowReadingMetricsFromCloudWatch",
-    //       Effect: "Allow",
-    //       Action: [
-    //         "cloudwatch:DescribeAlarmsForMetric",
-    //         "cloudwatch:DescribeAlarmHistory",
-    //         "cloudwatch:DescribeAlarms",
-    //         "cloudwatch:ListMetrics",
-    //         "cloudwatch:GetMetricData",
-    //         "cloudwatch:GetInsightRuleReport",
-    //       ],
-    //       Resource: "*",
-    //     },
-    //     {
-    //       Sid: "AllowReadingLogsFromCloudWatch",
-    //       Effect: "Allow",
-    //       Action: [
-    //         "logs:DescribeLogGroups",
-    //         "logs:GetLogGroupFields",
-    //         "logs:StartQuery",
-    //         "logs:StopQuery",
-    //         "logs:GetQueryResults",
-    //         "logs:GetLogEvents",
-    //       ],
-    //       Resource: "*",
-    //     },
-    //     {
-    //       Sid: "AllowReadingTagsInstancesRegionsFromEC2",
-    //       Effect: "Allow",
-    //       Action: [
-    //         "ec2:DescribeTags",
-    //         "ec2:DescribeInstances",
-    //         "ec2:DescribeRegions",
-    //       ],
-    //       Resource: "*",
-    //     },
-    //     document: grafanaPolicyDocument,
-    //   }),
-    // );
+    hypersChart.node.addDependency(albControllerChart);
 
-    // const lokiChart = cluster.addHelmChart("LokiController", {
-    //   chart: "loki-stack",
-    //   repository: "https://grafana.github.io/helm-charts/",
-    //   release: "loki",
-    //   values: {
-    //     grafana: {
-    //       image: {
-    //         tag: "10.0.1",
-    //       },
-    //       enabled: true,
-    //       adminPassword: "admin",
-    //       serviceAccount: {
-    //         annotations: {
-    //           "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
-    //         },
-    //       },
-    //     },
-    //     promtail: {
-    //       enabled: true,
-    //       config: {
-    //         snippets: {
-    //           extraRelabelConfigs: [
-    //             {
-    //               action: "keep",
-    //               regex: "hyperswitch-.*",
-    //               source_labels: ["__meta_kubernetes_pod_label_app"],
-    //             },
-    //           ],
-    //         }
-    //       }
-    //     }
-    //   },
-    // });
-    // lokiChart.node.addDependency(hypersChart);
-    // this.lokiChart = lokiChart;
+    const conditions = new cdk.CfnJson(scope, "ConditionJson", {
+      value: {
+        [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+        [`${provider.openIdConnectProviderIssuer}:sub`]:
+          "system:serviceaccount:hyperswitch:loki-grafana",
+      },
+    });
 
-    // cluster.addHelmChart("MetricsServer", {
-    //   chart: "metrics-server",
-    //   repository: "https://kubernetes-sigs.github.io/metrics-server/",
-    //   namespace: "kube-system",
-    //   release: "metrics-server",
-    // });
+    
+    const grafanaServiceAccountRole = new iam.Role(
+      scope,
+      "GrafanaServiceAccountRole",
+      {
+        assumedBy: new iam.FederatedPrincipal(
+          provider.openIdConnectProviderArn,
+          {
+            StringEquals: conditions,
+          },
+          "sts:AssumeRoleWithWebIdentity",
+        ),
+      },
+    );
 
-    // // Import an existing load balancer by its ARN
-    // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
-    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
-    // });
-    // hypersLB.node.addDependency(lokiChart);
+    const grafanaPolicyDocument = iam.PolicyDocument.fromJson({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Sid: "AllowReadingMetricsFromCloudWatch",
+          Effect: "Allow",
+          Action: [
+            "cloudwatch:DescribeAlarmsForMetric",
+            "cloudwatch:DescribeAlarmHistory",
+            "cloudwatch:DescribeAlarms",
+            "cloudwatch:ListMetrics",
+            "cloudwatch:GetMetricData",
+            "cloudwatch:GetInsightRuleReport",
+          ],
+          Resource: "*",
+        },
+        {
+          Sid: "AllowReadingLogsFromCloudWatch",
+          Effect: "Allow",
+          Action: [
+            "logs:DescribeLogGroups",
+            "logs:GetLogGroupFields",
+            "logs:StartQuery",
+            "logs:StopQuery",
+            "logs:GetQueryResults",
+            "logs:GetLogEvents",
+          ],
+          Resource: "*",
+        },
+        {
+          Sid: "AllowReadingTagsInstancesRegionsFromEC2",
+          Effect: "Allow",
+          Action: [
+            "ec2:DescribeTags",
+            "ec2:DescribeInstances",
+            "ec2:DescribeRegions",
+          ],
+          Resource: "*",
+        },
+        {
+          Sid: "AllowReadingResourcesForTags",
+          Effect: "Allow",
+          Action: "tag:GetResources",
+          Resource: "*",
+        },
+      ],
+    });
 
-    // // Import an existing load balancer by its ARN
-    // const hypersLogsLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLogsLoadBalancer', {
-    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-logs-alb-ingress-group' },
-    // });
-    // hypersLogsLB.node.addDependency(lokiChart);
+    grafanaServiceAccountRole.attachInlinePolicy(
+      new iam.Policy(scope, "GrafanaPolicy", {
+        document: grafanaPolicyDocument,
+      }),
+    );
 
-    // // Import an existing load balancer by its ARN
-    // const dashboardLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'DashboardLoadBalancer', {
-    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-control-center-alb-ingress-group' },
-    // });
-    // dashboardLB.node.addDependency(lokiChart);
+    const lokiChart = cluster.addHelmChart("LokiController", {
+      chart: "loki-stack",
+      repository: "https://grafana.github.io/helm-charts/",
+      namespace: "hyperswitch",
+      release: "loki",
+      values: {
+        grafana: {
+          image: {
+            tag: "10.0.1",
+          },
+          enabled: true,
+          adminPassword: "admin",
+          serviceAccount: {
+            annotations: {
+              "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
+            },
+          },
+        },
+        promtail: {
+          enabled: true,
+          config: {
+            snippets: {
+              extraRelabelConfigs: [
+                {
+                  action: "keep",
+                  regex: "hyperswitch-.*",
+                  source_labels: ["__meta_kubernetes_pod_label_app"],
+                },
+              ],
+            }
+          }
+        }
+      },
+    });
+    lokiChart.node.addDependency(hypersChart);
+    this.lokiChart = lokiChart;
 
-    // // Output the cluster name and endpoint
-    // const hyperswitchHost = new cdk.CfnOutput(scope, "HyperswitchHost", {
-    //   value: hypersLB.loadBalancerDnsName,
-    // });
+    cluster.addHelmChart("MetricsServer", {
+      chart: "metrics-server",
+      repository: "https://kubernetes-sigs.github.io/metrics-server/",
+      namespace: "kube-system",
+      release: "metrics-server",
+    });
 
-    // hyperswitchHost.node.addDependency(lokiChart);
+    // Import an existing load balancer by its ARN
+    const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
+      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
+    });
+    hypersLB.node.addDependency(lokiChart);
 
-    // this.hyperswitchHost = hypersLB.loadBalancerDnsName;
+    // Import an existing load balancer by its ARN
+    const hypersLogsLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLogsLoadBalancer', {
+      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-logs-alb-ingress-group' },
+    });
+    hypersLogsLB.node.addDependency(lokiChart);
+
+    // Import an existing load balancer by its ARN
+    const dashboardLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'DashboardLoadBalancer', {
+      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-control-center-alb-ingress-group' },
+    });
+    dashboardLB.node.addDependency(lokiChart);
+
+    // Output the cluster name and endpoint
+    const hyperswitchHost = new cdk.CfnOutput(scope, "HyperswitchHost", {
+      value: hypersLB.loadBalancerDnsName,
+    });
+
+    hyperswitchHost.node.addDependency(lokiChart);
+
+    this.hyperswitchHost = hypersLB.loadBalancerDnsName;
 
     // // Output the cluster name and endpoint
     // new cdk.CfnOutput(scope, "HyperswitchLogsHost", {
