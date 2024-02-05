@@ -372,8 +372,8 @@ export class EksStack {
               kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
               kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
               kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
-              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
+              kms_jwekey_vault_encryption_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+              kms_jwekey_vault_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
               kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
               kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
@@ -392,6 +392,24 @@ export class EksStack {
               postgresql: {
                 enabled: locker ? true : false,
               } 
+            },
+            "hyperswitchsdk": {
+              enabled: true,
+              ingress: {
+                className: "alb",
+                annotations: {
+                  "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+                  "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
+                  "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
+                  "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+                  "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+                  "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
+                  "alb.ingress.kubernetes.io/scheme": "internet-facing",
+                  "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+                  "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+                  "alb.ingress.kubernetes.io/target-type": "ip"
+                }
+              }
             },
             locker: {
               host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
@@ -585,31 +603,31 @@ export class EksStack {
     });
 
     // Import an existing load balancer by its ARN
-    const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
-      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
-    });
-    hypersLB.node.addDependency(lokiChart);
+    // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
+    // });
+    // hypersLB.node.addDependency(lokiChart);
 
-    // Import an existing load balancer by its ARN
-    const hypersLogsLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLogsLoadBalancer', {
-      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-logs-alb-ingress-group' },
-    });
-    hypersLogsLB.node.addDependency(lokiChart);
+    // // Import an existing load balancer by its ARN
+    // const hypersLogsLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLogsLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-logs-alb-ingress-group' },
+    // });
+    // hypersLogsLB.node.addDependency(lokiChart);
 
-    // Import an existing load balancer by its ARN
-    const dashboardLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'DashboardLoadBalancer', {
-      loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-control-center-alb-ingress-group' },
-    });
-    dashboardLB.node.addDependency(lokiChart);
+    // // Import an existing load balancer by its ARN
+    // const dashboardLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'DashboardLoadBalancer', {
+    //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-control-center-alb-ingress-group' },
+    // });
+    // dashboardLB.node.addDependency(lokiChart);
 
-    // Output the cluster name and endpoint
-    const hyperswitchHost = new cdk.CfnOutput(scope, "HyperswitchHost", {
-      value: hypersLB.loadBalancerDnsName,
-    });
+    // // Output the cluster name and endpoint
+    // const hyperswitchHost = new cdk.CfnOutput(scope, "HyperswitchHost", {
+    //   value: hypersLB.loadBalancerDnsName,
+    // });
 
-    hyperswitchHost.node.addDependency(lokiChart);
+    // hyperswitchHost.node.addDependency(lokiChart);
 
-    this.hyperswitchHost = hypersLB.loadBalancerDnsName;
+    // this.hyperswitchHost = hypersLB.loadBalancerDnsName;
 
     // // Output the cluster name and endpoint
     // new cdk.CfnOutput(scope, "HyperswitchLogsHost", {

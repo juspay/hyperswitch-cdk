@@ -483,7 +483,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echo "$blue Please run 'cat cdk.services.log' to view the services details again"$reset
   exit 0
 else
-  echo "Deleting cloud formation. Please re-run `sh install.sh`"
+  echo "Deleting cloud formation. Please re-run 'sh install.sh'"
   aws cloudformation delete-stack --stack-name CDKToolkit
 fi
 
