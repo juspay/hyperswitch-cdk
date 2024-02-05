@@ -411,31 +411,8 @@ export class EksStack {
               hyperSwitchClientUrl: "http://localhost:8080",
             },
           },
-          "hyperswitch-card-vault": {
-            enabled: locker ? true : false,
-            postgresql: {
-              enabled: locker ? true : false,
-            } 
-          },
-          "hyperswitchsdk": {
-            enabled: true,
-            ingress: {
-              className: "alb",
-              annotations: {
-                "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
-                "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
-                "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
-                "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
-                "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
-                "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
-                "alb.ingress.kubernetes.io/scheme": "internet-facing",
-                "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
-                "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
-                "alb.ingress.kubernetes.io/target-type": "ip"
-              }
-            }
-          },
         },
+
         postgresql: {
             enabled: false
         },
@@ -469,6 +446,30 @@ export class EksStack {
           enabled: true,
           host: elasticache.cluster.attrRedisEndpointAddress || "redis",
           port: 6379
+        },
+        "hyperswitch-card-vault": {
+          enabled: locker ? true : false,
+          postgresql: {
+            enabled: locker ? true : false,
+          } 
+        },
+        "hyperswitchsdk": {
+          enabled: true,
+          ingress: {
+            className: "alb",
+            annotations: {
+              "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+              "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
+              "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
+              "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+              "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
+              "alb.ingress.kubernetes.io/scheme": "internet-facing",
+              "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+              "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/target-type": "ip"
+            }
+          }
         },
         autoscaling: {
           enabled: true,
