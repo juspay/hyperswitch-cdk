@@ -18,6 +18,8 @@ class KmsSecrets:
     kms_id: str
     kms_region: str
     api_hash_key: str
+    locker_public_key: str
+    tenant_private_key: str
 
 
 def worker():
@@ -51,6 +53,12 @@ def worker():
     kms_region = base64.b64encode(
         credentials["region"].encode()).decode("utf-8")
 
+    locker_public_key = base64.b64encode(
+        credentials["locker_public_key"].encode()).decode("utf-8")
+
+    tenant_private_key = base64.b64encode(
+        credentials["tenant_private_key"].encode()).decode("utf-8")
+
     dummy_val = kms_fun_secret(dummy_val)
     kms_encrypted_api_hash_key = kms_fun_secret(api_hash_key)
 
@@ -61,12 +69,15 @@ def worker():
                       dummy_val,
                       kms_id,
                       kms_region,
-                      kms_encrypted_api_hash_key
+                      kms_encrypted_api_hash_key,
+                      locker_public_key,
+                      tenant_private_key
                       )
 
 
 def kms_encryptor(key_id: str, region: str, kms_client):
     return lambda data: base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"]).decode("utf-8")
+
 
 def kms_encryptor_secret(key_id: str, region: str, kms_client):
     return lambda data: base64.b64encode(base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"])).decode("utf-8")
@@ -129,6 +140,8 @@ def lambda_handler(event, context):
                      "kms_id": kms_secrets.kms_id,
                      "kms_region": kms_secrets.kms_region,
                      "dummy_val": kms_secrets.dummy_val,
+                     "locker_public_key": kms_secrets.locker_public_key,
+                     "tenant_private_key": kms_secrets.tenant_private_key,
                      "api_hash_key": kms_secrets.api_hash_key,
                  })
         else:

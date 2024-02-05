@@ -250,7 +250,8 @@ export class EksStack {
         admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
         kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
         region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
-        rust_locker_encryption_key: cdk.SecretValue.unsafePlainText("dummy_val"),
+        locker_public_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.locker_pair.public_key : "locker-key"),
+        tenant_private_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.tenant.private_key : "locker-key")
       },
     });
 
@@ -372,8 +373,8 @@ export class EksStack {
               kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
               kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
               kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-              kms_jwekey_vault_encryption_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
-              kms_jwekey_vault_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
+              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
+              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
               kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
               kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
@@ -697,8 +698,8 @@ class KmsSecrets {
     this.kms_jwekey_locker_encryption_key2 = kms.getAtt("dummy_val").toString();
     this.kms_jwekey_locker_decryption_key1 = kms.getAtt("dummy_val").toString();
     this.kms_jwekey_locker_decryption_key2 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_vault_encryption_key = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_vault_private_key = kms.getAtt("dummy_val").toString();
+    this.kms_jwekey_vault_encryption_key = kms.getAtt("locker_public_key").toString();
+    this.kms_jwekey_vault_private_key = kms.getAtt("tenant_private_key").toString();
     this.kms_jwekey_tunnel_private_key = kms.getAtt("dummy_val").toString();
     this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("dummy_val").toString();
     this.kms_connector_onboarding_paypal_client_id = kms.getAtt("dummy_val").toString();
