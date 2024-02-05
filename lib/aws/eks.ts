@@ -468,7 +468,17 @@ export class EksStack {
               "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
               "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
               "alb.ingress.kubernetes.io/target-type": "ip"
+            },
+            hosts: [{
+              host: {
+                paths: [{
+                  path: "/",
+                  pathType: "Prefix"
+                }
+                ]
+              }
             }
+            ]
           }
         },
         autoscaling: {
