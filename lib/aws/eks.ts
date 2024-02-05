@@ -387,30 +387,6 @@ export class EksStack {
               recon_admin_api_key: "test_admin",
             },
             master_enc_key: kmsSecrets.kms_encrypted_master_key,
-            "hyperswitch-card-vault": {
-              enabled: locker ? true : false,
-              postgresql: {
-                enabled: locker ? true : false,
-              } 
-            },
-            "hyperswitchsdk": {
-              enabled: true,
-              ingress: {
-                className: "alb",
-                annotations: {
-                  "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
-                  "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
-                  "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
-                  "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
-                  "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
-                  "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
-                  "alb.ingress.kubernetes.io/scheme": "internet-facing",
-                  "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
-                  "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
-                  "alb.ingress.kubernetes.io/target-type": "ip"
-                }
-              }
-            },
             locker: {
               host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
               locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
@@ -434,6 +410,30 @@ export class EksStack {
               hyperswitchServerUrl: "http://localhost:8080",
               hyperSwitchClientUrl: "http://localhost:8080",
             },
+          },
+          "hyperswitch-card-vault": {
+            enabled: locker ? true : false,
+            postgresql: {
+              enabled: locker ? true : false,
+            } 
+          },
+          "hyperswitchsdk": {
+            enabled: true,
+            ingress: {
+              className: "alb",
+              annotations: {
+                "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+                "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
+                "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
+                "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+                "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+                "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
+                "alb.ingress.kubernetes.io/scheme": "internet-facing",
+                "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+                "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+                "alb.ingress.kubernetes.io/target-type": "ip"
+              }
+            }
           },
         },
         postgresql: {
