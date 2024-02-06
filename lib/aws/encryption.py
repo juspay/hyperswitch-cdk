@@ -20,6 +20,8 @@ def worker():
 
     api_hash_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     secrets_manager = boto3.client('secretsmanager')
+    ssm_manager = boto3.client('ssm')
+
     kms_client = boto3.client('kms')
 
     secret_arn = os.environ['SECRET_MANAGER_ARN']
@@ -46,23 +48,18 @@ def worker():
     kms_encrypted_api_hash_key = kms_fun(api_hash_key)
 
     secretval = {
-        "db_pass": db_pass,
-        "master_key": master_key,
-        "admin_api_key": admin_api_key,
-        "jwt_secret": jwt_secret,
-        "dummy_val": dummy_val,
-        "kms_encrypted_api_hash_key": kms_encrypted_api_hash_key,
-        "locker_public_key": locker_public_key,
-        "tenant_private_key": tenant_private_key,
+        "db-pass": db_pass,
+        "master-key": master_key,
+        "admin-api-key": admin_api_key,
+        "jwt-secret": jwt_secret,
+        "dummy-val": dummy_val,
+        "kms-encrypted-api-hash_key": kms_encrypted_api_hash_key,
+        "locker-public-key": locker_public_key,
+        "tenant-private-key": tenant_private_key,
     }
 
-    secretReturn = secrets_manager.create_secret(
-        Name="hyperswitch-kms-encrypted-store", SecretString=json.dumps(secretval))
-
-    return SecretStore(
-        secretArn=secretReturn["ARN"],
-        secretName=secretReturn["Name"]
-    )
+    for key in secretval:
+        store_parameter(ssm_manager, key, secretval[key])
 
 
 def kms_encryptor(key_id: str, region: str, kms_client):
@@ -103,6 +100,11 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 
         print("send(..) failed executing http.request(..):", e)
         return {}
+
+
+def store_parameter(ssm, key, value):
+    ssm.put_parameter(Name="/hyperswitch_{}".format(key),
+                      Value=value, Overwrite=True, Type='String')
 
 
 def lambda_handler(event, context):
