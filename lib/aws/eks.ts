@@ -276,7 +276,7 @@ export class EksStack {
       },
     );
 
-    const kmsSecrets = new KmsSecrets(triggerKMSEncryption);
+    const kmsSecrets = new KmsSecrets(triggerKMSEncryption,scope);
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -685,26 +685,31 @@ class KmsSecrets {
   readonly kms_connector_onboarding_paypal_partner_id: string;
   readonly kms_encrypted_api_hash_key: string;
 
-  constructor(kms: cdk.CustomResource) {
-    this.kms_admin_api_key = kms.getAtt("admin_api_key").toString();
-    this.kms_jwt_secret = kms.getAtt("jwt_secret").toString();
-    this.kms_encrypted_db_pass = kms.getAtt("db_pass").toString();
-    this.kms_encrypted_master_key = kms.getAtt("master_key").toString();
-    this.kms_id = kms.getAtt("kms_id").toString();
-    this.kms_region = kms.getAtt("kms_region").toString();
-    this.kms_jwekey_locker_identifier1 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_locker_identifier2 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_locker_encryption_key1 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_locker_encryption_key2 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_locker_decryption_key1 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_locker_decryption_key2 = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_vault_encryption_key = kms.getAtt("locker_public_key").toString();
-    this.kms_jwekey_vault_private_key = kms.getAtt("tenant_private_key").toString();
-    this.kms_jwekey_tunnel_private_key = kms.getAtt("dummy_val").toString();
-    this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_client_id = kms.getAtt("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_client_secret = kms.getAtt("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_partner_id = kms.getAtt("dummy_val").toString();
-    this.kms_encrypted_api_hash_key = kms.getAtt("api_hash_key").toString();
+  constructor(kms: cdk.CustomResource, scope: Construct) {
+    let secretArn = kms.getAtt("secret_arn").toString();
+    let secretName = kms.getAtt("secret_name").toString();
+
+    let secret = Secret.fromSecretCompleteArn(scope,secretName,secretArn)
+
+    this.kms_admin_api_key = secret.secretValueFromJson("admin_api_key").toString();
+    this.kms_jwt_secret = secret.secretValueFromJson("jwt_secret").toString();
+    this.kms_encrypted_db_pass = secret.secretValueFromJson("db_pass").toString();
+    this.kms_encrypted_master_key = secret.secretValueFromJson("master_key").toString();
+    this.kms_id = secret.secretValueFromJson("kms_id").toString();
+    this.kms_region = secret.secretValueFromJson("kms_region").toString();
+    this.kms_jwekey_locker_identifier1 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_locker_identifier2 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_locker_encryption_key1 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_locker_encryption_key2 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_locker_decryption_key1 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_locker_decryption_key2 = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_vault_encryption_key = secret.secretValueFromJson("locker_public_key").toString();
+    this.kms_jwekey_vault_private_key = secret.secretValueFromJson("tenant_private_key").toString();
+    this.kms_jwekey_tunnel_private_key = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_jwekey_rust_locker_encryption_key = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_connector_onboarding_paypal_client_id = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_connector_onboarding_paypal_client_secret = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_connector_onboarding_paypal_partner_id = secret.secretValueFromJson("dummy_val").toString();
+    this.kms_encrypted_api_hash_key = secret.secretValueFromJson("api_hash_key").toString();
   }
 }
