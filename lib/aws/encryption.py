@@ -38,11 +38,9 @@ def worker():
     admin_api_key = enc_pl("admin_api_key")
     jwt_secret = enc_pl("jwt_secret")
 
-    locker_public_key = base64.b64encode(
-        credentials["locker_public_key"].encode()).decode("utf-8")
+    locker_public_key = enc_pl("locker_public_key")
 
-    tenant_private_key = base64.b64encode(
-        credentials["tenant_private_key"].encode()).decode("utf-8")
+    tenant_private_key = enc_pl("tenant_private_key")
 
     dummy_val = kms_fun(dummy_val)
     kms_encrypted_api_hash_key = kms_fun(api_hash_key)
@@ -58,12 +56,12 @@ def worker():
         "tenant_private_key": tenant_private_key,
     }
 
-    secrets_manager.create_secret(
+    secretReturn = secrets_manager.create_secret(
         Name="hyperswitch-kms-encrypted-store", SecretString=json.dumps(secretval))
 
     return SecretStore(
-        secretArn=secretval["ARN"],
-        secretName=secretval["Name"]
+        secretArn=secretReturn["ARN"],
+        secretName=secretReturn["Name"]
     )
 
 
