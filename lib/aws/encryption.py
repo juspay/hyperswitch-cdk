@@ -103,7 +103,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 
 
 def store_parameter(ssm, key, value):
-    ssm.put_parameter(Name="/hyperswitch_{}".format(key),
+    ssm.put_parameter(Name="/hyperswitch/{}".format(key),
                       Value=value, Overwrite=True, Type='String')
 
 
