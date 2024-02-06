@@ -474,7 +474,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echoLog "--------------------------------------------------------------------------------"
   echoLog "$bold Service                           Host$reset"
   echoLog "--------------------------------------------------------------------------------"
-  echoLog "$green HyperloaderJS Hosted at           $blue"$SDK_URL/HyperLoader.js"$reset"
+  echoLog "$green HyperloaderJS Hosted at           $blue"https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js"$reset"
   echoLog "$green App server running on             $blue"http://$APP_HOST"$reset"
   echoLog "$green Logs server running on            $blue"http://$LOGS_HOST"$reset, Login with $YELLOW username: admin, password: admin$reset , Please change on startup"
   echoLog "$green Control center server running on  $blue"http://$CONTROL_CENTER_HOST"$reset, Login with $YELLOW Email: test@gmail.com, password: admin$reset , Please change on startup"

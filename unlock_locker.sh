@@ -12,6 +12,7 @@ for pod in ${pods[@]}; do
   declare -i start=$((start+1))
 done
 
+sleep 10
 echo "Enter the keys that are created during the locker master key generation"
 echo "Enter key 1: "; read -s; \
   for pod in ${ports[@]}; do \

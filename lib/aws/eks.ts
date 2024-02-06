@@ -430,6 +430,7 @@ export class EksStack {
               username: "db_user",
               database: "hyperswitch",
               password: kmsSecrets.kms_encrypted_db_pass,
+              plainpassword: config.rds.password,
             },
           },
           replica: {
@@ -438,6 +439,7 @@ export class EksStack {
               username: "db_user",
               database: "hyperswitch",
               password: kmsSecrets.kms_encrypted_db_pass,
+              plainpassword: config.rds.password,
             },
 
           }
