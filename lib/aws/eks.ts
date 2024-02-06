@@ -350,13 +350,13 @@ export class EksStack {
         clusterName: cluster.clusterName,
         services: {
           router: {
-            image: "juspaydotin/hyperswitch-router:v1.105.0",
+            image: "juspaydotin/hyperswitch-router:v1.105.0-standalone",
           },
           producer: {
-            image: "juspaydotin/hyperswitch-producer:v1.105.0"
+            image: "juspaydotin/hyperswitch-producer:v1.105.0-standalone"
           },
           consumer: {
-            image: "juspaydotin/hyperswitch-consumer:v1.105.0"
+            image: "juspaydotin/hyperswitch-consumer:v1.105.0-standalone"
           }
         },
         application: {
@@ -392,7 +392,7 @@ export class EksStack {
               jwt_secret: "test_admin",
               recon_admin_api_key: "test_admin",
             },
-            master_enc_key: kmsSecrets.kms_encrypted_master_key,
+            // master_enc_key: kmsSecrets.kms_encrypted_master_key,
             locker: {
               host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
               locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
@@ -429,7 +429,7 @@ export class EksStack {
             auth: {
               username: "db_user",
               database: "hyperswitch",
-              password: kmsSecrets.kms_encrypted_db_pass,
+              password: config.rds.password,
               plainpassword: config.rds.password,
             },
           },
@@ -438,7 +438,7 @@ export class EksStack {
             auth: {
               username: "db_user",
               database: "hyperswitch",
-              password: kmsSecrets.kms_encrypted_db_pass,
+              password: config.rds.password,
               plainpassword: config.rds.password,
             },
 
