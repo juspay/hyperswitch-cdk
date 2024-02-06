@@ -37,9 +37,6 @@ def worker():
     master_key = enc_pl("master_key")
     admin_api_key = enc_pl("admin_api_key")
     jwt_secret = enc_pl("jwt_secret")
-    kms_id = base64.b64encode(credentials["kms_id"].encode()).decode("utf-8")
-    kms_region = base64.b64encode(
-        credentials["region"].encode()).decode("utf-8")
 
     locker_public_key = base64.b64encode(
         credentials["locker_public_key"].encode()).decode("utf-8")
@@ -56,8 +53,6 @@ def worker():
         "admin_api_key": admin_api_key,
         "jwt_secret": jwt_secret,
         "dummy_val": dummy_val,
-        "kms_id": kms_id,
-        "kms_region": kms_region,
         "kms_encrypted_api_hash_key": kms_encrypted_api_hash_key,
         "locker_public_key": locker_public_key,
         "tenant_private_key": tenant_private_key,

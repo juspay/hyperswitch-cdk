@@ -248,8 +248,6 @@ export class EksStack {
         jwt_secret: cdk.SecretValue.unsafePlainText("test_admin"),
         master_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.master_enc_key),
         admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
-        kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
-        region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
         locker_public_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.locker_pair.public_key : "locker-key"),
         tenant_private_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.tenant.private_key : "locker-key")
       },
@@ -380,8 +378,8 @@ export class EksStack {
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
               kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
               kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-              kms_key_id: kmsSecrets.kms_id,
-              kms_key_region: kmsSecrets.kms_region,
+              kms_key_id: kms_key.keyId,
+              kms_key_region: kms_key.stack.region,
               kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
@@ -667,8 +665,6 @@ class KmsSecrets {
   readonly kms_jwt_secret: string;
   readonly kms_encrypted_db_pass: string;
   readonly kms_encrypted_master_key: string;
-  readonly kms_id: string;
-  readonly kms_region: string;
   readonly kms_jwekey_locker_identifier1: string;
   readonly kms_jwekey_locker_identifier2: string;
   readonly kms_jwekey_locker_encryption_key1: string;
@@ -694,8 +690,6 @@ class KmsSecrets {
     this.kms_jwt_secret = secret.secretValueFromJson("jwt_secret").toString();
     this.kms_encrypted_db_pass = secret.secretValueFromJson("db_pass").toString();
     this.kms_encrypted_master_key = secret.secretValueFromJson("master_key").toString();
-    this.kms_id = secret.secretValueFromJson("kms_id").toString();
-    this.kms_region = secret.secretValueFromJson("kms_region").toString();
     this.kms_jwekey_locker_identifier1 = secret.secretValueFromJson("dummy_val").toString();
     this.kms_jwekey_locker_identifier2 = secret.secretValueFromJson("dummy_val").toString();
     this.kms_jwekey_locker_encryption_key1 = secret.secretValueFromJson("dummy_val").toString();
