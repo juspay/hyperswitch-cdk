@@ -363,7 +363,7 @@ while true; do
         break
     fi
 done
-MASTER_ENC_KEY=$(openssl enc -aes-256-cbc -k secret -P -md sha1 | grep 'key' | cut -d '=' -f 2)
+MASTER_ENC_KEY="471f22516724347bcca9c20c5fa88d9821c4604e63a6aceffd24605809c9237c"
 
 validate_api_key() {
     local api_key=$1
@@ -486,9 +486,6 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   echoLog "##########################################"
   echo "$blue Please run 'cat cdk.services.log' to view the services details again"$reset
   exit 0
-else
-  echo "Deleting cloud formation. Please re-run 'sh install.sh'"
-  aws cloudformation delete-stack --stack-name CDKToolkit
 fi
 
 else
@@ -506,7 +503,5 @@ if cdk deploy --require-approval never -c test=true ; then
   echoLog "--------------------------------------------------------------------------------"
   echoLog "$bold EC2 Instance IP Host                          $blue"$STANDALONE_HOST"$reset"
   echoLog "--------------------------------------------------------------------------------"
-else
-  aws cloudformation delete-stack --stack-name CDKToolkit
 fi
 fi

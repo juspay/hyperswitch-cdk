@@ -215,7 +215,7 @@ export class EksStack {
       nodegroupName: "hs-nodegroup",
       instanceTypes: [
         new ec2.InstanceType("t3.medium"),
-        new ec2.InstanceType("t3a.medium"),
+        new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
       maxSize: 3,
@@ -471,13 +471,12 @@ export class EksStack {
               "alb.ingress.kubernetes.io/target-type": "ip"
             },
             hosts: [{
-              host: {
-                paths: [{
-                  path: "/",
-                  pathType: "Prefix"
-                }
-                ]
+              host: "",
+              paths: [{
+                path: "/",
+                pathType: "Prefix"
               }
+              ]
             }
             ]
           },
