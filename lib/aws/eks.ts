@@ -248,6 +248,8 @@ export class EksStack {
         jwt_secret: cdk.SecretValue.unsafePlainText("test_admin"),
         master_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.master_enc_key),
         admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
+        kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
+        region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
         locker_public_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.locker_pair.public_key : "locker-key"),
         tenant_private_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.tenant.private_key : "locker-key")
       },
