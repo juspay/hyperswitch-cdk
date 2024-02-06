@@ -12,9 +12,10 @@ import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
-
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
+import { Trigger } from "aws-cdk-lib/triggers";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -39,7 +40,7 @@ export class EksStack {
     });
 
     const addClusterRole = (awsArn: string, name: string) => {
-      if(!awsArn) return;
+      if (!awsArn) return;
       const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");
       if (isRole) {
         const role = iam.Role.fromRoleName(
@@ -124,14 +125,18 @@ export class EksStack {
     });
 
     const kms_policy_document = new iam.PolicyDocument({
-    statements: [
+      statements: [
         new iam.PolicyStatement({
-            actions: ["kms:*"],
-            resources: [kms_key.keyArn],
+          actions: ["kms:*"],
+          resources: [kms_key.keyArn],
         }),
         new iam.PolicyStatement({
-            actions: ["secretsmanager:*"],
-            resources: ["*"],
+          actions: ["ssm:*"],
+          resources: ["*"],
+        }),
+        new iam.PolicyStatement({
+          actions: ["secretsmanager:*"],
+          resources: ["*"],
         }),
       ],
     });
@@ -215,7 +220,7 @@ export class EksStack {
       nodegroupName: "hs-nodegroup",
       instanceTypes: [
         new ec2.InstanceType("t3.medium"),
-        new ec2.InstanceType("t3a.medium"),
+        new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
       maxSize: 3,
@@ -228,59 +233,61 @@ export class EksStack {
     });
 
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
-            assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-            inlinePolicies: {
-                "use-kms-sm-s3": kms_policy_document,
-            },
-        });
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      inlinePolicies: {
+        "use-kms-sm-s3": kms_policy_document,
+      },
+    });
 
     const encryption_code = readFileSync(
-            "lib/aws/encryption.py",
-        ).toString();
+      "lib/aws/encryption.py",
+    ).toString();
 
     let secret = new Secret(scope, "hyperswitch-kms-userdata-secret", {
-            secretName: "HyperswitchKmsDataSecret",
-            description: "KMS encryptable secrets for Hyperswitch",
-            secretObjectValue: {
-                db_password: cdk.SecretValue.unsafePlainText(
-                    rds.password,
-                ),
-                jwt_secret: cdk.SecretValue.unsafePlainText("test_admin"),
-                master_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.master_enc_key),
-                admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
-                kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
-                region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
-                rust_locker_encryption_key: cdk.SecretValue.unsafePlainText("dummy_val"),
-            },
-        });
+      secretName: "HyperswitchKmsDataSecret",
+      description: "KMS encryptable secrets for Hyperswitch",
+      secretObjectValue: {
+        db_password: cdk.SecretValue.unsafePlainText(
+          rds.password,
+        ),
+        jwt_secret: cdk.SecretValue.unsafePlainText("test_admin"),
+        master_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.master_enc_key),
+        admin_api_key: cdk.SecretValue.unsafePlainText(config.hyperswitch_ec2.admin_api_key),
+        kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
+        region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
+        locker_public_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.locker_pair.public_key : "locker-key"),
+        tenant_private_key: cdk.SecretValue.unsafePlainText(locker ? locker.locker_ec2.tenant.private_key : "locker-key")
+      },
+    });
 
-     const kms_encrypt_function = new Function(scope, "hyperswitch-kms-encrypt", {
-            functionName: "HyperswitchKmsEncryptionLambda",
-            runtime: Runtime.PYTHON_3_9,
-            handler: "index.lambda_handler",
-            code: Code.fromInline(encryption_code),
-            timeout: cdk.Duration.minutes(15),
-            role: lambda_role,
-            environment: {
-                SECRET_MANAGER_ARN: secret.secretArn,
-            },
-            logRetention: RetentionDays.INFINITE,
-        });
+    const kms_encrypt_function = new Function(scope, "hyperswitch-kms-encrypt", {
+      functionName: "HyperswitchKmsEncryptionLambda",
+      runtime: Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: Code.fromInline(encryption_code),
+      timeout: cdk.Duration.minutes(15),
+      role: lambda_role,
+      environment: {
+        SECRET_MANAGER_ARN: secret.secretArn,
+      },
+      logRetention: RetentionDays.INFINITE,
+    });
 
     const triggerKMSEncryption = new cdk.CustomResource(
-            scope,
-            "HyperswitchKmsEncryptionCR",
-            {
-                serviceToken: kms_encrypt_function.functionArn,
-            },
-        );
+      scope,
+      "HyperswitchKmsEncryptionCR",
+      {
+        serviceToken: kms_encrypt_function.functionArn,
+      },
+    );
 
-    const kmsSecrets = new KmsSecrets(triggerKMSEncryption);
+    const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
       vpc: cluster.vpc,
       allowAllOutbound: false,
+      securityGroupName: "hs-loadbalancer-sg",
     });
 
     this.sg = cluster.clusterSecurityGroup;
@@ -312,6 +319,27 @@ export class EksStack {
       },
     });
 
+
+    cluster.openIdConnectProvider.openIdConnectProviderIssuer;
+
+    nodegroupRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy'));
+    cluster.addServiceAccount('EbsCsiControllerSa', {
+      name: 'ebs-csi-controller-sa' + process.env.CDK_DEFAULT_REGION,
+      namespace: 'kube-system',
+      annotations: {
+        'eks.amazonaws.com/role-arn': nodegroupRole.roleArn
+      }
+    });
+    // Add EBS CSI driver
+    const ebsCsiDriver = cluster.addHelmChart('EbsCsiDriver', {
+      chart: 'aws-ebs-csi-driver',
+      repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
+      namespace: 'kube-system',
+      values: {
+        clusterName: cluster.clusterName,
+      },
+    });
+
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-helm",
       repository: "https://juspay.github.io/hyperswitch-helm",
@@ -321,15 +349,15 @@ export class EksStack {
       values: {
         clusterName: cluster.clusterName,
         services: {
-            router: {
-              image: "juspaydotin/hyperswitch-router:v1.105.0",
-            },
-            producer: {
-              image: "juspaydotin/hyperswitch-producer:v1.105.0"
-            },
-            consumer: {
-                image: "juspaydotin/hyperswitch-consumer:v1.105.0"
-            }
+          router: {
+            image: "juspaydotin/hyperswitch-router:v1.105.0",
+          },
+          producer: {
+            image: "juspaydotin/hyperswitch-producer:v1.105.0"
+          },
+          consumer: {
+            image: "juspaydotin/hyperswitch-consumer:v1.105.0"
+          }
         },
         application: {
           server: {
@@ -357,8 +385,8 @@ export class EksStack {
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
               kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
               kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-              kms_key_id: kmsSecrets.kms_id,
-              kms_key_region: kmsSecrets.kms_region,
+              kms_key_id: kms_key.keyId,
+              kms_key_region: kms_key.stack.region,
               kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
               admin_api_key: admin_api_key,
               jwt_secret: "test_admin",
@@ -390,39 +418,84 @@ export class EksStack {
             },
           },
         },
+
         postgresql: {
-            enabled: false
+          enabled: false
         },
         externalPostgresql: {
-            enabled: true,
-            primary: {
-                host: rds.db_cluster.clusterEndpoint.hostname,
-                auth: {
-                    username: "db_user",
-                    database: "hyperswitch",
-                    password: kmsSecrets.kms_encrypted_db_pass,
-                },
+          enabled: true,
+          primary: {
+            host: rds.db_cluster.clusterEndpoint.hostname,
+            auth: {
+              username: "db_user",
+              database: "hyperswitch",
+              password: kmsSecrets.kms_encrypted_db_pass,
             },
-            replica: {
-                host: rds.db_cluster.clusterReadEndpoint.hostname,
-                auth: {
-                    username: "db_user",
-                    database: "hyperswitch",
-                    password: kmsSecrets.kms_encrypted_db_pass,
-                },
+          },
+          replica: {
+            host: rds.db_cluster.clusterReadEndpoint.hostname,
+            auth: {
+              username: "db_user",
+              database: "hyperswitch",
+              password: kmsSecrets.kms_encrypted_db_pass,
+            },
 
-            }
+          }
         },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
         redis: {
-            enabled: false
+          enabled: false
         },
         externalRedis: {
           enabled: true,
           host: elasticache.cluster.attrRedisEndpointAddress || "redis",
           port: 6379
+        },
+        "hyperswitch-card-vault": {
+          enabled: locker ? true : false,
+          postgresql: {
+            enabled: locker ? true : false,
+          }
+        },
+        "hyperswitchsdk": {
+          enabled: true,
+          ingress: {
+            className: "alb",
+            annotations: {
+              "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+              "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
+              "alb.ingress.kubernetes.io/group.name": "hyperswitch-web-alb-ingress-group",
+              "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+              "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-web",
+              "alb.ingress.kubernetes.io/scheme": "internet-facing",
+              "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+              "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/target-type": "ip"
+            },
+            hosts: [{
+              host: "",
+              paths: [{
+                path: "/",
+                pathType: "Prefix"
+              }
+              ]
+            }
+            ]
+          },
+          autoBuild: {
+            gitCloneParam: {
+              gitVersion: "0.16.7"
+            },
+            nginxConfig: { extraPath: "v0" },
+            buildParam: {
+              envSdkUrl: "http://hyperswitch-web-1293771213.eu-west-3.elb.amazonaws.com",
+              envBackendUrl: "http://hyperswitch-967472307.eu-west-3.elb.amazonaws.com"
+            }
+          }
+
         },
         autoscaling: {
           enabled: true,
@@ -442,6 +515,7 @@ export class EksStack {
           "system:serviceaccount:hyperswitch:loki-grafana",
       },
     });
+
 
     const grafanaServiceAccountRole = new iam.Role(
       scope,
@@ -555,7 +629,7 @@ export class EksStack {
       release: "metrics-server",
     });
 
-    // // Import an existing load balancer by its ARN
+    // Import an existing load balancer by its ARN
     // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
     //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-alb-ingress-group' },
     // });
@@ -594,47 +668,45 @@ export class EksStack {
 }
 
 class KmsSecrets {
-    readonly kms_admin_api_key: string;
-    readonly kms_jwt_secret: string;
-    readonly kms_encrypted_db_pass: string;
-    readonly kms_encrypted_master_key: string;
-    readonly kms_id: string;
-    readonly kms_region: string;
-    readonly kms_jwekey_locker_identifier1: string;
-    readonly kms_jwekey_locker_identifier2: string;
-    readonly kms_jwekey_locker_encryption_key1: string;
-    readonly kms_jwekey_locker_encryption_key2: string;
-    readonly kms_jwekey_locker_decryption_key1: string;
-    readonly kms_jwekey_locker_decryption_key2: string;
-    readonly kms_jwekey_vault_encryption_key: string;
-    readonly kms_jwekey_vault_private_key: string;
-    readonly kms_jwekey_tunnel_private_key: string;
-    readonly kms_jwekey_rust_locker_encryption_key: string;
-    readonly kms_connector_onboarding_paypal_client_id: string;
-    readonly kms_connector_onboarding_paypal_client_secret: string;
-    readonly kms_connector_onboarding_paypal_partner_id: string;
-    readonly kms_encrypted_api_hash_key: string;
+  readonly kms_admin_api_key: string;
+  readonly kms_jwt_secret: string;
+  readonly kms_encrypted_db_pass: string;
+  readonly kms_encrypted_master_key: string;
+  readonly kms_jwekey_locker_identifier1: string;
+  readonly kms_jwekey_locker_identifier2: string;
+  readonly kms_jwekey_locker_encryption_key1: string;
+  readonly kms_jwekey_locker_encryption_key2: string;
+  readonly kms_jwekey_locker_decryption_key1: string;
+  readonly kms_jwekey_locker_decryption_key2: string;
+  readonly kms_jwekey_vault_encryption_key: string;
+  readonly kms_jwekey_vault_private_key: string;
+  readonly kms_jwekey_tunnel_private_key: string;
+  readonly kms_jwekey_rust_locker_encryption_key: string;
+  readonly kms_connector_onboarding_paypal_client_id: string;
+  readonly kms_connector_onboarding_paypal_client_secret: string;
+  readonly kms_connector_onboarding_paypal_partner_id: string;
+  readonly kms_encrypted_api_hash_key: string;
 
-    constructor(kms: cdk.CustomResource) {
-        this.kms_admin_api_key = kms.getAtt("admin_api_key").toString();
-        this.kms_jwt_secret = kms.getAtt("jwt_secret").toString();
-        this.kms_encrypted_db_pass = kms.getAtt("db_pass").toString();
-        this.kms_encrypted_master_key = kms.getAtt("master_key").toString();
-        this.kms_id = kms.getAtt("kms_id").toString();
-        this.kms_region = kms.getAtt("kms_region").toString();
-        this.kms_jwekey_locker_identifier1 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_locker_identifier2 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_locker_encryption_key1 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_locker_encryption_key2 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_locker_decryption_key1 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_locker_decryption_key2 = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_vault_encryption_key = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_vault_private_key = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_tunnel_private_key = kms.getAtt("dummy_val").toString();
-        this.kms_jwekey_rust_locker_encryption_key = kms.getAtt("dummy_val").toString();
-        this.kms_connector_onboarding_paypal_client_id = kms.getAtt("dummy_val").toString();
-        this.kms_connector_onboarding_paypal_client_secret = kms.getAtt("dummy_val").toString();
-        this.kms_connector_onboarding_paypal_partner_id = kms.getAtt("dummy_val").toString();
-        this.kms_encrypted_api_hash_key = kms.getAtt("api_hash_key").toString();
-    }
+  constructor(scope: Construct, kms: cdk.CustomResource) {
+
+    let message = kms.getAtt("message");
+    this.kms_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/admin-api-key", 1);
+    this.kms_jwt_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/jwt-secret", 1);
+    this.kms_encrypted_db_pass = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/db-pass", 1);
+    this.kms_encrypted_master_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/master-key", 1);
+    this.kms_jwekey_locker_identifier1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_identifier2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_vault_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/locker-public-key", 1);
+    this.kms_jwekey_vault_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/tenant-private-key", 1);
+    this.kms_jwekey_tunnel_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_rust_locker_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
+  }
 }

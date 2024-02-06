@@ -24,5 +24,19 @@ fi
 if ! command -v aws &> /dev/null
 then
     curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+    echo "Please enter password. Make sure you have admin permissions\n"
     sudo installer -pkg AWSCLIV2.pkg -target /
+fi
+
+if ! command -v node &> /dev/null
+then
+    brew install node
+    node -v
+fi
+
+if ! command -v rust &> /dev/null
+then
+    brew install rust
+    rustc --version
+    cargo --version
 fi

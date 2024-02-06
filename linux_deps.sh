@@ -43,6 +43,21 @@ if ! command -v jq &> /dev/null; then
     install_jq
 fi
 
+# Install node
+if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    node -v
+fi
+
+# Install rust
+if ! command -v rust &> /dev/null; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    source $HOME/.cargo/env
+    rustc --version
+    cargo --version
+fi
+
 # Function to install kubectl
 install_kubectl() {
     local arch=$(uname -m)

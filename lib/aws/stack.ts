@@ -10,7 +10,6 @@ import { readFileSync } from "fs";
 import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
-import { HyperswitchSDKStack } from "./hs_sdk";
 import { LockerSetup } from "./card-vault/components";
 
 export class AWSStack extends cdk.Stack {
@@ -37,8 +36,7 @@ export class AWSStack extends cdk.Stack {
 
     let locker: LockerSetup | undefined;
     if (config.locker.master_key) {
-      locker = new LockerSetup(this, vpc.vpc, config.locker, rds.bucket, true);
-      locker.node.addDependency(rds.bucket);
+      locker = new LockerSetup(this, vpc.vpc, config.locker);
     }
 
     let isStandalone = scope.node.tryGetContext("test") || false;
@@ -75,12 +73,12 @@ export class AWSStack extends cdk.Stack {
         rds,
         elasticache,
         config.hyperswitch_ec2.admin_api_key,
-        locker,
+        locker
       );
       if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
-      let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
+      // let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
 
       // Create Jumps and add rules to access RDS, Elasticache and Proxies
       // Internal Jump can be accessed only from external jump. External jump can be accessed only from Session Manager
