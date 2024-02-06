@@ -40,10 +40,6 @@ Enhance your security posture with Jump Servers, designed to provide secure acce
 
 ## Installation
 
-There are two ways to install the HyperSwitch Full Stack:
-
-### Deployment
-
 #### Prerequisites
 
 Before you can use this script, you need to have the following installed:

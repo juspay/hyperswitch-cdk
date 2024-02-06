@@ -12,6 +12,7 @@ for pod in ${pods[@]}; do
   declare -i start=$((start+1))
 done
 
+echo "Enter the keys that are created during the locker master key generation"
 echo "Enter key 1: "; read -s; \
   for pod in ${ports[@]}; do \
     curl -X POST -H "Content-Type: application/json" -d '{"key": "'$REPLY'"}' http://localhost:$pod/custodian/key1 -v; \
