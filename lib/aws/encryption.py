@@ -47,7 +47,7 @@ def worker():
         "admin-api-key": admin_api_key,
         "jwt-secret": jwt_secret,
         "dummy-val": dummy_val,
-        "kms-encrypted-api-hash_key": kms_encrypted_api_hash_key,
+        "kms-encrypted-api-hash-key": kms_encrypted_api_hash_key,
         "locker-public-key": locker_public_key,
         "tenant-private-key": tenant_private_key,
     }

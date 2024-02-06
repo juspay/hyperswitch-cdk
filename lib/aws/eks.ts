@@ -12,9 +12,10 @@ import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
-
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
+import { Trigger } from "aws-cdk-lib/triggers";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -128,6 +129,10 @@ export class EksStack {
         new iam.PolicyStatement({
           actions: ["kms:*"],
           resources: [kms_key.keyArn],
+        }),
+        new iam.PolicyStatement({
+          actions: ["ssm:*"],
+          resources: ["*"],
         }),
         new iam.PolicyStatement({
           actions: ["secretsmanager:*"],
@@ -276,7 +281,7 @@ export class EksStack {
       },
     );
 
-    const kmsSecrets = new KmsSecrets(triggerKMSEncryption,scope);
+    const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -682,29 +687,26 @@ class KmsSecrets {
   readonly kms_connector_onboarding_paypal_partner_id: string;
   readonly kms_encrypted_api_hash_key: string;
 
-  constructor(kms: cdk.CustomResource, scope: Construct) {
-    let secretArn = kms.getAtt("secret_arn").toString();
-    let secretName = kms.getAtt("secret_name").toString();
+  constructor(scope: Construct, kms: cdk.CustomResource) {
 
-    let secret = Secret.fromSecretCompleteArn(scope,secretName,secretArn)
-
-    this.kms_admin_api_key = secret.secretValueFromJson("admin_api_key").unsafeUnwrap();
-    this.kms_jwt_secret = secret.secretValueFromJson("jwt_secret").unsafeUnwrap();
-    this.kms_encrypted_db_pass = secret.secretValueFromJson("db_pass").unsafeUnwrap();
-    this.kms_encrypted_master_key = secret.secretValueFromJson("master_key").unsafeUnwrap();
-    this.kms_jwekey_locker_identifier1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_locker_identifier2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_locker_encryption_key1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_locker_encryption_key2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_locker_decryption_key1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_locker_decryption_key2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_vault_encryption_key = secret.secretValueFromJson("locker_public_key").unsafeUnwrap();
-    this.kms_jwekey_vault_private_key = secret.secretValueFromJson("tenant_private_key").unsafeUnwrap();
-    this.kms_jwekey_tunnel_private_key = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_jwekey_rust_locker_encryption_key = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_connector_onboarding_paypal_client_id = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_connector_onboarding_paypal_client_secret = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_connector_onboarding_paypal_partner_id = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
-    this.kms_encrypted_api_hash_key = secret.secretValueFromJson("api_hash_key").unsafeUnwrap();
+    let message = kms.getAtt("message");
+    this.kms_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/admin-api-key", 1);
+    this.kms_jwt_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/jwt-secret", 1);
+    this.kms_encrypted_db_pass = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/db-pass", 1);
+    this.kms_encrypted_master_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/master-key", 1);
+    this.kms_jwekey_locker_identifier1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_identifier2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_vault_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/locker-public-key", 1);
+    this.kms_jwekey_vault_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/tenant-private-key", 1);
+    this.kms_jwekey_tunnel_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_rust_locker_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
   }
 }
