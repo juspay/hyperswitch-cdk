@@ -438,12 +438,12 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
   # Deploy Load balancer and Ingress
   echo "##########################################"
-  sleep 60
-  APP_HOST=$(kubectl get ingress hyperswitch -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  LOGS_HOST=$(kubectl get ingress hyperswitch-logs -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  SDK_WEB_HOST=$(kubectl get ingress hyperswitch-web -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-  SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  sleep 10
+  APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  SDK_WEB_HOST=$(kubectl get ingress hypers-v1-hyperswitchsdk -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
 
   # Deploy the hyperswitch application with the load balancer host name
@@ -467,13 +467,13 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   --header 'Accept: application/json' \
   --header 'api-key: '$ADMIN_API_KEY \
   --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}' )
-  if $LOCKER; then
+  if [[ "$CARD_VAULT" == "y" ]]; then
     sh ./unlock_locker.sh
   fi
-  printf "##########################################\nPlease wait for the application to deploy - Avg Wait time: ~4 mins\n##########################################"
+  printf "##########################################\nPlease wait for the application to deploy \n##########################################"
   helm get values -n hyperswitch hypers-v1 > values.yaml
-  helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST,hyperswitchsdk.autoBuild.buildParam.envSdkUrl=http://$SDK_WEB_HOST,hyperswitchsdk.autoBuild.buildParam.envBackendUrl=http://$APP_HOST" -n hyperswitch -f values.yaml
-  sleep 240
+  helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST,hyperswitchsdk.autoBuild.buildParam.envSdkUrl=http://$SDK_WEB_HOST,hyperswitchsdk.autoBuild.buildParam.envBackendUrl=http://$APP_HOST,services.router.host=http://$APP_HOST" -n hyperswitch -f values.yaml
+  sleep 10
   echoLog "--------------------------------------------------------------------------------"
   echoLog "$bold Service                           Host$reset"
   echoLog "--------------------------------------------------------------------------------"

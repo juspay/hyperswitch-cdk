@@ -42,22 +42,7 @@ Enhance your security posture with Jump Servers, designed to provide secure acce
 
 There are two ways to install the HyperSwitch Full Stack:
 
-### 1. Single-Click Deployment
-
-Click the button below to deploy the stack directly to AWS:
-
-&emsp;&emsp; <a href="https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=HyperswitchBootstrap&templateURL=https://hyperswitch-synth.s3.eu-central-1.amazonaws.com/production.yaml"><img src="./images/aws_button.png" height="35"></a>
-
-You will able to see the Hyperswitch services in the Hyperswitch Stack Output section once stack is deployed
-
-Follow below steps to unlock card vault if you have opted for Card Vault.
-
-1. Goto AWS console > CloudFormation > Stacks > HyperswitchBootstrap > Resources
-2. Click on HyperswitchCDKBootstrapEC2 instance starting with physical id `i-{{random_id}}`
-3. Open the instance and click on connect and login to the instance
-4. Follow next steps [here](#card_vault)
-
-### 2. Terminal Deployment
+### Deployment
 
 #### Prerequisites
 
