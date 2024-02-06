@@ -688,23 +688,23 @@ class KmsSecrets {
 
     let secret = Secret.fromSecretCompleteArn(scope,secretName,secretArn)
 
-    this.kms_admin_api_key = secret.secretValueFromJson("admin_api_key").toString();
-    this.kms_jwt_secret = secret.secretValueFromJson("jwt_secret").toString();
-    this.kms_encrypted_db_pass = secret.secretValueFromJson("db_pass").toString();
-    this.kms_encrypted_master_key = secret.secretValueFromJson("master_key").toString();
-    this.kms_jwekey_locker_identifier1 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_locker_identifier2 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_locker_encryption_key1 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_locker_encryption_key2 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_locker_decryption_key1 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_locker_decryption_key2 = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_vault_encryption_key = secret.secretValueFromJson("locker_public_key").toString();
-    this.kms_jwekey_vault_private_key = secret.secretValueFromJson("tenant_private_key").toString();
-    this.kms_jwekey_tunnel_private_key = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_jwekey_rust_locker_encryption_key = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_client_id = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_client_secret = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_connector_onboarding_paypal_partner_id = secret.secretValueFromJson("dummy_val").toString();
-    this.kms_encrypted_api_hash_key = secret.secretValueFromJson("api_hash_key").toString();
+    this.kms_admin_api_key = secret.secretValueFromJson("admin_api_key").unsafeUnwrap();
+    this.kms_jwt_secret = secret.secretValueFromJson("jwt_secret").unsafeUnwrap();
+    this.kms_encrypted_db_pass = secret.secretValueFromJson("db_pass").unsafeUnwrap();
+    this.kms_encrypted_master_key = secret.secretValueFromJson("master_key").unsafeUnwrap();
+    this.kms_jwekey_locker_identifier1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_locker_identifier2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_locker_encryption_key1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_locker_encryption_key2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_locker_decryption_key1 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_locker_decryption_key2 = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_vault_encryption_key = secret.secretValueFromJson("locker_public_key").unsafeUnwrap();
+    this.kms_jwekey_vault_private_key = secret.secretValueFromJson("tenant_private_key").unsafeUnwrap();
+    this.kms_jwekey_tunnel_private_key = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_jwekey_rust_locker_encryption_key = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_connector_onboarding_paypal_client_id = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_connector_onboarding_paypal_client_secret = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_connector_onboarding_paypal_partner_id = secret.secretValueFromJson("dummy_val").unsafeUnwrap();
+    this.kms_encrypted_api_hash_key = secret.secretValueFromJson("api_hash_key").unsafeUnwrap();
   }
 }
