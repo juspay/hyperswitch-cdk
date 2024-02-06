@@ -8,12 +8,6 @@ from dataclasses import dataclass
 http = urllib3.PoolManager()
 
 
-@dataclass
-class SecretStore:
-    secretArn: str
-    secretName: str
-
-
 def worker():
 
     dummy_val = "dummy_val"
@@ -111,7 +105,7 @@ def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             try:
-                secret = worker()
+                worker()
                 message = "Completed Successfully"
                 status = "SUCCESS"
             except Exception as e:
@@ -121,8 +115,6 @@ def lambda_handler(event, context):
             send(event, context, status,
                  {
                      "message": message,
-                     "secret_arn": secret.secretArn,
-                     "secret_name": secret.secretName
                  })
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
