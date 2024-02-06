@@ -448,7 +448,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
 
   # Deploy the hyperswitch application with the load balancer host name
   helm repo add hs https://juspay.github.io/hyperswitch-helm
-  export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin' \
+  export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/signup' \
   --header 'Content-Type: application/json' \
   --data-raw '{
       "email": "test@gmail.com",

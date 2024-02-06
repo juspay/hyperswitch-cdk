@@ -433,7 +433,7 @@ export class EksStack {
               plainpassword: config.rds.password,
             },
           },
-          replica: {
+          readOnly: {
             host: rds.db_cluster.clusterReadEndpoint.hostname,
             auth: {
               username: "db_user",
@@ -459,6 +459,11 @@ export class EksStack {
           enabled: locker ? true : false,
           postgresql: {
             enabled: locker ? true : false,
+          },
+          server: {
+            secrets: {
+              master_key: locker ? config.locker.master_key : ""
+            }
           }
         },
         "hyperswitchsdk": {
@@ -488,14 +493,11 @@ export class EksStack {
             ]
           },
           autoBuild: {
+            forceBuild: true,
             gitCloneParam: {
               gitVersion: "0.16.7"
             },
-            nginxConfig: { extraPath: "v0" },
-            buildParam: {
-              envSdkUrl: "http://hyperswitch-web-1293771213.eu-west-3.elb.amazonaws.com",
-              envBackendUrl: "http://hyperswitch-967472307.eu-west-3.elb.amazonaws.com"
-            }
+            nginxConfig: { extraPath: "v0" }
           }
 
         },
