@@ -438,7 +438,7 @@ if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADM
   aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
   # Deploy Load balancer and Ingress
   echo "##########################################"
-  sleep 10
+  sleep 60
   APP_HOST=$(kubectl get ingress hyperswitch -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   LOGS_HOST=$(kubectl get ingress hyperswitch-logs -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
