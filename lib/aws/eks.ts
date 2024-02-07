@@ -357,6 +357,9 @@ export class EksStack {
           },
           consumer: {
             image: "juspaydotin/hyperswitch-consumer:v1.105.0-standalone"
+          },
+          controlCenter: {
+            image: "juspaydotin/hyperswitch-control-center:v1.17.1"
           }
         },
         application: {
@@ -461,6 +464,8 @@ export class EksStack {
           },
           server: {
             secrets: {
+              locker_private_key: locker?.locker_ec2.locker_pair.private_key || '',
+              tenant_public_key: locker?.locker_ec2.tenant.public_key || '',
               master_key: locker ? config.locker.master_key : ""
             }
           }
