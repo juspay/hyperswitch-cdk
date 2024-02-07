@@ -378,8 +378,8 @@ export class EksStack {
               kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
               kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
               kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
-              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
+              kms_jwekey_vault_encryption_key: locker?.locker_ec2.locker_pair.public_key || kmsSecrets.kms_jwekey_vault_encryption_key,
+              kms_jwekey_vault_private_key: locker?.locker_ec2.tenant.private_key || kmsSecrets.kms_jwekey_vault_private_key,
               kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
               kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
               kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
@@ -394,7 +394,6 @@ export class EksStack {
             },
             // master_enc_key: kmsSecrets.kms_encrypted_master_key,
             locker: {
-              host: locker ? `http://${locker.locker_ec2.instance.instancePrivateIp}:8080` : "locker-host",
               locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
               hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
             },
