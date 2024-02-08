@@ -21,11 +21,12 @@ export class AWSStack extends cdk.Stack {
       // },
       stackName: config.stack.name,
     });
+    let isStandalone = scope.node.tryGetContext("free_tier") || false;
 
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
-    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc);
+    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc, isStandalone );
     rds.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
 
     config = update_config(
@@ -39,7 +40,6 @@ export class AWSStack extends cdk.Stack {
       locker = new LockerSetup(this, vpc.vpc, config.locker);
     }
 
-    let isStandalone = scope.node.tryGetContext("free_tier") || false;
     if (isStandalone) {
       // Deploying Router and Control center application in a single EC2 instance
       let hyperswitch_ec2 = new EC2Instance(
@@ -90,7 +90,7 @@ export class AWSStack extends cdk.Stack {
         value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + "/health"
       });
       new cdk.CfnOutput(this, "control_center", {
-        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + ":9000" + "\nFor login, use email id as 'itisatest@gmail.com' and password is test1234"
+        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + ":9000" + "\nFor login, use email id as 'itisatest@gmail.com' and password is admin"
       });
       new cdk.CfnOutput(this, "sdk assets link", {
         value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":9090"
