@@ -39,7 +39,7 @@ export class AWSStack extends cdk.Stack {
       locker = new LockerSetup(this, vpc.vpc, config.locker);
     }
 
-    let isStandalone = scope.node.tryGetContext("test") || false;
+    let isStandalone = scope.node.tryGetContext("free_tier") || false;
     if (isStandalone) {
       // Deploying Router and Control center application in a single EC2 instance
       let hyperswitch_ec2 = new EC2Instance(
