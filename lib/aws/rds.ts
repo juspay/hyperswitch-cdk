@@ -65,7 +65,6 @@ export class DataBaseConstruct {
           rds_config.writer_instance_class,
           rds_config.writer_instance_size
         ),
-        publiclyAccessible: true,
       }),
       readers: [
         ClusterInstance.provisioned("Reader Instance", {
@@ -76,7 +75,7 @@ export class DataBaseConstruct {
         }),
       ],
       vpc,
-      vpcSubnets: { subnetType: SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       engine,
       port: rds_config.port,
       securityGroups: [db_security_group],
@@ -84,9 +83,6 @@ export class DataBaseConstruct {
       credentials: Credentials.fromSecret(secret),
       removalPolicy: RemovalPolicy.DESTROY,
     });
-
-    // Add ingress rule to allow traffic from any IP address
-    db_cluster.connections.allowFromAnyIpv4(Port.tcp(rds_config.port));
 
     this.db_cluster = db_cluster;
 
