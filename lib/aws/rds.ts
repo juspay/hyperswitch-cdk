@@ -78,6 +78,7 @@ export class DataBaseConstruct {
       vpc,
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
       engine,
+      storageEncrypted: true,
       port: rds_config.port,
       securityGroups: [db_security_group],
       defaultDatabaseName: db_name,
