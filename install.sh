@@ -14,15 +14,16 @@ padding="$(printf '%*s' $(( (term_width - box_width) / 2 )) '')"
 box_line="$(printf '%*s' $box_width '')"
 box_line="${box_line// /-}"
 
+# Function to display error messages in red
+display_error() {
+    echo "${bold}${red}$1${reset}"
+}
+
 # Checking for AWS credentials
 if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
     display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
     exit 1
 fi
-# Function to display error messages in red
-display_error() {
-    echo "${bold}${red}$1${reset}"
-}
 
 echo
 echo "${green}##########################################${reset}"
@@ -99,7 +100,7 @@ echo "Dependency installation completed."
 
 fetch_details(){
 # Trying to retrieve AWS account owner's details
-if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
+if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity --output=json 2>&1); then
     display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"
     display_error "Check if your AWS credentials are expired and you have appropriate permissions."
     exit 1

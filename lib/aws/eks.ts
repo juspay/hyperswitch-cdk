@@ -506,9 +506,13 @@ export class EksStack {
             nodeAffinity: {
               requiredDuringSchedulingIgnoredDuringExecution: [
                 {
-                  key: "node-type",
-                  values: ["locker"],
-                  operator: "In",
+                  matchExpressions: [
+                    {
+                      key: "node-type",
+                      values: ["locker"],
+                      operator: "In",
+                    },
+                  ],
                 },
               ],
             },
