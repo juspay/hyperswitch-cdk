@@ -429,8 +429,15 @@ npm install
 export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=true
 if ! cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN; then
     BUCKET_NAME=cdk-hnb659fds-assets-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION
-    aws s3 rm s3://$BUCKET_NAME --recursive 
-    aws s3api delete-bucket --bucket $BUCKET_NAME
+    ROLE_NAME=cdk-hnb659fds-cfn-exec-role-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION
+    aws s3api delete-objects --bucket $BUCKET_NAME --delete "$(aws s3api list-object-versions --bucket $BUCKET_NAME --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" 2>/dev/null
+    aws s3api delete-objects --bucket $BUCKET_NAME --delete "$(aws s3api list-object-versions --bucket $BUCKET_NAME --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')" 2>/dev/null
+    aws s3 rm s3://$BUCKET_NAME --recursive 2>/dev/null
+    aws s3api delete-bucket --bucket $BUCKET_NAME 2>/dev/null
+    for policy_arn in $(aws iam list-attached-role-policies --role-name $ROLE_NAME --query 'AttachedPolicies[].PolicyArn' --output text); do
+      aws iam detach-role-policy --role-name $ROLE_NAME --policy-arn $policy_arn 2>/dev/null
+    done
+    aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
     cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
 fi
 if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER ; then
