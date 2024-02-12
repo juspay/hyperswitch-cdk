@@ -80,6 +80,7 @@ export class DataBaseConstruct {
       vpc,
       vpcSubnets: { subnetType: isStandalone ? SubnetType.PUBLIC : SubnetType.PRIVATE_WITH_EGRESS },
       engine,
+      storageEncrypted: true,
       port: rds_config.port,
       securityGroups: [db_security_group],
       defaultDatabaseName: db_name,
