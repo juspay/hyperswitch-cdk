@@ -21,8 +21,7 @@ export class AWSStack extends cdk.Stack {
       // },
       stackName: config.stack.name,
     });
-    let isStandalone = scope.node.tryGetContext("free_tier") || false;
-
+    let isStandalone = (scope.node.tryGetContext("free_tier") == "true") || false;
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
@@ -86,16 +85,16 @@ export class AWSStack extends cdk.Stack {
         ec2.Port.tcp(22),
       );
 
-      new cdk.CfnOutput(this, "router url", {
+      new cdk.CfnOutput(this, "StandaloneURL", {
         value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + "/health"
       });
-      new cdk.CfnOutput(this, "control_center", {
+      new cdk.CfnOutput(this, "ControlCenterURL", {
         value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + ":9000" + "\nFor login, use email id as 'itisatest@gmail.com' and password is admin"
       });
-      new cdk.CfnOutput(this, "sdk assets link", {
+      new cdk.CfnOutput(this, "SdkAssetsURL", {
         value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":9090"
       });
-      new cdk.CfnOutput(this, "demo app", {
+      new cdk.CfnOutput(this, "DemoApp", {
         value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":5252"
       });
 

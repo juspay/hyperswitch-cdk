@@ -66,18 +66,19 @@ export class DataBaseConstruct {
           rds_config.writer_instance_class,
           rds_config.writer_instance_size
         ),
-        publiclyAccessible: true,
+        publiclyAccessible: isStandalone,
       }),
-      // readers: [
-      //   ClusterInstance.provisioned("Reader Instance", {
-      //     instanceType: InstanceType.of(
-      //       rds_config.reader_instance_class,
-      //       rds_config.reader_instance_size
-      //     ),
-      //   }),
-      // ],
+      readers: isStandalone ? [] :
+        [
+          ClusterInstance.provisioned("Reader Instance", {
+            instanceType: InstanceType.of(
+              rds_config.reader_instance_class,
+              rds_config.reader_instance_size
+            ),
+          }),
+        ],
       vpc,
-      vpcSubnets: { subnetType: SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: isStandalone ? SubnetType.PUBLIC : SubnetType.PRIVATE_WITH_EGRESS },
       engine,
       port: rds_config.port,
       securityGroups: [db_security_group],
