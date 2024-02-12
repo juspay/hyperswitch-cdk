@@ -87,9 +87,6 @@ export class DataBaseConstruct {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    // Add ingress rule to allow traffic from any IP address
-    db_cluster.connections.allowFromAnyIpv4(Port.tcp(rds_config.port));
-
     this.db_cluster = db_cluster;
 
     // For standalone deployment, create a bucket to store the schema and migration code
