@@ -22,6 +22,7 @@ export class AWSStack extends cdk.Stack {
       stackName: config.stack.name,
     });
     let isStandalone = (scope.node.tryGetContext("free_tier") == "true") || false;
+    config = updateRdsConfigToFreeTier(config, isStandalone);
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
@@ -153,6 +154,14 @@ export class AWSStack extends cdk.Stack {
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
     }
   }
+}
+
+function updateRdsConfigToFreeTier(config: Config, isStandalone: Boolean) {
+  if(isStandalone) {
+    config.rds.writer_instance_class = ec2.InstanceClass.T3;
+    config.rds.writer_instance_size = ec2.InstanceSize.MICRO;
+  }
+  return config;
 }
 
 function update_config(config: Config, db_host: string, redis_host: string) {
