@@ -19,34 +19,62 @@ if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION
     exit 1
 fi
 
-function box_out_center()
-{
-  local s=("$@") b w padding terminalWidth
-  for l in "${s[@]}"; do
-    ((w<${#l})) && { b="$l"; w="${#l}"; }
-  done
-  terminalWidth=$(tput cols) # Get the terminal width
-  padding=$(( (terminalWidth - w - 4) / 2 )) # Calculate padding; subtract 4 for the box borders
+function box_out() {
+    local s=("$@") b w padding terminalWidth
+    for l in "${s[@]}"; do
+        ((w < ${#l})) && {
+            b="$l"
+            w="${#l}"
+        }
+    done
+    terminalWidth=$(tput cols)               # Get the terminal width
+    padding=$(((terminalWidth - w - 4) / 2)) # Calculate padding; subtract 4 for the box borders
 
-  tput bold
-  tput setaf 2
-  printf "%*s" $padding "" # Add padding before the top line
-  echo " #${b//?/#}#"
-  printf "%*s" $padding "" # Add padding before the second line
-  echo "| ${b//?/ } |"
-  for l in "${s[@]}"; do
-    printf "%*s" $padding "" # Add padding before each line within the box
-    printf "| %s%*s%s |" "$(tput sgr 0)$(tput bold)" "-$w" "$l" "$(tput bold)$(tput setaf 2)"
-    echo # New line
-  done
-  printf "%*s" $padding "" # Add padding before the bottom second line
-  echo "| ${b//?/ } |"
-  printf "%*s" $padding "" # Add padding before the bottom line
-  echo " #${b//?/#}#"
-  tput sgr 0
+    tput bold
+    tput setaf 2
+    printf "%*s" $padding "" # Add padding before the top line
+    echo " ${b//?/ } "
+    for l in "${s[@]}"; do
+        printf "%*s" $padding "" # Add padding before each line within the box
+        printf " %s%*s%s " "$(tput sgr 0)$(tput bold)" "-$w" "$l" "$(tput bold)$(tput setaf 2)"
+        echo # New line
+    done
+    tput sgr 0
 }
 
-box_out_center 'Installing Dependencies'
+function box_out_with_hyphen() {
+    local s=("$@") b w padding terminalWidth
+    for l in "${s[@]}"; do
+        ((w < ${#l})) && {
+            b="$l"
+            w="${#l}"
+        }
+    done
+    terminalWidth=$(tput cols)               # Get the terminal width
+    padding=$(((terminalWidth - w - 4) / 2)) # Calculate padding; subtract 4 for the box borders
+
+    tput bold
+    tput setaf 2
+    printf "%*s" $padding "" # Add padding before the top line
+    echo " -${b//?/-}-"
+    printf "%*s" $padding "" # Add padding before the second line
+    echo "| ${b//?/ } |"
+    for l in "${s[@]}"; do
+        printf "%*s" $padding "" # Add padding before each line within the box
+        printf "| %s%*s%s |" "$(tput sgr 0)$(tput bold)" "-$w" "$l" "$(tput bold)$(tput setaf 2)"
+        echo # New line
+    done
+    printf "%*s" $padding "" # Add padding before the bottom second line
+    echo "| ${b//?/ } |"
+    printf "%*s" $padding "" # Add padding before the bottom line
+    echo " -${b//?/-}-"
+    tput sgr 0
+}
+
+echo
+printf "${bold}Installing Dependencies...${reset}\n"
+echo
+
 # Function to display a simple loading animation
 show_loader() {
     local message=$1
@@ -147,10 +175,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-
 # Displaying AWS account information in a "box"
 echo
-box_out_center "AWS Account Information:"  "" "Account ID: $AWS_ACCOUNT_ID"  "User ID: $AWS_USER_ID" "Role: $AWS_ROLE"
+box_out_with_hyphen "AWS Account Information:" "" "Account ID: $AWS_ACCOUNT_ID" "User ID: $AWS_USER_ID" "Role: $AWS_ROLE"
 echo
 # Ask consent to proceed with the aws account
 while true; do
@@ -185,10 +212,9 @@ if [ "$version" -lt 18 ]; then
 fi
 echo "Node.js version is valid."
 
-
 # Function to list available services
 list_services() {
-    box_out_center "   Welcome to Hyperswitch Services Installer" "" "" "Hyperswitch Services Available for Installation:" "              1. Backend Services" "              2. Demo Store" "              3. Control Center" "              4. Card Vault" "              5. SDK"
+    box_out_with_hyphen "   Welcome to Hyperswitch Services Installer" "" "" "Hyperswitch Services Available for Installation:" "              1. Backend Services" "              2. Demo Store" "              3. Control Center" "              4. Card Vault" "              5. SDK"
 }
 
 INSTALLATION_MODE=1
@@ -232,8 +258,7 @@ check_if_element_is_preset_in_array() {
 }
 
 if [[ -z "$AWS_DEFAULT_REGION" ]]; then
-    echo "Please enter the AWS region to deploy the services: "
-    read -r AWS_DEFAULT_REGION
+    read -p "Please enter the AWS region to deploy the services: " AWS_DEFAULT_REGION
 else
     read -p "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): " input_region
     if [[ -n "$input_region" ]]; then
@@ -266,8 +291,7 @@ while true; do
     fi
 
     # Prompt for region again
-    echo "Please enter the AWS region to deploy the services: "
-    read -r AWS_DEFAULT_REGION
+    read -p "Please enter the AWS region to deploy the services: " AWS_DEFAULT_REGION
 
 done
 
@@ -277,7 +301,7 @@ function echoLog() {
 }
 
 echo
-box_out_center "Checking neccessary permissions"
+printf "${bold}Checking neccessary permissions${reset}\n"
 echo
 
 check_root_user() {
@@ -312,7 +336,7 @@ echo "Checking for necessary IAM policies..."
 show_loader "Verifying IAM policies"
 
 echo
-box_out_center "Configure Credentials of the Application"
+printf "${bold}Configure Credentials of the Application${reset}\n"
 echo
 
 validate_password() {
@@ -423,7 +447,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
     fi
 
-box_out_center "Deploying Hyperswitch Services"
+    printf "${bold}Deploying Hyperswitch Services${reset}\n"
     # Deploy the EKS Cluster
     npm install
     export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=true
@@ -497,8 +521,8 @@ box_out_center "Deploying Hyperswitch Services"
     fi
 
 else
-
-    box_out_center "Deploying Hyperswitch Services"
+    echo
+    printf "${bold}Deploying Hyperswitch Services${reset}\n"
     echo
     echo "Hyperswitch is being deployed in standalone mode. Please wait for the deployment to complete."
 
@@ -516,11 +540,31 @@ else
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY ; then
+    if cdk deploy -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY; then
         STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneURL'].OutputValue" --output text)
         CONTROL_CENTER_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='ControlCenterURL'].OutputValue" --output text)
         SDK_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkAssetsURL'].OutputValue" --output text)
         DEMO_APP=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DemoApp'].OutputValue" --output text)
+        echo "Please wait for instances to be initialized. Approximate time is 2 minutes."
+        printf "${bold}Initializing Instances${reset} "
+        # Start the spinner in the background
+        (
+            while :; do
+                for s in '/' '-' '\\' '|'; do
+                    printf "\r$s"
+                    sleep 1
+                done
+            done
+        ) &
+        spinner_pid=$!
+        # Sleep for 10 seconds to simulate work
+        sleep 120
+        # Kill the spinner
+        kill $spinner_pid >/dev/null 2>&1
+        wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
+        printf "\r"                   # Clear the spinner character
+        printf "\nInitialization complete.\n"
+        printf "\n"
         echoLog "--------------------------------------------------------------------------------"
         echoLog "$bold Service                           Host$reset"
         echoLog "--------------------------------------------------------------------------------"
