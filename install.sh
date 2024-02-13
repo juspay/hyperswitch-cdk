@@ -7,12 +7,6 @@ green=$(tput setaf 2)
 yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
-white=$(tput setaf 7)
-term_width=$(tput cols)
-box_width=60
-padding="$(printf '%*s' $(((term_width - box_width) / 2)) '')"
-box_line="$(printf '%*s' $box_width '')"
-box_line="${box_line// /-}"
 
 # Function to display error messages in red
 display_error() {
@@ -25,11 +19,34 @@ if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION
     exit 1
 fi
 
-echo
-echo "${green}##########################################${reset}"
-echo "${green}       Installing Dependencies${reset}"
-echo "${green}##########################################${reset}"
-echo
+function box_out_center()
+{
+  local s=("$@") b w padding terminalWidth
+  for l in "${s[@]}"; do
+    ((w<${#l})) && { b="$l"; w="${#l}"; }
+  done
+  terminalWidth=$(tput cols) # Get the terminal width
+  padding=$(( (terminalWidth - w - 4) / 2 )) # Calculate padding; subtract 4 for the box borders
+
+  tput bold
+  tput setaf 2
+  printf "%*s" $padding "" # Add padding before the top line
+  echo " #${b//?/#}#"
+  printf "%*s" $padding "" # Add padding before the second line
+  echo "| ${b//?/ } |"
+  for l in "${s[@]}"; do
+    printf "%*s" $padding "" # Add padding before each line within the box
+    printf "| %s%*s%s |" "$(tput sgr 0)$(tput bold)" "-$w" "$l" "$(tput bold)$(tput setaf 2)"
+    echo # New line
+  done
+  printf "%*s" $padding "" # Add padding before the bottom second line
+  echo "| ${b//?/ } |"
+  printf "%*s" $padding "" # Add padding before the bottom line
+  echo " #${b//?/#}#"
+  tput sgr 0
+}
+
+box_out_center 'Installing Dependencies'
 # Function to display a simple loading animation
 show_loader() {
     local message=$1
@@ -130,22 +147,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Function to print a line with padding
-print_line() {
-    echo "${padding}${blue}${white}$1${reset}"
-}
 
 # Displaying AWS account information in a "box"
-echo "${padding}${box_line}"
 echo
-print_line "${bold}AWS Account Information:${reset}"
-echo
-print_line "Account ID: ${bold}$AWS_ACCOUNT_ID${reset}"
-print_line "User ID: ${bold}$AWS_USER_ID${reset}"
-print_line "Role: ${bold}$AWS_ROLE${reset}"
-echo
-echo "${padding}${box_line}"
-
+box_out_center "AWS Account Information:"  "" "Account ID: $AWS_ACCOUNT_ID"  "User ID: $AWS_USER_ID" "Role: $AWS_ROLE"
 echo
 # Ask consent to proceed with the aws account
 while true; do
@@ -180,21 +185,10 @@ if [ "$version" -lt 18 ]; then
 fi
 echo "Node.js version is valid."
 
-# Function to display the header
-display_header() {
-    print_line "###########################################"
-    print_line " Welcome to Hyperswitch Services Installer"
-    print_line "###########################################"
-}
 
 # Function to list available services
 list_services() {
-    print_line "Hyperswitch Services Available for Installation:"
-    print_line "${green}1. Backend Services"
-    print_line "${green}2. Demo Store"
-    print_line "${green}3. Control Center"
-    print_line "${green}4. Card Vault"
-    print_line "${green}5. SDK"
+    box_out_center "   Welcome to Hyperswitch Services Installer" "" "" "Hyperswitch Services Available for Installation:" "              1. Backend Services" "              2. Demo Store" "              3. Control Center" "              4. Card Vault" "              5. SDK"
 }
 
 INSTALLATION_MODE=1
@@ -202,7 +196,7 @@ INSTALLATION_MODE=1
 show_install_options() {
     echo
     echo "${bold}Choose an installation option:${reset}"
-    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Under Development, Stay Tuned!${reset}"
+    echo "${bold}${green}1. Free Tier ${reset} - ${bold}${blue}Only for prototyping and not scalable. Falls under AWS Free Tier. ${reset}"
     echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
 }
 
@@ -225,9 +219,6 @@ get_user_choice() {
 }
 
 clear
-display_header
-echo
-print_line "This installer will guide you through setting up Hyperswitch services on your AWS account."
 list_services
 echo
 show_install_options
@@ -244,8 +235,7 @@ if [[ -z "$AWS_DEFAULT_REGION" ]]; then
     echo "Please enter the AWS region to deploy the services: "
     read -r AWS_DEFAULT_REGION
 else
-    echo "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): "
-    read -r input_region
+    read -p "Please enter the AWS region to deploy the services (Press enter to keep the current region $blue$bold$AWS_DEFAULT_REGION$reset): " input_region
     if [[ -n "$input_region" ]]; then
         AWS_DEFAULT_REGION=$input_region
     fi
@@ -287,9 +277,7 @@ function echoLog() {
 }
 
 echo
-echo "${blue}##########################################${reset}"
-echo "${blue}    Checking neccessary permissions${reset}"
-echo "${blue}##########################################${reset}"
+box_out_center "Checking neccessary permissions"
 echo
 
 check_root_user() {
@@ -324,9 +312,7 @@ echo "Checking for necessary IAM policies..."
 show_loader "Verifying IAM policies"
 
 echo
-echo "${blue}##########################################${reset}"
-echo "${blue} Configure Credentials of the Application ${reset}"
-echo "${blue}##########################################${reset}"
+box_out_center "Configure Credentials of the Application"
 echo
 
 validate_password() {
@@ -437,9 +423,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
     fi
 
-    echo "${blue}#########################################${reset}"
-    echo "${blue}      Deploying Hyperswitch Services${reset}"
-    echo "${blue}#########################################${reset}"
+box_out_center "Deploying Hyperswitch Services"
     # Deploy the EKS Cluster
     npm install
     export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=true
@@ -514,9 +498,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
 else
 
-    echo "${blue}#########################################${reset}"
-    echo "${blue}      Deploying Hyperswitch Services${reset}"
-    echo "${blue}#########################################${reset}"
+    box_out_center "Deploying Hyperswitch Services"
     echo
     echo "Hyperswitch is being deployed in standalone mode. Please wait for the deployment to complete."
 
