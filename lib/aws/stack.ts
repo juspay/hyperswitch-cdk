@@ -25,9 +25,10 @@ export class AWSStack extends cdk.Stack {
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
-    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc, isStandalone );
-    rds.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
-
+    let rds = new DataBaseConstruct(this, config.rds, vpc.vpc, isStandalone);
+    if (isStandalone) {
+      rds.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
+    }
     config = update_config(
       config,
       rds.db_cluster.clusterEndpoint.hostname,

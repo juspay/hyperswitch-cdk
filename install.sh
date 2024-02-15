@@ -295,6 +295,8 @@ while true; do
 
 done
 
+export AWS_DEFAULT_REGION;
+
 export LOG_FILE="cdk.services.log"
 function echoLog() {
     echo "$1" | tee -a $LOG_FILE
