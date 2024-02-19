@@ -18,8 +18,6 @@ const currentAccount: AccountRegion = {
 if (!process.env.CDK_DEFAULT_REGION) {
   throw Error("please do `export CDK_DEFAULT_REGION=<your region>`");
 }
-
-console.log("current", currentAccount);
 app.node.setContext("currentAccount", currentAccount);
 new HyperswitchStack(app, config, Cloud.AWS);
 

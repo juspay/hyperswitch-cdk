@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Duration, RemovalPolicy, SecretValue } from "aws-cdk-lib";
 import {
   ISecurityGroup,
@@ -7,7 +8,9 @@ import {
   Port,
   SecurityGroup,
   Vpc,
-  SubnetType
+  SubnetType,
+  InstanceClass,
+  InstanceSize
 } from "aws-cdk-lib/aws-ec2";
 import {
   AuroraPostgresEngineVersion,
@@ -15,6 +18,9 @@ import {
   Credentials,
   DatabaseCluster,
   DatabaseClusterEngine,
+  DatabaseInstance,
+  DatabaseInstanceEngine,
+  PostgresEngineVersion,
 } from "aws-cdk-lib/aws-rds";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
@@ -27,15 +33,12 @@ import * as triggers from "aws-cdk-lib/triggers";
 
 export class DataBaseConstruct {
   sg: SecurityGroup;
-  db_cluster: DatabaseCluster;
+  dbCluster?: DatabaseCluster;
+  standaloneDb?: DatabaseInstance;
   password: string;
   bucket: cdk.aws_s3.Bucket;
 
   constructor(scope: Construct, rds_config: RDSConfig, vpc: Vpc, isStandalone: boolean) {
-    const engine = DatabaseClusterEngine.auroraPostgres({
-      version: AuroraPostgresEngineVersion.VER_13_7,
-    });
-
     const db_name = "hyperswitch";
 
     const db_security_group = new SecurityGroup(scope, "Hyperswitch-db-SG", {
@@ -43,11 +46,8 @@ export class DataBaseConstruct {
       vpc: vpc,
     });
 
-    this.sg = db_security_group;
-
     const secretName = "hypers-db-master-user-secret";
 
-    // Create the secret if it doesn't exist
     let secret = new Secret(scope, "hypers-db-master-user-secret", {
       secretName: secretName,
       description: "Database master user credentials",
@@ -59,39 +59,29 @@ export class DataBaseConstruct {
     });
 
     this.password = rds_config.password;
+    this.sg = db_security_group;
 
-    const db_cluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
-      writer: ClusterInstance.provisioned("Writer Instance", {
-        instanceType: InstanceType.of(
-          rds_config.writer_instance_class,
-          rds_config.writer_instance_size
-        ),
-        publiclyAccessible: isStandalone,
-      }),
-      readers: isStandalone ? [] :
-        [
-          ClusterInstance.provisioned("Reader Instance", {
-            instanceType: InstanceType.of(
-              rds_config.reader_instance_class,
-              rds_config.reader_instance_size
-            ),
-          }),
-        ],
-      vpc,
-      vpcSubnets: { subnetType: isStandalone ? SubnetType.PUBLIC : SubnetType.PRIVATE_WITH_EGRESS },
-      engine,
-      storageEncrypted: true,
-      port: rds_config.port,
-      securityGroups: [db_security_group],
-      defaultDatabaseName: db_name,
-      credentials: Credentials.fromSecret(secret),
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    this.db_cluster = db_cluster;
-
-    // For standalone deployment, create a bucket to store the schema and migration code
     if (isStandalone) {
+
+      this.standaloneDb = new DatabaseInstance(scope, "hyperswitch-db", {
+        engine: DatabaseInstanceEngine.postgres({
+          version: PostgresEngineVersion.VER_14,
+        }),
+        instanceType: InstanceType.of(
+          InstanceClass.T3,
+          InstanceSize.MICRO
+        ),
+        vpc,
+        vpcSubnets: { subnetType: SubnetType.PUBLIC },
+        securityGroups: [this.sg],
+        databaseName: rds_config.db_name,
+        credentials: Credentials.fromSecret(secret),
+        port: rds_config.port,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+
+      this.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432));
+
       const schemaBucket = new Bucket(scope, "SchemaBucket", {
         removalPolicy: RemovalPolicy.DESTROY,
         blockPublicAccess: new s3.BlockPublicAccess({
@@ -248,10 +238,47 @@ def lambda_handler(event, context):
         handler: initializeDBFunction,
         timeout: Duration.minutes(15),
         invocationType: triggers.InvocationType.REQUEST_RESPONSE,
-      }).executeAfter(db_cluster);
+      }).executeAfter(this.standaloneDb);
 
       initializeDBFunction.node.addDependency(initializeDbTriggerCustomResource);
     }
+    else {
+
+      const engine = DatabaseClusterEngine.auroraPostgres({
+        version: AuroraPostgresEngineVersion.VER_13_7,
+      });
+
+      const dbCluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
+        writer: ClusterInstance.provisioned("Writer Instance", {
+          instanceType: InstanceType.of(
+            rds_config.writer_instance_class,
+            rds_config.writer_instance_size
+          ),
+          publiclyAccessible: isStandalone,
+        }),
+        readers: isStandalone ? [] :
+          [
+            ClusterInstance.provisioned("Reader Instance", {
+              instanceType: InstanceType.of(
+                rds_config.reader_instance_class,
+                rds_config.reader_instance_size
+              ),
+            }),
+          ],
+        vpc,
+        vpcSubnets: { subnetType: isStandalone ? SubnetType.PUBLIC : SubnetType.PRIVATE_WITH_EGRESS },
+        engine,
+        storageEncrypted: true,
+        port: rds_config.port,
+        securityGroups: [db_security_group],
+        defaultDatabaseName: db_name,
+        credentials: Credentials.fromSecret(secret),
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+
+      this.dbCluster = dbCluster;
+    }
+    // For standalone deployment, create a bucket to store the schema and migration code
   }
 
   addClient(

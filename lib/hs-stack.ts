@@ -17,8 +17,6 @@ export class HyperswitchStack {
 
     constructor(scope: Construct, config: Config, cloudProvider: Cloud) {
         const stack: string = scope.node.tryGetContext("stack") || "hyperswitch";
-        console.log(stack);
-        console.log(scope.node.tryGetContext("stack"))
 
         switch (stack) {
             case "hyperswitch":

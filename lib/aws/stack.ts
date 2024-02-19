@@ -22,26 +22,16 @@ export class AWSStack extends cdk.Stack {
       stackName: config.stack.name,
     });
     let isStandalone = (scope.node.tryGetContext("free_tier") == "true") || false;
-    config = updateRdsConfigToFreeTier(config, isStandalone);
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
     let rds = new DataBaseConstruct(this, config.rds, vpc.vpc, isStandalone);
-    if (isStandalone) {
-      rds.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432)); // this has to be moved to standalone and for production it should be internal jump
-    }
-    config = update_config(
-      config,
-      rds.db_cluster.clusterEndpoint.hostname,
-      elasticache.cluster.attrRedisEndpointAddress,
-    );
-
     let locker: LockerSetup | undefined;
     if (config.locker.master_key) {
       locker = new LockerSetup(this, vpc.vpc, config.locker);
     }
 
-    if (isStandalone) {
+    if (rds.standaloneDb) {
       // Deploying Router and Control center application in a single EC2 instance
       let hyperswitch_ec2 = new EC2Instance(
         this,
@@ -101,14 +91,20 @@ export class AWSStack extends cdk.Stack {
       });
 
 
-    } else {
+    } else if(rds.dbCluster) {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
       if (is_root_user)
         throw new Error(
           "Please create new user with appropiate role as ROOT user is not recommended",
         );
-      console.log("Deploying production");
+
+      config = update_config(
+        config,
+        rds.dbCluster.clusterEndpoint.hostname,
+        elasticache.cluster.attrRedisEndpointAddress,
+      );
+
       let eks = new EksStack(
         this,
         config,
@@ -155,14 +151,6 @@ export class AWSStack extends cdk.Stack {
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
     }
   }
-}
-
-function updateRdsConfigToFreeTier(config: Config, isStandalone: Boolean) {
-  if(isStandalone) {
-    config.rds.writer_instance_class = ec2.InstanceClass.T3;
-    config.rds.writer_instance_size = ec2.InstanceSize.MICRO;
-  }
-  return config;
 }
 
 function update_config(config: Config, db_host: string, redis_host: string) {
