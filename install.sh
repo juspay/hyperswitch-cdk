@@ -560,7 +560,7 @@ else
         ) &
         spinner_pid=$!
         # Sleep for 10 seconds to simulate work
-        sleep 120
+        sleep 60
         # Kill the spinner
         kill $spinner_pid >/dev/null 2>&1
         wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
