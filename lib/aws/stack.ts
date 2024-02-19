@@ -31,7 +31,7 @@ export class AWSStack extends cdk.Stack {
       locker = new LockerSetup(this, vpc.vpc, config.locker);
     }
 
-    if (rds.standaloneDb) {
+    if (isStandalone) {
       // Deploying Router and Control center application in a single EC2 instance
       let hyperswitch_ec2 = new EC2Instance(
         this,
@@ -91,7 +91,7 @@ export class AWSStack extends cdk.Stack {
       });
 
 
-    } else if(rds.dbCluster) {
+    } else {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
       if (is_root_user)
@@ -99,12 +99,13 @@ export class AWSStack extends cdk.Stack {
           "Please create new user with appropiate role as ROOT user is not recommended",
         );
 
-      config = update_config(
-        config,
-        rds.dbCluster.clusterEndpoint.hostname,
-        elasticache.cluster.attrRedisEndpointAddress,
-      );
-
+      if (rds.dbCluster) {
+        config = update_config(
+          config,
+          rds.dbCluster.clusterEndpoint.hostname,
+          elasticache.cluster.attrRedisEndpointAddress,
+        );
+      }
       let eks = new EksStack(
         this,
         config,
