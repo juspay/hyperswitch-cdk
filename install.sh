@@ -393,7 +393,6 @@ while true; do
         break
     fi
 done
-MASTER_ENC_KEY="471f22516724347bcca9c20c5fa88d9821c4604e63a6aceffd24605809c9237c"
 
 validate_api_key() {
     local api_key=$1
@@ -419,6 +418,16 @@ while true; do
     read -r -s ADMIN_API_KEY
     if validate_api_key "$ADMIN_API_KEY"; then
         break
+    fi
+done
+
+while true; do
+    echo "Please enter the AES master encryption key. It must be 64 characters long and consist of hexadecimal digits:"
+    read -r -s MASTER_ENC_KEY
+    if [[ ${#MASTER_ENC_KEY} -eq 64 && $MASTER_ENC_KEY =~ ^[0-9a-fA-F]+$ ]]; then
+        break
+    else
+        display_error "Invalid input. The master encryption key must be 64 characters long and consist of hexadecimal digits."
     fi
 done
 
@@ -466,6 +475,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
+    echo `cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER`
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
