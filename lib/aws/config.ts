@@ -75,6 +75,10 @@ export type LockerConfig = {
     db_user: string;
 };
 
+export type Tags = {
+  [key: string]: string;
+};
+
 export type Config = {
     stack: StackConfig;
     locker: LockerConfig;
@@ -83,6 +87,7 @@ export type Config = {
     extra_subnets: ExtraSubnetConfig[]; // TODO: remove this if not required
     hyperswitch_ec2: EC2;
     rds: RDSConfig;
+    tags: Tags;
 };
 
 export type ImageBuilderConfig = {
