@@ -279,6 +279,8 @@ export class LockerSetup extends Construct {
       "locker_db_subnet_id",
     );
 
+    cdk.Tags.of(this).add("SubStack", "Locker");
+
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
       version: AuroraPostgresEngineVersion.VER_13_7,
