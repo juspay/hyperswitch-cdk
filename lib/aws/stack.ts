@@ -21,7 +21,13 @@ export class AWSStack extends cdk.Stack {
       // },
       stackName: config.stack.name,
     });
-    let isStandalone = (scope.node.tryGetContext("free_tier") == "true") || false;
+
+    cdk.Tags.of(this).add("Stack", "Hyperswitch");
+    Object.entries(config.tags).forEach(([key, value]) => {
+      cdk.Tags.of(this).add(key, value);
+    });
+
+    let isStandalone = scope.node.tryGetContext("free_tier") == "true" || false;
     let vpc = new Vpc(this, config.vpc);
     let subnets = new SubnetStack(this, vpc.vpc, config);
     let elasticache = new ElasticacheStack(this, config, vpc.vpc);
@@ -42,15 +48,18 @@ export class AWSStack extends cdk.Stack {
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
-      hyperswitch_ec2.sg.addIngressRule( // To access the Router
+      hyperswitch_ec2.sg.addIngressRule(
+        // To access the Router
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(80),
       );
-      hyperswitch_ec2.sg.addIngressRule( // To access the Control Center
+      hyperswitch_ec2.sg.addIngressRule(
+        // To access the Control Center
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(9000),
       );
-      hyperswitch_ec2.sg.addIngressRule( // To SSH into the instance
+      hyperswitch_ec2.sg.addIngressRule(
+        // To SSH into the instance
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
@@ -64,33 +73,47 @@ export class AWSStack extends cdk.Stack {
       );
 
       // create an security group for the SDK and add rules to access the router and demo app with port 1234 after the hyperswitch_sdk_ec2 is created
-      hyperswitch_sdk_ec2.sg.addIngressRule( // To access the SDK
+      hyperswitch_sdk_ec2.sg.addIngressRule(
+        // To access the SDK
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(9090),
       );
-      hyperswitch_sdk_ec2.sg.addIngressRule( // To Access Demo APP
+      hyperswitch_sdk_ec2.sg.addIngressRule(
+        // To Access Demo APP
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(5252),
       );
-      hyperswitch_sdk_ec2.sg.addIngressRule( // To SSH into the instance
+      hyperswitch_sdk_ec2.sg.addIngressRule(
+        // To SSH into the instance
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
 
       new cdk.CfnOutput(this, "StandaloneURL", {
-        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + "/health"
+        value:
+          "http://" +
+          hyperswitch_ec2.getInstance().instancePublicIp +
+          "/health",
       });
       new cdk.CfnOutput(this, "ControlCenterURL", {
-        value: "http://" + hyperswitch_ec2.getInstance().instancePublicIp + ":9000" + "\nFor login, use email id as 'itisatest@gmail.com' and password is admin"
+        value:
+          "http://" +
+          hyperswitch_ec2.getInstance().instancePublicIp +
+          ":9000" +
+          "\nFor login, use email id as 'itisatest@gmail.com' and password is admin",
       });
       new cdk.CfnOutput(this, "SdkAssetsURL", {
-        value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":9090"
+        value:
+          "http://" +
+          hyperswitch_sdk_ec2.getInstance().instancePublicIp +
+          ":9090",
       });
       new cdk.CfnOutput(this, "DemoApp", {
-        value: "http://" + hyperswitch_sdk_ec2.getInstance().instancePublicIp + ":5252"
+        value:
+          "http://" +
+          hyperswitch_sdk_ec2.getInstance().instancePublicIp +
+          ":5252",
       });
-
-
     } else {
       const aws_arn = scope.node.tryGetContext("aws_arn");
       const is_root_user = aws_arn.includes(":root");
@@ -113,7 +136,7 @@ export class AWSStack extends cdk.Stack {
         rds,
         elasticache,
         config.hyperswitch_ec2.admin_api_key,
-        locker
+        locker,
       );
       if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
@@ -181,9 +204,15 @@ function get_standalone_ec2_config(config: Config) {
   return ec2_config;
 }
 
-function get_standalone_sdk_ec2_config(config: Config, hyperswitch_ec2: EC2Instance) {
+function get_standalone_sdk_ec2_config(
+  config: Config,
+  hyperswitch_ec2: EC2Instance,
+) {
   let customData = readFileSync("lib/aws/sdk_userdata.sh", "utf8")
-    .replaceAll("{{router_host}}", hyperswitch_ec2.getInstance().instancePublicIp)
+    .replaceAll(
+      "{{router_host}}",
+      hyperswitch_ec2.getInstance().instancePublicIp,
+    )
     .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
     .replaceAll("{{version}}", "0.16.7")
     .replaceAll("{{sub_version}}", "v0");
