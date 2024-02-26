@@ -39,6 +39,8 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
+    cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
+
     const addClusterRole = (awsArn: string, name: string) => {
       if (!awsArn) return;
       const isRole = awsArn.includes(":role") || awsArn.includes(":assumed-role");

@@ -23,6 +23,8 @@ export class AWSStack extends cdk.Stack {
     });
 
     cdk.Tags.of(this).add("Stack", "Hyperswitch");
+    cdk.Tags.of(this).add("StackName", config.stack.name);
+
     Object.entries(config.tags).forEach(([key, value]) => {
       cdk.Tags.of(this).add(key, value);
     });
