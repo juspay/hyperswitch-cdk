@@ -100,4 +100,5 @@ export type EC2Config = {
     userData?: ec2.UserData;
     ssmSessionPermissions?: boolean;
     associatePublicIpAddress?: boolean;
+    allowOutboundTraffic?: boolean;
 }
