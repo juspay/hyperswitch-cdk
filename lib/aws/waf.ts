@@ -33,6 +33,32 @@ export class WAF extends Construct {
             sampledRequestsEnabled: true,
           },
         },
+        // rate limit rule
+        {
+          name: "RateLimitRule",
+          priority: 1,
+          statement: {
+            rateBasedStatement: {
+              aggregateKeyType: "IP",
+              limit: 100,
+              scopeDownStatement: {
+                notStatement: {
+                  statement: {
+                    managedRuleGroupStatement: {
+                      name: "AWSManagedRulesAmazonIpReputationList",
+                      vendorName: "AWS",
+                    },
+                  },
+                },
+              },
+            }
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: "RateLimitRule",
+            sampledRequestsEnabled: true,
+          },
+        },
       ],
     });
 
