@@ -48,7 +48,8 @@ export class Configuration {
         db_user: "lockeruser",
         db_pass: scope.node.tryGetContext('locker_pass')
 
-      }
+      },
+      tags: {}
     }
     this.config = config;
   }
