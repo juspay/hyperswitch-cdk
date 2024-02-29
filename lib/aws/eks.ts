@@ -16,6 +16,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
+import { WAF } from "./waf";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -309,6 +310,8 @@ export class EksStack {
       "Allow inbound traffic from an existing load balancer security group",
     );
 
+    const waf = new WAF(scope, "HyperswitchWAF");
+
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
       wait: true,
@@ -486,6 +489,7 @@ export class EksStack {
               "alb.ingress.kubernetes.io/scheme": "internet-facing",
               "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
               "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/wafv2-acl-arn": waf.waf_arn,
               "alb.ingress.kubernetes.io/target-type": "ip"
             },
             hosts: [{
