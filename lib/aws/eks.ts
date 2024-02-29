@@ -16,6 +16,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
+import * as codebuild from "aws-cdk-lib/aws-codebuild";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -31,6 +32,9 @@ export class EksStack {
     admin_api_key: string,
     locker: LockerSetup | undefined,
   ) {
+
+    const ecr = new DockerImagesToEcr(scope);
+
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.28"),
       kubectlLayer: new KubectlLayer(scope, "KubectlLayer"),
@@ -38,6 +42,8 @@ export class EksStack {
       vpc: vpc,
       clusterName: "hs-eks-cluster",
     });
+
+    cluster.node.addDependency(ecr.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
 
@@ -718,5 +724,113 @@ class KmsSecrets {
     this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
+  }
+}
+
+class DockerImagesToEcr {
+
+  codebuildProject: codebuild.Project;
+  codebuildTrigger: cdk.CustomResource;
+
+  constructor(scope: Construct) {
+
+    const ecrRole = new iam.Role(scope, "ECRRole", {
+      assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+    });
+
+    const ecrPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "ecr:CompleteLayerUpload",
+            "ecr:GetAuthorizationToken",
+            "ecr:UploadLayerPart",
+            "ecr:InitiateLayerUpload",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:PutImage",
+          ],
+          resources: ["*"],
+        }),
+      ]
+    });
+
+    ecrRole.attachInlinePolicy(
+      new iam.Policy(scope, "ECRFullAccessPolicy", {
+        document: ecrPolicy,
+      }),
+    );
+
+    this.codebuildProject = new codebuild.Project(scope, "ECRImageTransfer", {
+      environmentVariables: {
+        AWS_ACCOUNT_ID: {
+          value: process.env.CDK_DEFAULT_ACCOUNT,
+        },
+        AWS_DEFAULT_REGION: {
+          value: process.env.CDK_DEFAULT_REGION,
+        },
+      },
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+      },
+      role: ecrRole,
+      buildSpec: codebuild.BuildSpec.fromAsset("./dependencies/code_builder/buildspec.yml"),
+    });
+
+    const lambdaStartBuildCode = readFileSync('./dependencies/code_builder/start_build.py').toString();
+
+    const triggerCodeBuildRole = new iam.Role(scope, "ECRImageTransferLambdaRole", {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    });
+
+    const triggerCodeBuildPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "codebuild:StartBuild",
+          ],
+          resources: [this.codebuildProject.projectArn],
+        }),
+      ]
+    });
+
+    const logsPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+          ],
+          resources: ["*"],
+        })
+      ]
+    })
+
+    triggerCodeBuildRole.attachInlinePolicy(
+      new iam.Policy(scope, "ECRImageTransferLambdaPolicy", {
+        document: triggerCodeBuildPolicy,
+      }),
+    );
+
+    triggerCodeBuildRole.attachInlinePolicy(
+      new iam.Policy(scope, "ECRImageTransferLambdaLogsPolicy", {
+        document: logsPolicy,
+      }),
+    );
+
+    const triggerCodeBuild = new Function(scope, "ECRImageTransferLambda", {
+      runtime: Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: Code.fromInline(lambdaStartBuildCode),
+      timeout: cdk.Duration.minutes(15),
+      role: triggerCodeBuildRole,
+      environment: {
+        PROJECT_NAME: this.codebuildProject.projectName,
+      },
+    });
+
+    this.codebuildTrigger = new cdk.CustomResource(scope, "ECRImageTransferCR", {
+      serviceToken: triggerCodeBuild.functionArn,
+    });
   }
 }
