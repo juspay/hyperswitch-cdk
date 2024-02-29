@@ -1,12 +1,8 @@
 version: 0.2
 
 phases:
-  pre_build:
-    commands:
-      - echo "Logging in to the docker"
   build:
     commands:
-       - echo "Building and pushing Docker images"
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
         PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center")

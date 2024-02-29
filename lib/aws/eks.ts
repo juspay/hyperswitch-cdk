@@ -742,7 +742,12 @@ class DockerImagesToEcr {
       statements: [
         new iam.PolicyStatement({
           actions: [
-            "ecr:*",
+            "ecr:CompleteLayerUpload",
+            "ecr:GetAuthorizationToken",
+            "ecr:UploadLayerPart",
+            "ecr:InitiateLayerUpload",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:PutImage",
           ],
           resources: ["*"],
         }),
