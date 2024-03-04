@@ -11,6 +11,7 @@ import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
+import { ProxySetup } from "./proxy";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -175,6 +176,17 @@ export class AWSStack extends cdk.Stack {
 
       rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
+
+
+
+      // Create Inbound Proxy
+      const inbound_proxy = new ProxySetup(
+        this,
+        config,
+        vpc.vpc,
+        eks.hyperswitchHost,
+        eks.sg
+      );
     }
   }
 }
