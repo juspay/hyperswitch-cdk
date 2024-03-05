@@ -55,6 +55,11 @@ def worker():
     for key in secretval:
         store_parameter(ssm_manager, key, secretval[key])
 
+    #get the latest version stored in ssm
+    response = ssm_manager.get_parameter(Name="/hyperswitch/db-pass")
+
+    return response.get('Parameter').get('Version')
+
 
 def kms_encryptor(key_id: str, region: str, kms_client):
     return lambda data: base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"]).decode("utf-8")
@@ -105,7 +110,7 @@ def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             try:
-                worker()
+                response = worker()
                 message = "Completed Successfully"
                 status = "SUCCESS"
             except Exception as e:
@@ -115,6 +120,7 @@ def lambda_handler(event, context):
             send(event, context, status,
                  {
                      "message": message,
+                     "version": response
                  })
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})

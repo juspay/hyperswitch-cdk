@@ -421,17 +421,20 @@ while true; do
     fi
 done
 
-while true; do
-    echo "Please enter the AES master encryption key. It must be 64 characters long and consist of hexadecimal digits:"
-    read -r -s MASTER_ENC_KEY
-    if [[ ${#MASTER_ENC_KEY} -eq 64 && $MASTER_ENC_KEY =~ ^[0-9a-fA-F]+$ ]]; then
-        break
-    else
-        display_error "Invalid input. The master encryption key must be 64 characters long and consist of hexadecimal digits."
-    fi
-done
-
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
+
+    while true; do
+        echo "Please enter the AES master encryption key. It must be 64 characters long and consist of hexadecimal digits:"
+        read -r -s MASTER_ENC_KEY
+        if [[ ${#MASTER_ENC_KEY} -eq 64 && $MASTER_ENC_KEY =~ ^[0-9a-fA-F]+$ ]]; then
+            break
+        else
+            display_error "Invalid input. The master encryption key must be 64 characters long and consist of hexadecimal digits."
+        fi
+    done
+
+    echo "Please enter the IP addresses that you want to whitelist for the EKS cluster. If you have multiple IP addresses, separate them with commas. If you want to use the default value, simply press enter."
+    read -r VPN_IPS
 
     echo "Do you want to deploy the Card Vault? [y/n]: "
     read -r CARD_VAULT
@@ -475,7 +478,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY $LOCKER; then
+    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS $LOCKER; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
