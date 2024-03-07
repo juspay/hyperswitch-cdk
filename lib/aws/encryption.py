@@ -122,6 +122,12 @@ def lambda_handler(event, context):
                      "message": message,
                      "version": response
                  })
+        elif event['RequestType'] == 'Delete':
+            keys = ["db-pass", "master-key", "admin-api-key", "jwt-secret", "dummy-val", "kms-encrypted-api-hash-key", "locker-public-key", "tenant-private-key"]
+            ssm = boto3.client('ssm')
+            for key in keys:
+                ssm.delete_parameter(Name="/hyperswitch/{}".format(key))
+            send(event, context, "SUCCESS", {"message": "No action required"})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
     except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable

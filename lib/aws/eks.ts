@@ -793,25 +793,25 @@ class KmsSecrets {
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
-    let version = parseInt(kms.getAtt("version").toString());
-    this.kms_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/admin-api-key", version);
-    this.kms_jwt_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/jwt-secret", version);
-    this.kms_encrypted_db_pass = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/db-pass", version);
-    this.kms_encrypted_master_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/master-key", version);
-    this.kms_jwekey_locker_identifier1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_locker_identifier2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_locker_encryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_locker_encryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_locker_decryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_locker_decryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_vault_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/locker-public-key", version);
-    this.kms_jwekey_vault_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/tenant-private-key", version);
-    this.kms_jwekey_tunnel_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_jwekey_rust_locker_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_connector_onboarding_paypal_client_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", version);
-    this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", version);
+    let message = kms.getAtt("message");
+    this.kms_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/admin-api-key", 1);
+    this.kms_jwt_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/jwt-secret", 1);
+    this.kms_encrypted_db_pass = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/db-pass", 1);
+    this.kms_encrypted_master_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/master-key", 1);
+    this.kms_jwekey_locker_identifier1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_identifier2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_encryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key1 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_locker_decryption_key2 = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_jwekey_vault_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/locker-public-key", 1);
+    this.kms_jwekey_vault_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/tenant-private-key", 1);
+    this.kms_jwekey_tunnel_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", );
+    this.kms_jwekey_rust_locker_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
   }
 }
 
