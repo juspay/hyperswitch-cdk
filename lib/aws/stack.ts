@@ -157,10 +157,10 @@ export class AWSStack extends cdk.Stack {
         vpc.vpc,
         get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"),
       );
-      external_jump.sg.addEgressRule(internal_jump.sg, ec2.Port.tcp(22));
-      internal_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(22));
-      internal_jump.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
-      internal_jump.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
+      internal_jump.addClient(external_jump.sg, ec2.Port.tcp(22));
+      internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
+      internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
+      external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
       external_jump.sg.addIngressRule(
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
@@ -173,8 +173,8 @@ export class AWSStack extends cdk.Stack {
       if (locker)
         internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
 
-      rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
-      elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
+      // rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
+      // elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
     }
   }
 }
@@ -202,6 +202,7 @@ function get_standalone_ec2_config(config: Config) {
     machineImage: new ec2.AmazonLinuxImage(),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     userData: ec2.UserData.custom(customData),
+    allowOutboundTraffic: true,
   };
   return ec2_config;
 }
@@ -227,6 +228,7 @@ function get_standalone_sdk_ec2_config(
     machineImage: new ec2.AmazonLinuxImage(),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     userData: ec2.UserData.custom(customData),
+    allowOutboundTraffic: true,
   };
   return ec2_config;
 }
@@ -241,6 +243,7 @@ function get_internal_jump_ec2_config(config: Config, id: string) {
     machineImage: new ec2.AmazonLinuxImage(),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     associatePublicIpAddress: false,
+    allowOutboundTraffic: false,
   };
   return ec2_config;
 }
@@ -259,6 +262,7 @@ function get_external_jump_ec2_config(config: Config, id: string) {
     machineImage: new ec2.AmazonLinuxImage(props),
     vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
     ssmSessionPermissions: true,
+    allowOutboundTraffic: false,
   };
   return ec2_config;
 }

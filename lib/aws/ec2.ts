@@ -18,7 +18,7 @@ export class EC2Instance {
             sg = new ec2.SecurityGroup(scope, sg_id, {
                 securityGroupName: sg_id,
                 vpc: vpc,
-                allowAllOutbound: true,
+                allowAllOutbound: config.allowOutboundTraffic,
             });
         }
         this.sg = sg;
@@ -59,4 +59,9 @@ export class EC2Instance {
     public getInstance(): ec2.Instance {
         return this.instance;
     }
+
+    addClient(sg: ec2.ISecurityGroup, port: ec2.Port) {
+        this.sg.addIngressRule(sg, port);
+        sg.addEgressRule(this.sg, port);
+      }
 }
