@@ -11,6 +11,7 @@ import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
+import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -41,11 +42,17 @@ export class AWSStack extends cdk.Stack {
 
     if (isStandalone) {
       // Deploying Router and Control center application in a single EC2 instance
+
+      if (rds.standaloneDb) {
+        config = update_hosts_standalone(config, rds.standaloneDb.instanceEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress);
+      }
+
       let hyperswitch_ec2 = new EC2Instance(
         this,
         vpc.vpc,
         get_standalone_ec2_config(config),
       );
+
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
@@ -180,6 +187,12 @@ export class AWSStack extends cdk.Stack {
 }
 
 function update_config(config: Config, db_host: string, redis_host: string) {
+  config.hyperswitch_ec2.db_host = db_host;
+  config.hyperswitch_ec2.redis_host = redis_host;
+  return config;
+}
+
+function update_hosts_standalone(config: Config, db_host: string, redis_host: string) {
   config.hyperswitch_ec2.db_host = db_host;
   config.hyperswitch_ec2.redis_host = redis_host;
   return config;
