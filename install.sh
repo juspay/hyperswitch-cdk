@@ -423,6 +423,9 @@ done
 
 while true; do
     echo "Please enter the AES master encryption key. It must be 64 characters long and consist of hexadecimal digits:"
+    echo "${bold}${red}Please create the AES master encryption key as described below.${reset}"
+    echo "${bold}${yellow}To generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1${reset}"
+    echo "${bold}${yellow}Copy the value of 'key' from the output and use it as the master key.${reset}"
     read -r -s MASTER_ENC_KEY
     if [[ ${#MASTER_ENC_KEY} -eq 64 && $MASTER_ENC_KEY =~ ^[0-9a-fA-F]+$ ]]; then
         break
