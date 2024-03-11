@@ -728,7 +728,7 @@ export class EksStack {
       values: {
         image: {
           repository: `${privateEcrRepository}/metrics-server`,
-          tag: "v0.3.6",
+          tag: "v0.7.0",
         },
       }
     });

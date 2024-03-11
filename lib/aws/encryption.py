@@ -119,7 +119,11 @@ def lambda_handler(event, context):
             keys = ["db-pass", "master-key", "admin-api-key", "jwt-secret", "dummy-val", "kms-encrypted-api-hash-key", "locker-public-key", "tenant-private-key"]
             ssm = boto3.client('ssm')
             for key in keys:
-                ssm.delete_parameter(Name="/hyperswitch/{}".format(key))
+                parameter_name="/hyperswitch/{}".format(key)
+                try:
+                    ssm.delete_parameter(parameter_name)
+                except:
+                    print("Parameter {} doesn't exist.".format(parameter_name))
             send(event, context, "SUCCESS", {"message": "No action required"})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
