@@ -85,9 +85,9 @@ export class DataBaseConstruct {
       const schemaBucket = new Bucket(scope, "SchemaBucket", {
         removalPolicy: RemovalPolicy.DESTROY,
         blockPublicAccess: new s3.BlockPublicAccess({
-          blockPublicAcls: false,
+          blockPublicAcls: true,
         }),
-        publicReadAccess: true,
+        publicReadAccess: false,
         autoDeleteObjects: true,
         bucketName:
           "hyperswitch-schema-" +
