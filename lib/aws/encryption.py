@@ -55,7 +55,6 @@ def worker():
     for key in secretval:
         store_parameter(ssm_manager, key, secretval[key])
 
-
 def kms_encryptor(key_id: str, region: str, kms_client):
     return lambda data: base64.b64encode(kms_client.encrypt(KeyId=key_id, Plaintext=data)["CiphertextBlob"]).decode("utf-8")
 
@@ -114,8 +113,18 @@ def lambda_handler(event, context):
 
             send(event, context, status,
                  {
-                     "message": message,
+                     "message": message
                  })
+        elif event['RequestType'] == 'Delete':
+            keys = ["db-pass", "master-key", "admin-api-key", "jwt-secret", "dummy-val", "kms-encrypted-api-hash-key", "locker-public-key", "tenant-private-key"]
+            ssm = boto3.client('ssm')
+            for key in keys:
+                parameter_name="/hyperswitch/{}".format(key)
+                try:
+                    ssm.delete_parameter(parameter_name)
+                except:
+                    print("Parameter {} doesn't exist.".format(parameter_name))
+            send(event, context, "SUCCESS", {"message": "No action required"})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
     except Exception as e:  # Use 'Exception as e' to properly catch and define the exception variable
