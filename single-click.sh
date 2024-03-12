@@ -56,10 +56,6 @@ export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$APP_HOS
 # helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
 sleep 240
 # SDK_URL=$SDK_URL/HyperLoader.js
-APP_HOST=http://$STANDALONE_HOST
-SDK_HOST=http://$SDK_HOST
-CONTROL_CENTER_HOST=http://$CONTROL_CENTER_HOST
-DEMO_APP=http://$DEMO_APP
 
 # Generate the HTML content
 HTML_CONTENT="
@@ -80,11 +76,11 @@ HTML_CONTENT="
   </tr>
   <tr>
     <td>Logs server running on</td>
-    <td><a href=\"$DEMO_APP\" id=\"logs_host\">$DEMO_APP</a> <span>, Login with username: admin, password: admin , Please change on startup</span> </td>
+    <td><a href=\"$DEMO_APP\" id=\"demo app\">DEMO_APP</a></td>
   </tr>
   <tr>
     <td>Control center server running on</td>
-    <td><a href=\"$CONTROL_CENTER_HOST\" id=\"control_center_host\">$CONTROL_CENTER_HOST</a> <span>Login with Email: test@gmail.com, password: admin , Please change on startup</span> </td>
+    <td><a href=\"$CONTROL_CENTER_HOST\" id=\"control_center_host\">$CONTROL_CENTER_HOST</a></td>
   </tr>
   <tr>
     <td>Hyperswitch Demo Store running on</td>
