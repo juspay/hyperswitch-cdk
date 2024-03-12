@@ -91,7 +91,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refactor/update-single-click/single-click.sh
           chmod a+x run-cdk.sh
 
           # export env variables
@@ -103,6 +103,16 @@ Resources:
           export MASTER_KEY="${CardVaultMasterKEY}"
           export LOCKER_DB_PASS="${CardVaultDBPass}"
           export ADMIN_AWS_ARN="${AWSArn}"
+          export VPN_IPS="${VpnIps}"
+          export MASTER_ENC_KEY="${MasterEncKey}"
+          export MODE="${HyperswitchInstallMode}"
+
+          if [[ $MODE == "Free Tier" ]]; then
+            INSTALLATION_MODE=1
+          else
+            INSTALLATION_MODE=2
+          fi
+
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
@@ -121,10 +131,11 @@ Conditions:
 Parameters:
   HyperswitchInstallMode:
     Type: String
-    Default: Enterprise
+    Default: Free Tier
     AllowedValues:
-      - Enterprise
-    Description: Hyperswitch Enterprise Edition Mode
+      - Free Tier
+      # - Enterprise
+    Description: "Please select the Hyperswitch Installation Mode"
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
     AllowedPattern : ".{10,}"
@@ -142,16 +153,25 @@ Parameters:
     Type: String
     Default: "test_admin"
     Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
-  CardVaultMasterKEY:
+  MasterEncKey:
     Type: String
-    Default: ""
-    Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
-  CardVaultDBPass:
-    Type: String
-    Default: "testadmin"
-    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
-    Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
-  AWSArn:
-    Type: String
-    AllowedPattern: "^arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:[a-z0-9-]*:[0-9]*:[a-zA-Z0-9:/._+-]+$"
-    Description: "run `aws sts get-caller-identity` and copy the arn value. This is will be helpful in future updates of services"
+    Default: NoValue
+    Description: "Please enter the AES master encryption key for Hyperswitch. \nTo generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1 \n Copy the value of 'key' from the output and use it as the master key."
+  # VpnIps:
+  #   Type: String
+  #   Default: "0.0.0.0"
+  #   Description: "Please enter all the IPs that needs to be whitelisted to access EKS."
+  # CardVaultMasterKEY:
+  #   Type: String
+  #   Default: ""
+  #   Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
+  # CardVaultDBPass:
+  #   Type: String
+  #   Default: "testadmin"
+  #   AllowedPattern: "^[a-zA-Z0-9]{8,}$"
+  #   Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
+  # AWSArn:
+  #   Type: String
+  #   AllowedPattern: "^arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:[a-z0-9-]*:[0-9]*:[a-zA-Z0-9:/._+-]+$"
+  #   Description: "run `aws sts get-caller-identity` and copy the arn value. This is will be helpful in future updates of services"
+
