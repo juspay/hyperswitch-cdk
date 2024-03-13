@@ -2,10 +2,14 @@ import * as cdk from "aws-cdk-lib";
 import * as image_builder from "aws-cdk-lib/aws-imagebuilder"
 import * as iam from "aws-cdk-lib/aws-iam";
 
+import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
+import { LambdaSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Vpc } from './networking';
+import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Construct } from "constructs";
 import { ImageBuilderConfig, VpcConfig } from "./config";
-import { MachineImage } from 'aws-cdk-lib/aws-ec2';
+import { MachineImage, SubnetType, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 
 import { readFileSync } from "fs";
 
@@ -19,13 +23,17 @@ type ImageBuilderProperties = {
     baseimageArn: string;
     description: string;
     compFilePath: string;
+    snsTopicArn: string;
+    subnetId: string;
+    sgId: string;
+
 }
 
 function CreateImagePipeline(
     stack: ImageBuilderStack,
     role: iam.Role,
     props: ImageBuilderProperties,
-) {
+): string {
     const component = new image_builder.CfnComponent(stack, props.comp_id, {
         name: props.comp_name,
         description: props.description,
@@ -48,6 +56,9 @@ function CreateImagePipeline(
         name: props.infra_config_name,
         instanceTypes: ["t3.medium"],
         instanceProfileName: props.profile_name,
+        snsTopicArn: props.snsTopicArn,
+        subnetId: props.subnetId,
+        securityGroupIds: [props.sgId]
     })
     squid_infra_config.addDependency(instance_profile)
 
@@ -58,6 +69,8 @@ function CreateImagePipeline(
     })
 
     pipeline.addDependency(squid_infra_config)
+    return pipeline.attrArn
+
 }
 
 export class ImageBuilderStack extends cdk.Stack {
@@ -71,7 +84,18 @@ export class ImageBuilderStack extends cdk.Stack {
             maxAzs: 2,
         };
 
+        const envoy_channel = new Topic(this, 'ImgBuilderNotificationTopicEnvoy', {});
+        const squid_channel = new Topic(this, 'ImgBuilderNotificationTopicSquid', {});
+
         let vpc = new Vpc(this, vpcConfig);
+
+        let subnetId = vpc.vpc.selectSubnets({ subnetType: SubnetType.PUBLIC }).subnetIds[0];
+        let ib_SG = new SecurityGroup(this, 'image-server-sg', {
+            vpc: vpc.vpc,
+            allowAllOutbound: true,
+            description: 'security group for a image builder server',
+        });
+
         let role = new iam.Role(this, "StationRole", { roleName: "StationRole", assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com") })
 
         role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
@@ -89,13 +113,17 @@ export class ImageBuilderStack extends cdk.Stack {
             baseimageArn: base_image_id,
             description: "Image builder for squid",
             compFilePath: "./components/squid.yml",
+            sgId: ib_SG.securityGroupId,
+            subnetId: subnetId,
+            snsTopicArn: squid_channel.topicArn,
         };
 
-        CreateImagePipeline(
+        let envoy_arn = CreateImagePipeline(
             this,
             role,
             squid_properties,
         )
+
 
         let envoy_properties = {
             pipeline_name: "EnvoyImagePipeline",
@@ -107,12 +135,98 @@ export class ImageBuilderStack extends cdk.Stack {
             baseimageArn: base_image_id,
             description: "Image builder for Envoy",
             compFilePath: "./components/envoy.yml",
+            sgId: ib_SG.securityGroupId,
+            subnetId: subnetId,
+            snsTopicArn: envoy_channel.topicArn,
         };
 
-        CreateImagePipeline(
+        let squid_arn = CreateImagePipeline(
             this,
             role,
             envoy_properties,
         )
+
+
+        const start_ib_code = readFileSync(
+            "lib/aws/lambda/start_ib.py",
+        ).toString();
+
+
+        const lambda_policy = new iam.PolicyDocument({
+            statements: [
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['imagebuilder:StartImagePipelineExecution'],
+                    resources: [
+                        `arn:aws:imagebuilder:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account
+                        }:image/*`,
+                        `arn:aws:imagebuilder:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account
+                        }:image-pipeline/*`,
+                    ],
+                }),
+            ],
+        });
+
+        const lambda_role = new iam.Role(this, "hyperswitch-ib-lambda-role", {
+            assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+            inlinePolicies: {
+                "ib-start-role": lambda_policy,
+            },
+        });
+
+        const ib_lambda = new Function(this, "hyperswitch-ib-lambda", {
+            functionName: "HyperswitchIbStartLambda",
+            runtime: Runtime.PYTHON_3_9,
+            handler: "index.lambda_handler",
+            code: Code.fromInline(start_ib_code),
+            timeout: cdk.Duration.minutes(15),
+            role: lambda_role,
+            environment: {
+                envoy_image_pipeline_arn: envoy_arn,
+                squid_image_pipeline_arn: squid_arn,
+            },
+        });
+
+
+        const triggerIbStart = new cdk.CustomResource(
+            this,
+            "HyperswitchIbStart",
+            {
+                serviceToken: ib_lambda.functionArn,
+            },
+        );
+
+        const record_amid_code = readFileSync(
+            "lib/aws/lambda/record_ami.py",
+        ).toString();
+
+        const ib_record_amid_envoy = new Function(this, "hyperswitch-record-amid-envoy", {
+            functionName: "HyperswitchRecordAmiIdEnvoy",
+            runtime: Runtime.PYTHON_3_9,
+            handler: "index.lambda_handler",
+            code: Code.fromInline(record_amid_code),
+            timeout: cdk.Duration.minutes(15),
+            role: lambda_role,
+            environment: {
+                IMAGE_SSM_NAME: "envoy_image_ami",
+            },
+        });
+
+        envoy_channel.addSubscription(new LambdaSubscription(ib_record_amid_envoy))
+
+
+        const ib_record_amid_squid = new Function(this, "hyperswitch-record-amid-squid", {
+            functionName: "HyperswitchRecordAmiIdSquid",
+            runtime: Runtime.PYTHON_3_9,
+            handler: "index.lambda_handler",
+            code: Code.fromInline(record_amid_code),
+            timeout: cdk.Duration.minutes(15),
+            role: lambda_role,
+            environment: {
+                IMAGE_SSM_NAME: "squid_image_ami",
+            },
+        });
+
+        squid_channel.addSubscription(new LambdaSubscription(ib_record_amid_squid))
     }
 }
