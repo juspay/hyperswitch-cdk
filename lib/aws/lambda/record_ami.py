@@ -1,5 +1,4 @@
 from typing import Union
-import json
 import os
 import logging
 import boto3
@@ -11,8 +10,6 @@ def lambda_handler(event, _):
     logger.info(event.get("Records")[0].get("Sns").get("Message"))
 
     message_body = event.get("Records")[0].get("Sns").get("Message")
-    json_body = json.loads(message_body)
-    logger.info(json_body["outputResources"]["amis"][0]["image"])
     ssm_key = os.environ["IMAGE_SSM_NAME"]
     logger.info(f"updating ssm {ssm_key}")
     ssm_client = boto3.client("ssm")

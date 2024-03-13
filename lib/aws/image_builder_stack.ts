@@ -9,7 +9,6 @@ import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Construct } from "constructs";
 import { ImageBuilderConfig, VpcConfig } from "./config";
 import { MachineImage, SubnetType, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 
 import { readFileSync } from "fs";
 
