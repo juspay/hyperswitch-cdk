@@ -5,7 +5,7 @@ schemaVersion: 1.0
 phases:
     - name: build
       steps:
-        - name: InstallSquid
+        - name: InstallBase
           action: ExecuteBash
           inputs:
             commands:
