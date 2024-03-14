@@ -727,7 +727,7 @@ export class EksStack {
       release: "metrics-server",
       values: {
         image: {
-          repository: `${privateEcrRepository}/metrics-server`,
+          repository: `${privateEcrRepository}/bitnami/metrics-server`,
           tag: "v0.7.0",
         },
       }

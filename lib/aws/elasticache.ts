@@ -21,7 +21,7 @@ export class ElasticacheStack {
         });
         const cluster = new elasticache.CfnCacheCluster(scope, 'HSCacheCluster', {
             clusterName: 'hs-elasticache',
-            cacheNodeType: 'cache.t2.micro',
+            cacheNodeType: 'cache.t3.micro',
             engine: 'redis',
             numCacheNodes: 1,
             cacheSubnetGroupName: subnetgroup.ref,
