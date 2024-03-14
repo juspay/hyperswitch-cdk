@@ -12,12 +12,16 @@ def worker():
 
     envoy_arn = os.environ['envoy_image_pipeline_arn']
     squid_arn = os.environ['squid_image_pipeline_arn']
+    base_arn = os.environ['base_image_pipeline_arn']
 
     imagebuilder.start_image_pipeline_execution(
         imagePipelineArn=envoy_arn)
 
     imagebuilder.start_image_pipeline_execution(
         imagePipelineArn=squid_arn)
+
+    imagebuilder.start_image_pipeline_execution(
+        imagePipelineArn=base_arn)
 
 
 def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
