@@ -29,6 +29,14 @@ type ImageBuilderProperties = {
 
 }
 
+type RecordLambdaProperties = {
+    name: string;
+    id: string;
+    role: iam.Role;
+    ssm_key: string;
+    topic: Topic,
+}
+
 function CreateImagePipeline(
     stack: ImageBuilderStack,
     role: iam.Role,
@@ -86,6 +94,7 @@ export class ImageBuilderStack extends cdk.Stack {
 
         const envoy_channel = new Topic(this, 'ImgBuilderNotificationTopicEnvoy', {});
         const squid_channel = new Topic(this, 'ImgBuilderNotificationTopicSquid', {});
+        const base_channel = new Topic(this, 'ImgBuilderNotificationTopicBase', {});
 
         let vpc = new Vpc(this, vpcConfig);
 
@@ -147,6 +156,27 @@ export class ImageBuilderStack extends cdk.Stack {
         )
 
 
+        let base_properties = {
+            pipeline_name: "BaseImagePipeline",
+            recipe_name: "BaseImageRecipe",
+            profile_name: "BaseStationProfile",
+            comp_name: "HyperswitchBaseImageBuilder",
+            comp_id: "install_base_component",
+            infra_config_name: "BaseInfraConfig",
+            baseimageArn: base_image_id,
+            description: "Image builder for Base Image",
+            compFilePath: "./components/base.yml",
+            sgId: ib_SG.securityGroupId,
+            subnetId: subnetId,
+            snsTopicArn: base_channel.topicArn,
+        };
+
+        let base_arn = CreateImagePipeline(
+            this,
+            role,
+            base_properties,
+        )
+
         const start_ib_code = readFileSync(
             "lib/aws/lambda/start_ib.py",
         ).toString();
@@ -189,6 +219,7 @@ export class ImageBuilderStack extends cdk.Stack {
             environment: {
                 envoy_image_pipeline_arn: envoy_arn,
                 squid_image_pipeline_arn: squid_arn,
+                base_image_pipeline_arn: base_arn,
             },
         });
 
@@ -201,39 +232,49 @@ export class ImageBuilderStack extends cdk.Stack {
             },
         );
 
-        const record_amid_code = readFileSync(
-            "lib/aws/lambda/record_ami.py",
-        ).toString();
-
-        const ib_record_amid_envoy = new Function(this, "hyperswitch-record-amid-envoy", {
-            functionName: "HyperswitchRecordAmiIdEnvoy",
-            runtime: Runtime.PYTHON_3_9,
-            handler: "index.lambda_handler",
-            code: Code.fromInline(record_amid_code),
-            timeout: cdk.Duration.minutes(15),
+        addRecordLambda(this, {
+            id: "hyperswitch-record-amid-squid",
+            name: "HyperswitchRecordAmiIdSquid",
             role: lambda_role,
-            logRetention: logs.RetentionDays.INFINITE,
-            environment: {
-                IMAGE_SSM_NAME: "envoy_image_ami",
-            },
-        });
+            topic: squid_channel,
+            ssm_key: "squid_image_ami",
+        })
 
-        envoy_channel.addSubscription(new LambdaSubscription(ib_record_amid_envoy))
-
-
-        const ib_record_amid_squid = new Function(this, "hyperswitch-record-amid-squid", {
-            functionName: "HyperswitchRecordAmiIdSquid",
-            runtime: Runtime.PYTHON_3_9,
-            handler: "index.lambda_handler",
-            code: Code.fromInline(record_amid_code),
-            timeout: cdk.Duration.minutes(15),
+        addRecordLambda(this, {
+            id: "hyperswitch-record-amid-envoy",
+            name: "HyperswitchRecordAmiIdEnvoy",
             role: lambda_role,
-            logRetention: logs.RetentionDays.INFINITE,
-            environment: {
-                IMAGE_SSM_NAME: "squid_image_ami",
-            },
-        });
+            topic: envoy_channel,
+            ssm_key: "envoy_image_ami",
+        })
 
-        squid_channel.addSubscription(new LambdaSubscription(ib_record_amid_squid))
+        addRecordLambda(this, {
+            id: "hyperswitch-record-amid-base",
+            name: "HyperswitchRecordAmiIdBase",
+            role: lambda_role,
+            topic: base_channel,
+            ssm_key: "base_image_ami",
+        })
     }
+}
+
+
+function addRecordLambda(stack: cdk.Stack, props: RecordLambdaProperties) {
+    const record_amid_code = readFileSync(
+        "lib/aws/lambda/record_ami.py"
+    ).toString();
+
+    let ib_record_function = new Function(stack, props.id, {
+        functionName: props.name,
+        runtime: Runtime.PYTHON_3_9,
+        handler: "index.lambda_handler",
+        code: Code.fromInline(record_amid_code),
+        timeout: cdk.Duration.minutes(15),
+        role: props.role,
+        environment: {
+            IMAGE_SSM_NAME: props.ssm_key,
+        },
+    });
+
+    props.topic.addSubscription(new LambdaSubscription(ib_record_function))
 }
