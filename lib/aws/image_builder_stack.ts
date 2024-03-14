@@ -8,6 +8,7 @@ import { Vpc } from './networking';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Construct } from "constructs";
 import { ImageBuilderConfig, VpcConfig } from "./config";
+import { aws_logs as logs } from 'aws-cdk-lib';
 import { MachineImage, SubnetType, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 
 import { readFileSync } from "fs";
@@ -163,6 +164,11 @@ export class ImageBuilderStack extends cdk.Stack {
                         }:image-pipeline/*`,
                     ],
                 }),
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['ssm:*'],
+                    resources: ["*"],
+                }),
             ],
         });
 
@@ -206,6 +212,7 @@ export class ImageBuilderStack extends cdk.Stack {
             code: Code.fromInline(record_amid_code),
             timeout: cdk.Duration.minutes(15),
             role: lambda_role,
+            logRetention: logs.RetentionDays.INFINITE,
             environment: {
                 IMAGE_SSM_NAME: "envoy_image_ami",
             },
@@ -221,6 +228,7 @@ export class ImageBuilderStack extends cdk.Stack {
             code: Code.fromInline(record_amid_code),
             timeout: cdk.Duration.minutes(15),
             role: lambda_role,
+            logRetention: logs.RetentionDays.INFINITE,
             environment: {
                 IMAGE_SSM_NAME: "squid_image_ami",
             },
