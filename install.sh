@@ -226,6 +226,25 @@ show_install_options() {
     echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
 }
 
+declare base_ami,envoy_ami,squid_ami
+
+check_image_builder() {
+    ssm=$(aws ssm get-parameters \
+            --names base_image_amid squid_image_amid envoy_image_amid \
+            --query "Parameters[*].{Name:Name,Value:Value}" --output json)
+
+    length=$(echo "$ssm" | jq -r ".|length")
+
+    if [ "$length" -lt 3 ]; then
+        display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh"
+    fi
+
+    base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
+    envoy_ami=$(echo "$ssm" | jq '.[]|select(.Name=="envoy_image_ami")|.Value')
+    squid_ami=$(echo "$ssm" | jq '.[]|select(.Name=="squid_image_ami")|.Value')
+
+}
+
 # Function to read user input until a valid choice is made
 get_user_choice() {
     while true; do
@@ -247,6 +266,7 @@ get_user_choice() {
 clear
 list_services
 echo
+check_image_builder
 show_install_options
 get_user_choice
 
@@ -481,7 +501,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS $LOCKER; then
+    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
