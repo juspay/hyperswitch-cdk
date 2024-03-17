@@ -97,7 +97,7 @@ echo "AWS CDK is installed successfully."
 
 # Check for AWS CDK
 if ! command -v cdk &> /dev/null; then
-    echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
+    echo "AWS CDK could not be found. Please rerun 'bash deploy_imagebuilder.sh' with Sudo access and ensure the command is available within the \$PATH"
     exit 1
 fi
 
@@ -120,7 +120,7 @@ esac
 
 # Check if AWS CLI installation was successful
 if ! command -v aws &> /dev/null; then
-    echo "AWS CLI could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the $PATH"
+    echo "AWS CLI could not be found. Please rerun 'bash deploy_imagebuilder.sh' with Sudo access and ensure the command is available within the $PATH"
     exit 1
 fi
 

@@ -230,13 +230,13 @@ declare base_ami,envoy_ami,squid_ami
 
 check_image_builder() {
     ssm=$(aws ssm get-parameters \
-            --names base_image_amid squid_image_amid envoy_image_amid \
+            --names base_image_ami squid_image_ami envoy_image_ami \
             --query "Parameters[*].{Name:Name,Value:Value}" --output json)
 
     length=$(echo "$ssm" | jq -r ".|length")
 
     if [ "$length" -lt 3 ]; then
-        display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh"
+        display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
     fi
 
     base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
