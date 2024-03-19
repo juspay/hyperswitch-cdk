@@ -237,6 +237,7 @@ check_image_builder() {
 
     if [ "$length" -lt 3 ]; then
         display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
+        exit 1
     fi
 
     base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
