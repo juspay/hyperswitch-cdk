@@ -226,25 +226,25 @@ show_install_options() {
     echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
 }
 
-declare base_ami,envoy_ami,squid_ami
+# declare base_ami,envoy_ami,squid_ami
 
-check_image_builder() {
-    ssm=$(aws ssm get-parameters \
-            --names base_image_ami squid_image_ami envoy_image_ami \
-            --query "Parameters[*].{Name:Name,Value:Value}" --output json)
+# check_image_builder() {
+#     ssm=$(aws ssm get-parameters \
+#             --names base_image_ami squid_image_ami envoy_image_ami \
+#             --query "Parameters[*].{Name:Name,Value:Value}" --output json)
 
-    length=$(echo "$ssm" | jq -r ".|length")
+#     length=$(echo "$ssm" | jq -r ".|length")
 
-    if [ "$length" -lt 3 ]; then
-        display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
-        exit 1
-    fi
+#     if [ "$length" -lt 3 ]; then
+#         display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
+#         exit 1
+#     fi
 
-    base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
-    envoy_ami=$(echo "$ssm" | jq '.[]|select(.Name=="envoy_image_ami")|.Value')
-    squid_ami=$(echo "$ssm" | jq '.[]|select(.Name=="squid_image_ami")|.Value')
+#     base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
+#     envoy_ami=$(echo "$ssm" | jq '.[]|select(.Name=="envoy_image_ami")|.Value')
+#     squid_ami=$(echo "$ssm" | jq '.[]|select(.Name=="squid_image_ami")|.Value')
 
-}
+# }
 
 # Function to read user input until a valid choice is made
 get_user_choice() {
@@ -267,7 +267,7 @@ get_user_choice() {
 clear
 list_services
 echo
-check_image_builder
+# check_image_builder
 show_install_options
 get_user_choice
 
