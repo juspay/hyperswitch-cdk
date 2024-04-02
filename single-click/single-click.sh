@@ -107,15 +107,15 @@ else
         LOCKER ="-c master_key=$CARD_VAULT_MASTER_KEY "
         LOCKER ="-c locker_pass=$CARD_VAULT_DB_PASS "
     fi
-    echo `aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query 'Vpcs[*].VpcId'` >> /dev/null
-    if [ $? -ne 0 ]; then
-        echo
-        echo "${green}No default VPC found. Creating one...${reset}"
-        echo
-        aws ec2 create-default-vpc
-    fi
-    cdk bootstrap aws://"$AWS_ACCOUNT_ID"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN" -c stack=imagebuilder
-    cdk deploy --require-approval never -c stack=imagebuilder $AMI_OPTIONS
+    # echo `aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query 'Vpcs[*].VpcId'` >> /dev/null
+    # if [ $? -ne 0 ]; then
+    #     echo
+    #     echo "${green}No default VPC found. Creating one...${reset}"
+    #     echo
+    #     aws ec2 create-default-vpc
+    # fi
+    # cdk bootstrap aws://"$AWS_ACCOUNT_ID"/"$AWS_DEFAULT_REGION" -c aws_arn="$AWS_ARN" -c stack=imagebuilder
+    # cdk deploy --require-approval never -c stack=imagebuilder $AMI_OPTIONS
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
