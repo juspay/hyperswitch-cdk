@@ -20,7 +20,7 @@ cd $(unzip -Z -1 main.zip | head -1)
 
 npm install
 
-if [[ "$INSTALLATION_MODE" == 1]]; then
+if [ "$INSTALLATION_MODE" -eq 1 ]; then
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
     cdk deploy --require-approval never -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
     # aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
@@ -119,7 +119,7 @@ else
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
-        aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
+        aws eks update-kubeconfig --region "$AWS_REGION" --name hs-eks-cluster
         # Deploy Load balancer and Ingress
         echo "##########################################"
         sleep 10
@@ -136,10 +136,10 @@ else
             curl --silent --location --request POST 'http://'$APP_HOST'/user/signup'
             --header 'Content-Type: application/json'
             --data-raw '{
-"email": "test@gmail.com",
-"password": "admin"
-}' | jq -r '.merchant_id'
-        )
+            "email": "test@gmail.com",
+            "password": "admin"
+            }' | jq -r '.merchant_id'
+            )
         export PUB_KEY=$(
             curl --silent --location --request GET 'http://'$APP_HOST'/accounts/'$MERCHANT_ID
             --header 'Accept: application/json'
@@ -164,42 +164,42 @@ else
         sleep 10
         # Generate the HTML content
         HTML_CONTENT="
-<!DOCTYPE html>
-<html>
-<body>
+            <!DOCTYPE html>
+            <html>
+            <body>
 
-<h2>Hyperswitch Services</h2>
+            <h2>Hyperswitch Services</h2>
 
-<table style="width:100% text-align:left">
-<tr>
-<th>Service</th>
-<th>Host</th>
-</tr>
-<tr>
-<td>HyperloaderJS Hosted at</td>
-<td><a href="https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js" id="hyperloaderjs_host">https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js</a></td>
-</tr>
-<tr>
-<td>App server running on</td>
-<td><a href="http://$APP_HOST" id="app_host">http://$APP_HOST</a></td>
-</tr>
-<tr>
-<td>Logs server running on</td>
-<td><a href="http://$LOGS_HOST" id="logs_host">http://$LOGS_HOST</a></td>
-</tr>
-<tr>
-<td>Control center server running on</td>
-<td><a href="http://$CONTROL_CENTER_HOST" id="control_center_host">http://$CONTROL_CENTER_HOST</a></td>
-</tr>
-<tr>
-<td>Hyperswitch Demo Store running on</td>
-<td><a href="http://$SDK_HOST" id="sdk_host">http://$SDK_HOST</a></td>
-</tr>
-</table>
+            <table style="width:100% text-align:left">
+            <tr>
+            <th>Service</th>
+            <th>Host</th>
+            </tr>
+            <tr>
+            <td>HyperloaderJS Hosted at</td>
+            <td><a href="https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js" id="hyperloaderjs_host">https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js</a></td>
+            </tr>
+            <tr>
+            <td>App server running on</td>
+            <td><a href="http://$APP_HOST" id="app_host">http://$APP_HOST</a></td>
+            </tr>
+            <tr>
+            <td>Logs server running on</td>
+            <td><a href="http://$LOGS_HOST" id="logs_host">http://$LOGS_HOST</a></td>
+            </tr>
+            <tr>
+            <td>Control center server running on</td>
+            <td><a href="http://$CONTROL_CENTER_HOST" id="control_center_host">http://$CONTROL_CENTER_HOST</a></td>
+            </tr>
+            <tr>
+            <td>Hyperswitch Demo Store running on</td>
+            <td><a href="http://$SDK_HOST" id="sdk_host">http://$SDK_HOST</a></td>
+            </tr>
+            </table>
 
-</body>
-</html>
-"
+            </body>
+            </html>
+            "
         echo "$HTML_CONTENT" >cdk.services.html
         aws s3 cp cdk.services.html s3://hyperswitch-schema-$AWS_ACCOUNT-$AWS_REGION/cdk.services.html
         if [[ -n "$CARD_VAULT_MASTER_KEY" ]]; then
