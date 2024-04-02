@@ -86,7 +86,7 @@ Resources:
         Timeout: PT1H
     Properties:
       ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
-      InstanceType: 't3.small'
+      InstanceType: 't3.medium'
       IamInstanceProfile: !Ref InstanceProfile
       UserData:
         Fn::Base64: !Sub |
@@ -106,15 +106,15 @@ Resources:
           export CARD_VAULT_DB_PASS="${CardVaultDBPass}"
 
           if [[ $MODE == "Free Tier" ]]; then
-            INSTALLATION_MODE=1
+            export INSTALLATION_MODE=1
           else
-            INSTALLATION_MODE=2
+            export INSTALLATION_MODE=2
           fi
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
-          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
@@ -139,7 +139,7 @@ Parameters:
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
     AllowedPattern : ".{10,}"
-    Description: "Select a Subnet where the EC2 instance will be deployed."
+    Description: "Select a Subnet where the EC2 instance will be deployed. Please make sure that subnet exists inside VPC selected above."
   DBPassword:
     Type: String
     Default: "testadmin"
@@ -156,7 +156,7 @@ Parameters:
   VpnIps:
     Type: String
     Default: "0.0.0.0"
-    Description: "Please enter all the IPs that needs to be whitelisted to access EKS. (Only required for Enterprise mode)"
+    Description: "Please enter all the comma seperated IPs that needs to be whitelisted to access EKS. (Only required for Enterprise mode)"
   CardVaultMasterKey:
     Type: String
     Default: ""
@@ -164,6 +164,6 @@ Parameters:
   CardVaultDBPass:
     Type: String
     Default: "testadmin"
-    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
+    AllowedPattern: "^[a-zA-Z0-9 ]{8,}$"
     Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
 

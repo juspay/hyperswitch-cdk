@@ -9,8 +9,9 @@ nvm install 18 -y
 nvm use 18
 npm install -g aws-cdk
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-chmod x kubectl
+chmod +x ./kubectl
 mv ./kubectl /usr/local/bin/kubectl
+chmod +x /usr/local/bin/kubectl
 kubectl version --client
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn)
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
