@@ -1,40 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Resources:
-  HyperswitchCDKBootstrapEC2:
-    Type: AWS::EC2::Instance
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT1H
+  HyperswitchAwsEksAccessRole:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      ImageId: 'ami-076c7acfc9e8ee57d'
-      InstanceType: 't3.micro'
-      IamInstanceProfile: !Ref InstanceProfile
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/sh
-          sudo su
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/my-test/dependencies/script.sh
-          chmod a+x run-cdk.sh
-
-          # export env variables
-          export HYPERSWITCH_INSTALL_MODE="${HyperswitchInstallMode}"
-          export AWS_STACK_NAME="${AWS::StackName}"
-          export AWS_REGION="${AWS::Region}"
-
-          sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-
-          # delete the stack
-          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
-      NetworkInterfaces:
-        - DeviceIndex: 0
-          SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
-          GroupSet:
-            - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
-          AssociatePublicIpAddress: true
-      KeyName: 'hyps-oneclick'
-
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Sid: AllowEksAccess
+            Effect: Allow
+            Action:
+              - eks:*
+              - sts:GetCallerIdentity
+            Resource: "*"
   AwsIamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -51,6 +30,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2FullAccess
         - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
         - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+        - !Ref HyperswitchAwsEksAccessRole
       Path: /
       Policies:
         - PolicyName: CdkPolicy
@@ -69,7 +49,14 @@ Resources:
                 Resource: '*'
                 Effect: Allow
               - Action: s3:*
-                Resource: arn:aws:s3:::cdktoolkit-stagingbucket-*
+                Resource: '*'
+                Effect: Allow
+              - Action: [
+                  "ssm:Describe*",
+                  "ssm:Get*",
+                  "ssm:List*"
+                ]
+                Resource: '*'
                 Effect: Allow
               - Action:
                   - sts:AssumeRole
@@ -92,23 +79,74 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+  HyperswitchCDKBootstrapEC2:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT1H
+    Properties:
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
+      InstanceType: 't3.small'
+      IamInstanceProfile: !Ref InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
+          chmod a+x run-cdk.sh
 
+          # export env variables
+          export HYPERSWITCH_INSTALL_MODE="${HyperswitchInstallMode}"
+          export AWS_STACK_NAME="${AWS::StackName}"
+          export AWS_REGION="${AWS::Region}"
+          export DB_PASS="${DBPassword}"
+          export ADMIN_API_KEY="${AdminApiKey}"
+          export MASTER_ENC_KEY="${MasterEncKey}"
+          export MODE="${HyperswitchInstallMode}"
+
+          if [[ $MODE == "Free Tier" ]]; then
+            INSTALLATION_MODE=1
+          else
+            INSTALLATION_MODE=2
+          fi
+
+          sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          # delete the stack
+          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
+          GroupSet:
+            - !Ref HyperswitchCDKBootstrapEC2SecurityGroup
+          AssociatePublicIpAddress: true
 Conditions:
   UseCustomVpc: !Not [!Equals [!Ref CustomVpcId, ""]]
   UseCustomSubnet: !Not [!Equals [!Ref CustomSubnetId, ""]]
-
 Parameters:
   HyperswitchInstallMode:
     Type: String
-    Default: standalone
+    Default: Free Tier
     AllowedValues:
-      - standalone
-    Description: Hyperswitch Enterprise Edition Mode
+      - Free Tier
+    Description: "Please select the Hyperswitch Installation Mode"
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
-    Default: ""
-    Description: "(Optional) Select a VPC where the resources will be deployed. Leave blank to use default VPC (if you have one)."
+    AllowedPattern : ".{10,}"
+    Description: "Select a VPC where the resources will be deployed."
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
+    AllowedPattern : ".{10,}"
+    Description: "Select a Subnet where the EC2 instance will be deployed. (Should be under the same VPC you opted)"
+  DBPassword:
+    Type: String
+    Default: "testadmin"
+    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
+    Description: "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9])"
+  AdminApiKey:
+    Type: String
+    Default: "test_admin"
+    Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
+  MasterEncKey:
+    Type: String
     Default: ""
-    Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one)."
+    Description: "Please enter the AES master encryption key for Hyperswitch. \nTo generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1 and Copy the value of 'key' from the output and use it as the master key."

@@ -135,11 +135,11 @@ Parameters:
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
     AllowedPattern : ".{10,}"
-    Description: "Select a VPC where the resources will be deployed. Leave blank to use default VPC (if you have one)."
+    Description: "Select a VPC where the resources will be deployed."
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
     AllowedPattern : ".{10,}"
-    Description: "Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one). Please check if the subnet is present in the selected VPC."
+    Description: "Select a Subnet where the EC2 instance will be deployed."
   DBPassword:
     Type: String
     Default: "testadmin"
