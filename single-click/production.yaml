@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  HyperswitchAwsEksAccessRole:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Sid: AllowEksAccess
+            Effect: Allow
+            Action:
+              - eks:*
+              - sts:GetCallerIdentity
+            Resource: "*"
+  AwsIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
+        - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+        - !Ref HyperswitchAwsEksAccessRole
+      Path: /
+      Policies:
+        - PolicyName: CdkPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - cloudformation:*
+                Resource: '*'
+                Effect: Allow
+              - Condition:
+                  ForAnyValue:StringEquals:
+                    aws:CalledVia:
+                      - cloudformation.amazonaws.com
+                Action: '*'
+                Resource: '*'
+                Effect: Allow
+              - Action: s3:*
+                Resource: '*'
+                Effect: Allow
+              - Action: [
+                  "ssm:Describe*",
+                  "ssm:Get*",
+                  "ssm:List*"
+                ]
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/cdk-*
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref AwsIamRole
+  HyperswitchCDKBootstrapEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !If [UseCustomVpc, !Ref CustomVpcId, !Ref AWS::NoValue]
+      GroupDescription: Hyperswitch CDK Bootstrap Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  HyperswitchCDKBootstrapEC2:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT1H
+    Properties:
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
+      InstanceType: 't3.medium'
+      IamInstanceProfile: !Ref InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/feat/production-ready-single-click/single-click/single-click.sh
+          chmod a+x run-cdk.sh
+
+          # export env variables
+          export AWS_STACK_NAME="${AWS::StackName}"
+          export AWS_REGION="${AWS::Region}"
+          export DB_PASS="${DBPassword}"
+          export ADMIN_API_KEY="${AdminApiKey}"
+          export MASTER_ENC_KEY="${MasterEncKey}"
+          export MODE="${HyperswitchInstallMode}"
+          export VPN_IPS="${VpnIps}"
+          export CARD_VAULT_MASTER_KEY="${CardVaultMasterKey}"
+          export CARD_VAULT_DB_PASS="${CardVaultDBPass}"
+
+          if [[ $MODE == "Free Tier" ]]; then
+            export INSTALLATION_MODE=1
+          else
+            export INSTALLATION_MODE=2
+          fi
+
+          sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          # delete the stack
+          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
+          GroupSet:
+            - !Ref HyperswitchCDKBootstrapEC2SecurityGroup
+          AssociatePublicIpAddress: true
+Conditions:
+  UseCustomVpc: !Not [!Equals [!Ref CustomVpcId, ""]]
+  UseCustomSubnet: !Not [!Equals [!Ref CustomSubnetId, ""]]
+Parameters:
+  HyperswitchInstallMode:
+    Type: String
+    Default: Free Tier
+    AllowedValues:
+      - Free Tier
+      - Enterprise
+    Description: "Please select the Hyperswitch Installation Mode"
+  CustomVpcId:
+    Type: AWS::EC2::VPC::Id
+    AllowedPattern : ".{10,}"
+    Description: "Select a VPC where the resources will be deployed."
+  CustomSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    AllowedPattern : ".{10,}"
+    Description: "Select a Subnet where the EC2 instance will be deployed. Please make sure that subnet exists inside VPC selected above."
+  DBPassword:
+    Type: String
+    Default: "testadmin"
+    AllowedPattern: "^[a-zA-Z0-9]{8,}$"
+    Description: "Please enter the password for your RDS instance: (Min 8 Character Needed [A-Z][a-z][0-9])"
+  AdminApiKey:
+    Type: String
+    Default: "test_admin"
+    Description: "Please enter the Admin api key (Required to access Hyperswitch APIs)"
+  MasterEncKey:
+    Type: String
+    Default: ""
+    Description: "Please enter the AES master encryption key for Hyperswitch. \nTo generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1 and Copy the value of 'key' from the output and use it as the master key. (Only required for Enterprise mode)"
+  VpnIps:
+    Type: String
+    Default: "0.0.0.0"
+    Description: "Please enter all the comma seperated IPs that needs to be whitelisted to access EKS. (Only required for Enterprise mode)"
+  CardVaultMasterKey:
+    Type: String
+    Default: ""
+    Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
+  CardVaultDBPass:
+    Type: String
+    Default: "testadmin"
+    AllowedPattern: "^[a-zA-Z0-9 ]{8,}$"
+    Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
+

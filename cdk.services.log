@@ -1,0 +1,10 @@
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttps://hyperswitch-web-1848392926.us-east-1.elb.amazonaws.com/0.16.7/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-584444745.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-397699258.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1802238184.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1699837745.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################

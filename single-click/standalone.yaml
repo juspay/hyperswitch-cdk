@@ -91,7 +91,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refactor/update-single-click/single-click.sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
           chmod a+x run-cdk.sh
 
           # export env variables
@@ -128,16 +128,15 @@ Parameters:
     Default: Free Tier
     AllowedValues:
       - Free Tier
-      # - Enterprise
     Description: "Please select the Hyperswitch Installation Mode"
   CustomVpcId:
     Type: AWS::EC2::VPC::Id
     AllowedPattern : ".{10,}"
-    Description: "(Optional) Select a VPC where the resources will be deployed. Leave blank to use default VPC (if you have one)."
+    Description: "Select a VPC where the resources will be deployed."
   CustomSubnetId:
     Type: AWS::EC2::Subnet::Id
     AllowedPattern : ".{10,}"
-    Description: "(Optional) Select a Subnet where the EC2 instance will be deployed. Leave blank to use default Subnet (if you have one). Please check if the subnet is present in the selected VPC."
+    Description: "Select a Subnet where the EC2 instance will be deployed. (Should be under the same VPC you opted)"
   DBPassword:
     Type: String
     Default: "testadmin"
@@ -151,21 +150,3 @@ Parameters:
     Type: String
     Default: ""
     Description: "Please enter the AES master encryption key for Hyperswitch. \nTo generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1 and Copy the value of 'key' from the output and use it as the master key."
-  # VpnIps:
-  #   Type: String
-  #   Default: "0.0.0.0"
-  #   Description: "Please enter all the IPs that needs to be whitelisted to access EKS."
-  # CardVaultMasterKEY:
-  #   Type: String
-  #   Default: ""
-  #   Description: "(Optional) If you need Card Vault, please create master key by following below steps, leave it empty if you don't need it\nTo generate the master key, you can use the utility bundled within \n(https://github.com/juspay/hyperswitch-card-vault)\nIf you have cargo installed you can run \n(cargo install --git https://github.com/juspay/hyperswitch-card-vault --bin utils --root . && ./bin/utils master-key && rm ./bin/utils && rmdir ./bin)"
-  # CardVaultDBPass:
-  #   Type: String
-  #   Default: "testadmin"
-  #   AllowedPattern: "^[a-zA-Z0-9]{8,}$"
-  #   Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
-  # AWSArn:
-  #   Type: String
-  #   AllowedPattern: "^arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:[a-z0-9-]*:[0-9]*:[a-zA-Z0-9:/._+-]+$"
-  #   Description: "run `aws sts get-caller-identity` and copy the arn value. This is will be helpful in future updates of services"
-
