@@ -24,7 +24,7 @@ Resources:
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
-          
+
           # delete the stack
           aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
       NetworkInterfaces:
@@ -34,7 +34,7 @@ Resources:
             - !GetAtt HyperswitchCDKBootstrapEC2SecurityGroup.GroupId
           AssociatePublicIpAddress: true
       KeyName: 'hyps-oneclick'
-      
+
   AwsIamRole:
     Type: AWS::IAM::Role
     Properties:
