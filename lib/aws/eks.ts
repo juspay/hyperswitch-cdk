@@ -489,7 +489,7 @@ export class EksStack {
                 apple_pay_merchant_conf_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
                 apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
                 pm_auth_key: kmsSecrets.pm_auth_key,
-                api_hash_key: kmsSecrets.pm_auth_key
+                api_hash_key: kmsSecrets.api_hash_key
               },
               master_enc_key: kmsSecrets.kms_encrypted_master_key,
               locker: {
@@ -851,7 +851,7 @@ class KmsSecrets {
     this.apple_pay_merchant_conf_merchant_cert_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.apple_pay_merchant_conf_merchant_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.pm_auth_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
-    this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
   }
 }
