@@ -7,6 +7,7 @@ green=$(tput setaf 2)
 yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
+source ./bash/utils.sh
 
 # Function to display error messages in red
 display_error() {
@@ -70,82 +71,7 @@ function box_out_with_hyphen() {
     echo " -${b//?/-}-"
     tput sgr 0
 }
-
-echo
-printf "${bold}Installing Dependencies...${reset}\n"
-echo
-
-# Function to display a simple loading animation
-show_loader() {
-    local message=$1
-    local pid=$!
-    local delay=0.3
-    local spinstr='|/-\\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf "\r%s [%c]  " "$message" "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-    done
-    printf "\r%s [Done]   \n" "$message"
-}
-
-# Check for Node.js
-echo "Checking for Node.js..."
-if ! command -v node &>/dev/null; then
-    echo "Node.js could not be found. Please install node js 18 or above."
-    exit 1
-fi
-
-# Verify Node.js version
-version=$(node -v | cut -d'.' -f1 | tr -d 'v')
-if [ "$version" -lt 18 ]; then
-    echo "Invalid Node.js version. Expected 18 or above, but got $version."
-    exit 1
-fi
-echo "Node.js version is valid."
-
-# Install AWS CDK
-echo "Installing AWS CDK..."
-npm install -g aws-cdk &
-show_loader "Installing AWS CDK..."
-echo "AWS CDK is installed successfully."
-
-# Check for AWS CDK
-if ! command -v cdk &>/dev/null; then
-    echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
-    exit 1
-fi
-
-# Determine OS and run respective dependency script
-os=$(uname)
-case "$os" in
-"Linux")
-    echo "Detecting operating system: Linux"
-    (
-        bash linux_deps.sh &
-        show_loader "Running Linux dependencies script..."
-    )
-    ;;
-"Darwin")
-    echo "Detecting operating system: macOS"
-    (
-        bash mac_deps.sh &
-        show_loader "Running macOS dependencies script..."
-    )
-    ;;
-*)
-    echo "Unsupported operating system."
-    exit 1
-    ;;
-esac
-
-# Check if AWS CLI installation was successful
-if ! command -v aws &>/dev/null; then
-    echo "AWS CLI could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the $PATH"
-    exit 1
-fi
-
+bash ./bash/deps.sh
 echo "Dependency installation completed."
 
 fetch_details() {
@@ -317,11 +243,6 @@ while true; do
 done
 
 export AWS_DEFAULT_REGION;
-
-export LOG_FILE="cdk.services.log"
-function echoLog() {
-    echo "$1" | tee -a $LOG_FILE
-}
 
 echo
 printf "${bold}Checking neccessary permissions${reset}\n"
@@ -505,56 +426,8 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
-        aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
-        # Deploy Load balancer and Ingress
-        echo "##########################################"
-        sleep 10
-        APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        SDK_WEB_HOST=$(kubectl get ingress hypers-v1-hyperswitchsdk -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
-
-        # Deploy the hyperswitch application with the load balancer host name
-        helm repo add hs https://juspay.github.io/hyperswitch-helm
-        export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/signup' \
-            --header 'Content-Type: application/json' \
-            --data-raw '{
-      "email": "test@gmail.com",
-      "password": "admin"
-  }' | jq -r '.merchant_id')
-        export PUB_KEY=$(curl --silent --location --request GET 'http://'$APP_HOST'/accounts/'$MERCHANT_ID \
-            --header 'Accept: application/json' \
-            --header 'api-key: '$ADMIN_API_KEY | jq -r '.publishable_key')
-        export API_KEY=$(curl --silent --location --request POST 'http://'$APP_HOST'/api_keys/'$MERCHANT_ID \
-            --header 'Content-Type: application/json' \
-            --header 'Accept: application/json' \
-            --header 'api-key: '$ADMIN_API_KEY \
-            --data-raw '{"name":"API Key 1","description":null,"expiration":"2038-01-19T03:14:08.000Z"}' | jq -r '.api_key')
-        export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$APP_HOST'/account/'$MERCHANT_ID'/connectors' \
-            --header 'Content-Type: application/json' \
-            --header 'Accept: application/json' \
-            --header 'api-key: '$ADMIN_API_KEY \
-            --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}')
-        printf "##########################################\nPlease wait for the application to deploy \n##########################################"
-        helm get values -n hyperswitch hypers-v1 >values.yaml
-        helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST,hyperswitchsdk.autoBuild.buildParam.envSdkUrl=http://$SDK_WEB_HOST,hyperswitchsdk.autoBuild.buildParam.envBackendUrl=http://$APP_HOST,services.router.host=http://$APP_HOST" -n hyperswitch -f values.yaml
-        sleep 10
-        echoLog "--------------------------------------------------------------------------------"
-        echoLog "$bold Service                           Host$reset"
-        echoLog "--------------------------------------------------------------------------------"
-        echoLog "$green HyperloaderJS Hosted at           $blue"https://$SDK_WEB_HOST/0.16.7/v0/HyperLoader.js"$reset"
-        echoLog "$green App server running on             $blue"http://$APP_HOST"$reset"
-        echoLog "$green Logs server running on            $blue"http://$LOGS_HOST"$reset, Login with $YELLOW username: admin, password: admin$reset , Please change on startup"
-        echoLog "$green Control center server running on  $blue"http://$CONTROL_CENTER_HOST"$reset, Login with $YELLOW Email: test@gmail.com, password: admin$reset , Please change on startup"
-        echoLog "$green Hyperswitch Demo Store running on $blue"http://$SDK_HOST"$reset"
-        echoLog "--------------------------------------------------------------------------------"
-        echoLog "##########################################"
-        echo "$blue Please run 'cat cdk.services.log' to view the services details again"$reset
-        if [[ "$CARD_VAULT" == "y" ]]; then
-            sh ./unlock_locker.sh
-        fi
+        helm get values -n hyperswitch hypers-v1 > values.yaml
+        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
         exit 0
     fi
 

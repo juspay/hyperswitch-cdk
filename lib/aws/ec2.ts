@@ -29,7 +29,7 @@ export class EC2Instance {
             let keypair_id = id+'-keypair';
             let awsKeyPair = new ec2.CfnKeyPair(scope, keypair_id, {
                 keyName: keypair_id,
-            });
+              });
             keyName = awsKeyPair.keyName;
         }
 
