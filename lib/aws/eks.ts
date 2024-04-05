@@ -408,139 +408,166 @@ export class EksStack {
         // }
       },
     });
-
+    
+    const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
-      chart: "hyperswitch-helm",
-      repository: "https://juspay.github.io/hyperswitch-helm",
+      chart: "hyperswitch-stack",
+      repository: "https://juspay.github.io/hyperswitch-helm/v0.1.2",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
       values: {
         clusterName: cluster.clusterName,
-        services: {
-          router: {
-            image: `juspaydotin/hyperswitch-router:v1.105.0`
-          },
-          producer: {
-            image: `juspaydotin/hyperswitch-producer:v1.105.0`
-          },
-          consumer: {
-            image: `juspaydotin/hyperswitch-consumer:v1.105.0`
-          },
-          controlCenter: {
-            image: `juspaydotin/hyperswitch-control-center:v1.17.0`
-          }
-        },
-        application: {
-          server: {
-            serviceAccountAnnotations: {
-              "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
-            },
-            server_base_url: "https://sandbox.hyperswitch.io",
-            secrets: {
-              podAnnotations: {
-                traffic_sidecar_istio_io_excludeOutboundIPRanges:
-                  "10.23.6.12/32",
-              },
-              kms_admin_api_key: kmsSecrets.kms_admin_api_key,
-              kms_jwt_secret: kmsSecrets.kms_jwt_secret,
-              kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
-              kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
-              kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
-              kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
-              kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
-              kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-              kms_jwekey_vault_encryption_key: locker?.locker_ec2.locker_pair.public_key || kmsSecrets.kms_jwekey_vault_encryption_key,
-              kms_jwekey_vault_private_key: locker?.locker_ec2.tenant.private_key || kmsSecrets.kms_jwekey_vault_private_key,
-              kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
-              kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
-              kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
-              kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
-              kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-              kms_key_id: kms_key.keyId,
-              kms_key_region: kms_key.stack.region,
-              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
-              admin_api_key: admin_api_key,
-              jwt_secret: "test_admin",
-              recon_admin_api_key: "test_admin",
-            },
-            master_enc_key: kmsSecrets.kms_encrypted_master_key,
-            locker: {
-              locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
-              hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
-            },
-            basilisk: {
-              host: "basilisk-host",
-            },
-          },
-          dashboard: {
-            env: {
-              apiBaseUrl: "http://localhost:8080",
-              sdkBaseUrl: "http://localhost:8080",
-            },
-          },
-          sdk: {
-            image: `juspaydotin/hyperswitch-web:v1.0.4`,
-            env: {
-              hyperswitchPublishableKey: "pk_test_123",
-              hyperswitchSecretKey: "sk_test_123",
-              hyperswitchServerUrl: "http://localhost:8080",
-              hyperSwitchClientUrl: "http://localhost:8080",
-            },
-          },
-        },
-
-        postgresql: {
-          enabled: false
-        },
-        externalPostgresql: {
-          enabled: true,
-          primary: {
-            host: rds.dbCluster?.clusterEndpoint.hostname,
-            auth: {
-              username: "db_user",
-              database: "hyperswitch",
-              password: kmsSecrets.kms_encrypted_db_pass,
-              plainpassword: config.rds.password,
-            },
-          },
-          readOnly: {
-            host: rds.dbCluster?.clusterReadEndpoint.hostname,
-            auth: {
-              username: "db_user",
-              database: "hyperswitch",
-              password: kmsSecrets.kms_encrypted_db_pass,
-              plainpassword: config.rds.password,
-            },
-
-          }
-        },
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        redis: {
-          enabled: false
-        },
-        externalRedis: {
-          enabled: true,
-          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          port: 6379
-        },
-        "hyperswitch-card-vault": {
-          enabled: locker ? true : false,
-          postgresql: {
-            enabled: locker ? true : false,
+        "hyperswitch-app": {
+          loadBalancer: {
+            targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
-          server: {
-            secrets: {
-              locker_private_key: locker?.locker_ec2.locker_pair.private_key || '',
-              tenant_public_key: locker?.locker_ec2.tenant.public_key || '',
-              master_key: locker ? config.locker.master_key : ""
+          services: {
+            router: {
+              version: "v1.107.0",
+              image: `juspaydotin/hyperswitch-router:v1.107.0-standalone`,
+              host: "http://localhost:8080"
+            },
+            producer: {
+              image: `juspaydotin/hyperswitch-producer:v1.107.0-standalone`
+            },
+            consumer: {
+              image: `juspaydotin/hyperswitch-consumer:v1.107.0-standalone`
+            },
+            controlCenter: {
+              image: `juspaydotin/hyperswitch-control-center:v1.17.0`
+            },
+            sdk: {
+              host: "http://localhost:9090",
+              version: sdk_version,
+              subversion: "v0"
+            }
+          },
+          application: {
+            server: {
+              secrets_manager: "aws_kms",
+              serviceAccountAnnotations: {
+                "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
+              },
+              server_base_url: "https://sandbox.hyperswitch.io",
+              secrets: {
+                podAnnotations: {
+                  traffic_sidecar_istio_io_excludeOutboundIPRanges:
+                    "10.23.6.12/32",
+                },
+                kms_admin_api_key: kmsSecrets.kms_admin_api_key,
+                kms_jwt_secret: kmsSecrets.kms_jwt_secret,
+                kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
+                kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
+                kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
+                kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
+                kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
+                kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
+                kms_jwekey_vault_encryption_key: locker?.locker_ec2.locker_pair.public_key || kmsSecrets.kms_jwekey_vault_encryption_key,
+                kms_jwekey_vault_private_key: locker?.locker_ec2.tenant.private_key || kmsSecrets.kms_jwekey_vault_private_key,
+                kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
+                kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
+                kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
+                kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
+                kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
+                kms_key_id: kms_key.keyId,
+                kms_key_region: kms_key.stack.region,
+                kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
+                admin_api_key: kmsSecrets.kms_admin_api_key,
+                jwt_secret: kmsSecrets.kms_jwt_secret,
+                recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
+                forex_api_key: kmsSecrets.kms_forex_api_key,
+                forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
+                apple_pay_ppc: kmsSecrets.apple_pay_ppc, 
+                apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
+                apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
+                apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
+                apple_pay_merchant_conf_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
+                apple_pay_merchant_conf_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
+                apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
+                pm_auth_key: kmsSecrets.pm_auth_key,
+              },
+              master_enc_key: kmsSecrets.kms_encrypted_master_key,
+              locker: {
+                locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+                hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
+              },
+              basilisk: {
+                host: "basilisk-host",
+              },
+            }
+          },
+          postgresql: {
+            enabled: false
+          },
+          externalPostgresql: {
+            enabled: true,
+            primary: {
+              host: rds.dbCluster?.clusterEndpoint.hostname,
+              auth: {
+                username: "db_user",
+                database: "hyperswitch",
+                password: kmsSecrets.kms_encrypted_db_pass,
+                plainpassword: config.rds.password,
+              },
+            },
+            readOnly: {
+              host: rds.dbCluster?.clusterReadEndpoint.hostname,
+              auth: {
+                username: "db_user",
+                database: "hyperswitch",
+                password: kmsSecrets.kms_encrypted_db_pass,
+                plainpassword: config.rds.password,
+              },
+  
+            }
+          },
+          redis: {
+            enabled: false
+          },
+          externalRedis: {
+            enabled: true,
+            host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+            port: 6379
+          },
+          autoscaling: {
+            enabled: true,
+            minReplicas: 3,
+            maxReplicas: 5,
+            targetCPUUtilizationPercentage: 80,
+          },
+          "hyperswitch-card-vault": {
+            enabled: locker ? true : false,
+            postgresql: {
+              enabled: locker ? true : false,
+            },
+            server: {
+              secrets: {
+                locker_private_key: locker?.locker_ec2.locker_pair.private_key || '',
+                tenant_public_key: locker?.locker_ec2.tenant.public_key || '',
+                master_key: locker ? config.locker.master_key : ""
+              }
             }
           }
         },
         "hyperswitchsdk": {
           enabled: true,
+          services: {
+            router: {
+              host: "http://localhost:8080"
+            },
+            sdkDemo: {
+              image: "juspaydotin/hyperswitch-web:v1.0.10",
+              hyperswitchPublishableKey: "pub_key",
+              hyperswitchSecretKey: "secret_key"
+            }
+          },
+          loadBalancer: {
+            targetSecurityGroup: lbSecurityGroup.securityGroupId
+          },
           ingress: {
             className: "alb",
             annotations: {
@@ -568,18 +595,11 @@ export class EksStack {
           autoBuild: {
             forceBuild: true,
             gitCloneParam: {
-              gitVersion: "0.16.7"
+              gitVersion: sdk_version
             },
             nginxConfig: { extraPath: "v0" }
           }
-
-        },
-        autoscaling: {
-          enabled: true,
-          minReplicas: 3,
-          maxReplicas: 5,
-          targetCPUUtilizationPercentage: 80,
-        },
+        }
       },
     });
 
@@ -773,6 +793,7 @@ export class EksStack {
 
 class KmsSecrets {
   readonly kms_admin_api_key: string;
+  readonly kms_recon_admin_api_key: string;
   readonly kms_jwt_secret: string;
   readonly kms_encrypted_db_pass: string;
   readonly kms_encrypted_master_key: string;
@@ -789,12 +810,21 @@ class KmsSecrets {
   readonly kms_connector_onboarding_paypal_client_id: string;
   readonly kms_connector_onboarding_paypal_client_secret: string;
   readonly kms_connector_onboarding_paypal_partner_id: string;
+  readonly kms_forex_api_key: string;
+  readonly kms_forex_fallback_api_key: string;
+  readonly apple_pay_ppc: string;
+  readonly apple_pay_ppc_key: string;
+  readonly apple_pay_merchant_conf_merchant_cert: string;
+  readonly apple_pay_merchant_conf_merchant_cert_key: string;
+  readonly apple_pay_merchant_conf_merchant_id: string;
+  readonly pm_auth_key: string;
   readonly kms_encrypted_api_hash_key: string;
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
     let message = kms.getAtt("message");
     this.kms_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/admin-api-key", 1);
+    this.kms_recon_admin_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_jwt_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/jwt-secret", 1);
     this.kms_encrypted_db_pass = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/db-pass", 1);
     this.kms_encrypted_master_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/master-key", 1);
@@ -811,6 +841,14 @@ class KmsSecrets {
     this.kms_connector_onboarding_paypal_client_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_connector_onboarding_paypal_client_secret = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_connector_onboarding_paypal_partner_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_forex_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.kms_forex_fallback_api_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.apple_pay_ppc = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.apple_pay_ppc_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.apple_pay_merchant_conf_merchant_cert = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.apple_pay_merchant_conf_merchant_cert_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.apple_pay_merchant_conf_merchant_id = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.pm_auth_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
   }
 }

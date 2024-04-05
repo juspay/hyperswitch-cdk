@@ -97,7 +97,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 
 def store_parameter(ssm, key, value):
     ssm.put_parameter(Name="/hyperswitch/{}".format(key),
-                      Value=value, Overwrite=True, Type='String')
+                      Value=value, Overwrite=True, Type='String', Tier='Advanced')
 
 
 def lambda_handler(event, context):

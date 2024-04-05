@@ -2,7 +2,7 @@
 # shellcheck disable=2155
 
 
-source deps.sh
+source ./bash/deps.sh
 
 set -e
 

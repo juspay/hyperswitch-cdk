@@ -31,6 +31,7 @@ fi
 if ! command -v node &> /dev/null
 then
     brew install node
+    brew upgrade
     node -v
 fi
 

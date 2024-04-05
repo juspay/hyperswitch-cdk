@@ -230,7 +230,7 @@ function get_standalone_sdk_ec2_config(
       hyperswitch_ec2.getInstance().instancePublicIp,
     )
     .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
-    .replaceAll("{{version}}", "0.16.7")
+    .replaceAll("{{version}}", "0.27.2")
     .replaceAll("{{sub_version}}", "v0");
   let ec2_config: EC2Config = {
     id: "hyperswitch_standalone_sdk_demo_ec2",
