@@ -24,7 +24,7 @@ SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "S
 
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm/v0.1.2 --force-update
-export MERCHANT_ID=$(curl --silent --location --request POST 'http://'$APP_HOST'/user/signup' \
+export MERCHANT_ID=$(curl --connect-timeout 5 --retry 5 --retry-delay 30 --silent --location --request POST 'http://'$APP_HOST'/user/signup' \
     --header 'Content-Type: application/json' \
     --data-raw '{
 "email": "test@gmail.com",
