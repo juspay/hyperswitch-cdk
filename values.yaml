@@ -1,90 +1,113 @@
 USER-SUPPLIED VALUES:
-application:
-  dashboard:
-    env:
-      apiBaseUrl: http://localhost:8080
-      sdkBaseUrl: http://localhost:8080
-  sdk:
-    env:
-      hyperSwitchClientUrl: http://localhost:8080
-      hyperswitchPublishableKey: pk_test_123
-      hyperswitchSecretKey: sk_test_123
-      hyperswitchServerUrl: http://localhost:8080
-    image: juspaydotin/hyperswitch-web:v1.0.4
-  server:
-    basilisk:
-      host: basilisk-host
-    locker:
-      hyperswitch_private_key: locker-key
-      locker_readonly_key: locker-key
-    master_enc_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG9yhJPaZRd53SQL11VGkmcAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDHNldrMLkeQYbCP2owIBEIBbKAuXQrd0MCtvvJxh8/YmrKFBhJ+NAc7z+B9tDuokXVezdX4NjjxzV3XV/2J7ZRAI8rcjPti6/ht1dX9hwrxbPbU9PYFZEDQCxs3rfgc7hQL+M0gWwHCZHu3VuQ==
-    secrets:
-      admin_api_key: test_admin
-      jwt_secret: test_admin
-      kms_admin_api_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgHfyHvlOCDRwJUcwQlmqmwgAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMt460apbhAvjwM49aAgEQgCX1gblWpVQLn8gElifc6D9NEDvROW8VsTJYqm4wfY6RHPOxVvRI
-      kms_connector_onboarding_paypal_client_id: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_connector_onboarding_paypal_client_secret: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_connector_onboarding_paypal_partner_id: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_encrypted_api_hash_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgHf4tv8B+0EqSplYsDKupd9AAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDLEAxqrMMMr6N0R+VQIBEIBb7JGwP45d3/LGqWUobMv+OyHYnGCqn+p9BgmcdgCtp+XzNTGaMvVwfHsD2+qvqNWKyFKFtNDN0wyZl9j4k5n0oY8/Rc5QeFKB0AFLGdELIxf84GLgrDxAB4sDqg==
-      kms_jwekey_locker_decryption_key1: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_locker_decryption_key2: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_locker_encryption_key1: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_locker_encryption_key2: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_locker_identifier1: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_locker_identifier2: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_rust_locker_encryption_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_tunnel_private_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgG6DcGcOBhWcghMxqjHOJZBAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSvVdF01QUhzunuUMAgEQgCRuDLbjJYg8Lkj5wVCKqUdZEWjsV8qPPjb7OgZ2WVBaV2jmEw4=
-      kms_jwekey_vault_encryption_key: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgF4IhnA+5ICqhog/mE836IgAAACKzCCAicGCSqGSIb3DQEHBqCCAhgwggIUAgEAMIICDQYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAw8CljHEtS+vSegc6YCARCAggHeE4/dovBGo4CfqWNkEeW+a1sRQfdgu1bgSYlFy+hTmZ1r+bsuY9aOfAdfdXfJ6/Q345PrKZFnwC3LXwfvh8uf7sael3/jbyfo/CUKrfdeIXoOZ+tp8A3FFTzePP3bCVZQubMdSGRTJjICm+zaED18lV+mkgJaUtFnxMOttMaBvO4YGpu7vp7And2P2kXd/LWkZ7/195d2G7EtEt64L4SwtM7Ruv48ByWaRS1/7IdKgra/KajG9Bi4NCABAkCDO734RcdWtD2rSAgcU8CjtKOZW3n3l5ZGIK0Ezy+orKSRr4va5N5HNB1enysdplz26q30kdpRfn+v4ifXFVJ3VpVVMiCyuinZr6ZzX4cxDgJBqA0ud3wPbyZI+w8yUhZXz8OJId+Y+A8/ONx8P/62o9BYzwakbaJvV3+xJ+SAywFCQGHYfyQklz9TBeK7jqyZ1uv6rtWDkUmblFIqQ/cgezNCJR33gPCiAG3fXEMRjQzn/r9PoXpBL6eSm05X4ZLLJEx5qOcoIIBNpBJHx5GHSTtcehk2O92L2HPI1SI4aGDEiSytlxPSLgrHbsNTc6EmHa70vLEfjQ1cAnHtdHlaAWohShaspqMgLuQ1Jlejw4H3nwOCWWGV/g49Wxsjgwf1aQ==
-      kms_jwekey_vault_private_key: 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
-      kms_jwt_secret: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgH8lDdmm3Xz0kZWKrJFDN4OAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMuysUaH4LkpFSoZkRAgEQgCVv3iSxSLvODb6IZKp0eE5MVXyyW9IaKvxqYmGrvtFVNvVvQFy9
-      kms_key_id: 84324792-3b41-472b-8b7d-c422fa5cb4ba
-      kms_key_region: us-east-1
-      podAnnotations:
-        traffic_sidecar_istio_io_excludeOutboundIPRanges: 10.23.6.12/32
-      recon_admin_api_key: test_admin
-    server_base_url: https://sandbox.hyperswitch.io
-    serviceAccountAnnotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::225681119357:role/hyperswitch-HyperswitchServiceAccountRoleCC06B446-2W1rXW70hrxF
-autoscaling:
-  enabled: true
-  maxReplicas: 5
-  minReplicas: 3
-  targetCPUUtilizationPercentage: 80
 clusterName: hs-eks-cluster
-externalPostgresql:
-  enabled: true
-  primary:
-    auth:
-      database: hyperswitch
-      password: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgFpMme18j/YU5FQR3pTmxdgAAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMovuLY6xQUI0jAaoqAgEQgCNvpCKvdKpeLOq0xwKVXxg5OpE5Xj05WbAdbGJsETIDuUtnzA==
-      plainpassword: dbPassw1
-      username: db_user
-    host: hyperswitch-hyperswitchdbcluster6afb6ee5-k4z7hzyn2gih.cluster-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
-  readOnly:
-    auth:
-      database: hyperswitch
-      password: AQICAHgdp7NiSiNipeefAK6ZUt6vP0P5zLbIVnv2UAfAkgNVtgFpMme18j/YU5FQR3pTmxdgAAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMovuLY6xQUI0jAaoqAgEQgCNvpCKvdKpeLOq0xwKVXxg5OpE5Xj05WbAdbGJsETIDuUtnzA==
-      plainpassword: dbPassw1
-      username: db_user
-    host: hyperswitch-hyperswitchdbcluster6afb6ee5-k4z7hzyn2gih.cluster-ro-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
-externalRedis:
-  enabled: true
-  host: hs-elasticache.4x7hjl.0001.use1.cache.amazonaws.com
-  port: 6379
-hyperswitch-card-vault:
-  enabled: false
+hyperswitch-app:
+  application:
+    server:
+      basilisk:
+        host: basilisk-host
+      locker:
+        hyperswitch_private_key: locker-key
+        locker_readonly_key: locker-key
+      master_enc_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgExEqQYoyPLPg1qPtSfx3coAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDKBLfyyesiR82s5gYwIBEIBbfFhLqFznkGyJET/I0+0ljrqhPNrC7N/9BU+D/stFlTzZL7hX9ow9YqSmzT9oYyuoQ13PEF54mtrVE9vR9jeDQR2V9kRlYWDw4MwsyahWJJ20IBJsV1eTs6LAXw==
+      secrets:
+        admin_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgEhoGRgMph2pb2mFCljVSslAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDznelc4MFjvG7uNWAgEQgCQBxxA8AQJgvU8lR2EdG//QsanxRt8xnefSiqxegJfgtF7VFbc=
+        api_hash_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHjHB4ecU1Ua3mnnz5tKQe3AAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDAjLQTkkSvXXQVSzYQIBEIBbVSMtyv+ovPMQKVEiCJ2RxllBU8sOKeGqDzl0iZlEdoVCCtTPixN3SkOYR01q6JCA3C9xIpsd7OLj09ZzqYw2K1ASW6dRO1CPKI2BjthNazhHnEBdaI3iyiJDzw==
+        apple_pay_merchant_cert: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_merchant_cert_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_merchant_conf_merchant_cert: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_merchant_conf_merchant_cert_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_merchant_conf_merchant_id: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_ppc: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        apple_pay_ppc_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        forex_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        forex_fallback_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        jwt_secret: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgE8e2JJ0P0VfK0UHS2K0NEgAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMk716dcRyH0/l6s+gAgEQgCUrHv0ffjgZOZl2idnEhZDqo2DLG222/4t1/hFAnjv8Dzm/dszk
+        kms_admin_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgEhoGRgMph2pb2mFCljVSslAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDznelc4MFjvG7uNWAgEQgCQBxxA8AQJgvU8lR2EdG//QsanxRt8xnefSiqxegJfgtF7VFbc=
+        kms_connector_onboarding_paypal_client_id: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_connector_onboarding_paypal_client_secret: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_connector_onboarding_paypal_partner_id: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_encrypted_api_hash_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHjHB4ecU1Ua3mnnz5tKQe3AAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDAjLQTkkSvXXQVSzYQIBEIBbVSMtyv+ovPMQKVEiCJ2RxllBU8sOKeGqDzl0iZlEdoVCCtTPixN3SkOYR01q6JCA3C9xIpsd7OLj09ZzqYw2K1ASW6dRO1CPKI2BjthNazhHnEBdaI3iyiJDzw==
+        kms_jwekey_locker_decryption_key1: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_locker_decryption_key2: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_locker_encryption_key1: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_locker_encryption_key2: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_locker_identifier1: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_locker_identifier2: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_rust_locker_encryption_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_tunnel_private_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        kms_jwekey_vault_encryption_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgGD4UmeblwNhfJGGfEEhMXfAAACKzCCAicGCSqGSIb3DQEHBqCCAhgwggIUAgEAMIICDQYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAw6XGw0MojK9Qjpn84CARCAggHekq+h42nqTC4TCOncqRNkEv0VvyuXEMqkpOJt28XVDsmakQ5OhEFeP6afvIfWyxJFnxYeAuA08MKr9WPZ+GTc9YlDR1yrVqnoMlYRaDHuzNO0w9pF79gnETcK36dZFpJUjQXn3ToP8JK5K0QSe+HqbWoAOF89vS2d5pFb3NO4+nc/9bzQjl9xLoPUlP/WAOdX/xHSxXsVRORWWCCcC3Vuq8dHdXniD/aIYdaeRZFN79d1GHJ/qVY6kKbltcfy1UCR+EW2I+YmKpxnidVze7M4pIdQkkBbXMduePOLaF0Eae7cWTlVwA0PS05D6Hcl4zc0BX5KOXMpwr4Hf7Uq/wo9AhzFqOtc/jrCjueCSy/Guo8q/QFrKL15JrD/mZPkzVweyZ5nSM+LnaIWfqtgYiv/OQaCEfEWP1neJYjtGOiXcqH7xiMrO5p+HivqZvQR1gJSmrbR9IoT6cP+kW2BllVhAQqMey3HQ/C7MarKDnTKh1jMfXmK7vksQKdRIopx7KnKGvSmzjf4RaXYgIkv3rmFnrM+PTuE2X3C50WfOZ6V5b3ck1BzPrnsGnUftticEDYzELZTDBMlOy3EPRh0dbO0r4IzZrSdkoY8+YbmGeRfMEJxKrkco/TYYgRkxr0aQw==
+        kms_jwekey_vault_private_key: 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
+        kms_jwt_secret: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgE8e2JJ0P0VfK0UHS2K0NEgAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMk716dcRyH0/l6s+gAgEQgCUrHv0ffjgZOZl2idnEhZDqo2DLG222/4t1/hFAnjv8Dzm/dszk
+        kms_key_id: 14a99a52-53a7-4d38-bba4-f6604005daf2
+        kms_key_region: us-east-2
+        pm_auth_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+        podAnnotations:
+          traffic_sidecar_istio_io_excludeOutboundIPRanges: 10.23.6.12/32
+        recon_admin_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
+      secrets_manager: aws_kms
+      server_base_url: https://sandbox.hyperswitch.io
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::225681119357:role/hyperswitch-HyperswitchServiceAccountRoleCC06B446-y2eMDKNYhHQ2
+  autoscaling:
+    enabled: true
+    maxReplicas: 5
+    minReplicas: 3
+    targetCPUUtilizationPercentage: 80
+  externalPostgresql:
+    enabled: true
+    primary:
+      auth:
+        database: hyperswitch
+        password: AQICAHjLbnSxjAEjk9mcww3btkkNBHBJ8gn3F7KLEFi2E6BHiAELGpkn2PW59PmZ2D4fs3L8AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMR3BePcIu2xahR6x9AgEQgCTJYn59/cjvJiue1+pzj6gCxobLFy0/nOW4juhJa7ht7ODrNBA=
+        plainpassword: dbPassw1
+        username: db_user
+      host: hyperswitch-hyperswitchdbcluster6afb6ee5-2a8138uhyp1d.cluster-c7kw3vg70axg.us-east-2.rds.amazonaws.com
+    readOnly:
+      auth:
+        database: hyperswitch
+        password: AQICAHjLbnSxjAEjk9mcww3btkkNBHBJ8gn3F7KLEFi2E6BHiAELGpkn2PW59PmZ2D4fs3L8AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMR3BePcIu2xahR6x9AgEQgCTJYn59/cjvJiue1+pzj6gCxobLFy0/nOW4juhJa7ht7ODrNBA=
+        plainpassword: dbPassw1
+        username: db_user
+      host: hyperswitch-hyperswitchdbcluster6afb6ee5-2a8138uhyp1d.cluster-ro-c7kw3vg70axg.us-east-2.rds.amazonaws.com
+  externalRedis:
+    enabled: true
+    host: hs-elasticache.6nakwn.0001.use2.cache.amazonaws.com
+    port: 6379
+  hyperswitch-card-vault:
+    enabled: false
+    postgresql:
+      enabled: false
+    server:
+      secrets:
+        locker_private_key: ""
+        master_key: ""
+        tenant_public_key: ""
+  loadBalancer:
+    targetSecurityGroup: sg-0d0f74975b1fedfec
   postgresql:
     enabled: false
-  server:
-    secrets:
-      locker_private_key: ""
-      master_key: ""
-      tenant_public_key: ""
+  redis:
+    enabled: false
+  services:
+    consumer:
+      image: juspaydotin/hyperswitch-consumer:v1.107.0-standalone
+    controlCenter:
+      image: juspaydotin/hyperswitch-control-center:v1.17.0
+    producer:
+      image: juspaydotin/hyperswitch-producer:v1.107.0-standalone
+    router:
+      host: http://localhost:8080
+      image: juspaydotin/hyperswitch-router:v1.107.0-standalone
+      version: v1.107.0
+    sdk:
+      host: http://localhost:9090
+      subversion: v0
+      version: 0.27.2
 hyperswitchsdk:
   autoBuild:
     forceBuild: true
     gitCloneParam:
-      gitVersion: 0.16.7
+      gitVersion: 0.27.2
     nginxConfig:
       extraPath: v0
   enabled: true
@@ -97,7 +120,7 @@ hyperswitchsdk:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
       alb.ingress.kubernetes.io/load-balancer-name: hyperswitch-web
       alb.ingress.kubernetes.io/scheme: internet-facing
-      alb.ingress.kubernetes.io/security-groups: sg-07f1816cf7d159a70
+      alb.ingress.kubernetes.io/security-groups: sg-0d0f74975b1fedfec
       alb.ingress.kubernetes.io/tags: stack=hyperswitch-lb
       alb.ingress.kubernetes.io/target-type: ip
     className: alb
@@ -106,18 +129,14 @@ hyperswitchsdk:
       paths:
       - path: /
         pathType: Prefix
+  loadBalancer:
+    targetSecurityGroup: sg-0d0f74975b1fedfec
+  services:
+    router:
+      host: http://localhost:8080
+    sdkDemo:
+      hyperswitchPublishableKey: pub_key
+      hyperswitchSecretKey: secret_key
+      image: juspaydotin/hyperswitch-web:v1.0.10
 loadBalancer:
-  targetSecurityGroup: sg-07f1816cf7d159a70
-postgresql:
-  enabled: false
-redis:
-  enabled: false
-services:
-  consumer:
-    image: juspaydotin/hyperswitch-consumer:v1.105.0
-  controlCenter:
-    image: juspaydotin/hyperswitch-control-center:v1.17.0
-  producer:
-    image: juspaydotin/hyperswitch-producer:v1.105.0
-  router:
-    image: juspaydotin/hyperswitch-router:v1.105.0
+  targetSecurityGroup: sg-0d0f74975b1fedfec

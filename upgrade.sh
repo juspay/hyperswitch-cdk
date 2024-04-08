@@ -18,9 +18,9 @@ ADMIN_API_KEY=$1
 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-SDK_WEB_HOST=$(kubectl get ingress hyperswitch-web-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+# SDK_WEB_HOST=$(kubectl get ingress hyperswitch-web-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='HyperLoaderUrl'].OutputValue" --output text)
+SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkDistribution'].OutputValue" --output text)
 
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm/v0.1.2 --force-update
@@ -47,7 +47,7 @@ printf "##########################################\nPlease wait for the applicat
 APP_ENV="hyperswitch-app"
 SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
-HYPERLOADER="http://$SDK_WEB_HOST/0.27.2/v0/HyperLoader.js"
+HYPERLOADER="http://$SDK_URL/0.27.2/v0/HyperLoader.js"
 helm upgrade --install hypers-v1 hs/hyperswitch-stack --set "$SDK_ENV.router.host=http://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=http://$SDK_WEB_HOST,$APP_ENV.services.router.host=http://$APP_HOST,$SDK_BUILD.envSdkUrl=http://$SDK_WEB_HOST,$SDK_BUILD.envBackendUrl=http://$APP_HOST" -n hyperswitch -f values.yaml
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$bold Service                           Host$reset"

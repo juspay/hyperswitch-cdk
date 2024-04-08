@@ -555,7 +555,7 @@ export class EksStack {
           }
         },
         "hyperswitchsdk": {
-          enabled: true,
+          enabled: false,
           services: {
             router: {
               host: "http://localhost:8080"

@@ -12,6 +12,7 @@ import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
 import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
+import { HyperswitchSDKStack } from "./hsSdk";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -150,7 +151,7 @@ export class AWSStack extends cdk.Stack {
       if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
-      // let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, rds, eks);
+      let hsSdk = new HyperswitchSDKStack(this, config, vpc.vpc, eks);
 
       // Create Jumps and add rules to access RDS, Elasticache and Proxies
       // Internal Jump can be accessed only from external jump. External jump can be accessed only from Session Manager

@@ -2,30 +2,38 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import { Config } from "./config";
-import { DataBaseConstruct } from "./rds";
 import * as cr from "aws-cdk-lib/custom-resources";
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import * as cdk from "aws-cdk-lib/core";
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { EksStack } from "./eks";
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import { S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 
 export class HyperswitchSDKStack {
   constructor(
     scope: Construct,
     config: Config,
     vpc: ec2.Vpc,
-    rds: DataBaseConstruct,
     eks: EksStack
   ) {
-    // Create a new S3 bucket
-    const bucket = rds.bucket;
-    let sdkVersion = '0.5.6';
+    const sdkCorsRule: s3.CorsRule = {
+      allowedOrigins: ["*"],
+      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+      allowedHeaders: ["*"],
+      maxAge: 3000,
+    }
 
-    new cdk.CfnOutput(scope, 'HyperLoaderUrl', {
-      value: "http://"+rds.bucket.bucketDomainName+"/"+sdkVersion+"/v0",
+    const bucket = new s3.Bucket(scope, "HyperswitchSDKBucket", {
+      bucketName: "hyperswitch-sdk",
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      cors: [sdkCorsRule],
     });
-    new cdk.CfnOutput(scope, 'Hyperswitch Services', {
-      value: "https://"+rds.bucket.bucketDomainName+"/cdk.services.html",
-    });
+    let sdkVersion = "0.27.2";
 
     // Create a new CodeBuild project
     const project = new codebuild.Project(scope, "HyperswitchSDK", {
@@ -57,11 +65,11 @@ export class HyperswitchSDKStack {
       }),
       environmentVariables: {
         sdkBucket: {
-          value: rds.bucket.bucketName,
+          value: bucket.bucketName,
           type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
         },
         envSdkUrl: {
-          value: "http://" + rds.bucket.bucketDomainName,
+          value: "http://" + bucket.bucketDomainName,
           type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
@@ -87,6 +95,25 @@ export class HyperswitchSDKStack {
 
     // Allow the CodeBuild project to access the S3 bucket
     bucket.grantReadWrite(project);
+
+    const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
+    bucket.grantRead(oai);
+
+    let sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
+      originConfigs: [
+        {
+        s3OriginSource: {
+          s3BucketSource: bucket,
+          originAccessIdentity: oai,
+        },
+        behaviors: [{isDefaultBehavior: true}, {pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD}]
+      }
+      ]
+    });
+
+    new cdk.CfnOutput(scope, 'SdkDistribution', {
+      value: sdkDistribution.distributionDomainName,
+    });
 
     // Create a custom resource that starts a build when the project is created
     new cr.AwsCustomResource(scope, "StartBuild", {
