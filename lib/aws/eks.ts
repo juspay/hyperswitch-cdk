@@ -17,12 +17,15 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
+  sdkBucket: s3.Bucket;
   constructor(
     scope: Construct,
     config: Config,
@@ -408,7 +411,43 @@ export class EksStack {
         // }
       },
     });
-    
+
+    const sdkCorsRule: s3.CorsRule = {
+      allowedOrigins: ["*"],
+      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+      allowedHeaders: ["*"],
+      maxAge: 3000,
+    }
+
+    let sdkBucket = new s3.Bucket(scope, "HyperswitchSDKBucket", {
+      bucketName: "hyperswitch-sdk",
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      cors: [sdkCorsRule],
+    });
+
+    const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
+    sdkBucket.grantRead(oai);
+
+    let sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
+      originConfigs: [
+        {
+        s3OriginSource: {
+          s3BucketSource: sdkBucket,
+          originAccessIdentity: oai,
+        },
+        behaviors: [{isDefaultBehavior: true}, {pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD}]
+      }
+      ]
+    });
+
+    new cdk.CfnOutput(scope, 'SdkDistribution', {
+      value: sdkDistribution.distributionDomainName,
+    });
+
     const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
@@ -523,7 +562,6 @@ export class EksStack {
                 password: kmsSecrets.kms_encrypted_db_pass,
                 plainpassword: config.rds.password,
               },
-  
             }
           },
           redis: {
@@ -555,7 +593,7 @@ export class EksStack {
           }
         },
         "hyperswitchsdk": {
-          enabled: false,
+          enabled: true,
           services: {
             router: {
               host: "http://localhost:8080"
@@ -598,12 +636,16 @@ export class EksStack {
             gitCloneParam: {
               gitVersion: sdk_version
             },
+            buildParam: {
+              envSdkUrl: `https://${sdkDistribution.distributionDomainName}`
+            },
             nginxConfig: { extraPath: "v0" }
           }
         }
       },
     });
 
+    this.sdkBucket = sdkBucket;
     hypersChart.node.addDependency(albControllerChart);
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
