@@ -7,6 +7,7 @@ import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import * as cdk from "aws-cdk-lib/core";
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { EksStack } from "./eks";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 export class HyperswitchSDKStack {
   constructor(
@@ -14,11 +15,36 @@ export class HyperswitchSDKStack {
     eks: EksStack,
   ) {
 
+    const sdkBuildRole = new iam.Role(scope, "sdkBucketRole", {
+      assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+    });
+
+    const sdkBuildPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "s3:putObject",
+            "s3:getObject",
+            "s3:ListBucket",
+            "elasticloadbalancing:DescribeLoadBalancers",
+          ],
+          resources: ["*"],
+        }),
+      ]
+    });
+
+    sdkBuildRole.attachInlinePolicy(
+      new iam.Policy(scope, "ECRFullAccessPolicy", {
+        document: sdkBuildPolicy,
+      }),
+    );
+
     let sdkVersion = "0.27.2";
 
     // Create a new CodeBuild project
     const project = new codebuild.Project(scope, "HyperswitchSDK", {
       projectName: "HyperswitchSDK",
+      role: sdkBuildRole,
       buildSpec: codebuild.BuildSpec.fromObject({
         version: "0.2",
         phases: {
@@ -58,24 +84,10 @@ export class HyperswitchSDKStack {
         buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
       },
     });
-    project.node.addDependency(eks.lokiChart);
-
-    project.addToRolePolicy(
-      new PolicyStatement({
-        actions: ["elasticloadbalancing:DescribeLoadBalancers"],
-        resources: ["*"], // Modify this to restrict access to specific resources
-      })
-    );
-
-    project.addToRolePolicy(
-      new PolicyStatement({
-        actions: ["logs:CreateLogStream"],
-        resources: ["*"],
-      })
-    );
-
     // Allow the CodeBuild project to access the S3 bucket
     eks.sdkBucket.grantReadWrite(project);
+
+    project.node.addDependency(eks.lokiChart);
 
     // Create a custom resource that starts a build when the project is created
     new cr.AwsCustomResource(scope, "StartBuild", {
