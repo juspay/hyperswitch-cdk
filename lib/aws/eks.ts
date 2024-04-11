@@ -26,6 +26,7 @@ export class EksStack {
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
+  sdkDistribution: cloudfront.CloudFrontWebDistribution;
   constructor(
     scope: Construct,
     config: Config,
@@ -432,7 +433,7 @@ export class EksStack {
     const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
     sdkBucket.grantRead(oai);
 
-    let sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
+    this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
       originConfigs: [
         {
         s3OriginSource: {
@@ -443,9 +444,9 @@ export class EksStack {
       }
       ]
     });
-
+    this.sdkDistribution.node.addDependency(sdkBucket);
     new cdk.CfnOutput(scope, 'SdkDistribution', {
-      value: sdkDistribution.distributionDomainName,
+      value: this.sdkDistribution.distributionDomainName,
     });
 
     const sdk_version = "0.27.2";
@@ -477,7 +478,7 @@ export class EksStack {
               image: `juspaydotin/hyperswitch-consumer:v1.107.0-standalone`
             },
             controlCenter: {
-              image: `juspaydotin/hyperswitch-control-center:v1.17.0`
+              image: `juspaydotin/hyperswitch-control-center:v1.29.9`
             },
             sdk: {
               host: "http://localhost:9090",
@@ -637,7 +638,7 @@ export class EksStack {
               gitVersion: sdk_version
             },
             buildParam: {
-              envSdkUrl: `https://${sdkDistribution.distributionDomainName}`
+              envSdkUrl: `https://${this.sdkDistribution.distributionDomainName}`
             },
             nginxConfig: { extraPath: "v0" }
           }

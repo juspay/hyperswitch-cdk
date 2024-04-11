@@ -34,7 +34,7 @@ export class HyperswitchSDKStack {
     });
 
     sdkBuildRole.attachInlinePolicy(
-      new iam.Policy(scope, "ECRFullAccessPolicy", {
+      new iam.Policy(scope, "SDKBucketAccessPolicy", {
         document: sdkBuildPolicy,
       }),
     );
@@ -76,7 +76,7 @@ export class HyperswitchSDKStack {
           type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
         },
         envSdkUrl: {
-          value: "http://" + eks.sdkBucket.bucketDomainName,
+          value: "http://" + eks.sdkDistribution.distributionDomainName,
           type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
         },
       },

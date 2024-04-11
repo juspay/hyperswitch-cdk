@@ -12,7 +12,7 @@ import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
 import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
-import { HyperswitchSDKStack } from "./hsSdk";
+import { HyperswitchSDKStack } from "./hs-sdk";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {

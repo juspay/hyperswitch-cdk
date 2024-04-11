@@ -26,9 +26,9 @@ phases:
             docker tag $IMAGE:v1.105.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.105.0
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.105.0
           elif [[ $IMAGE == "juspaydotin/hyperswitch-control-center" ]]; then
-            docker pull $IMAGE:v1.17.0
-            docker tag $IMAGE:v1.17.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.17.0
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.17.0
+            docker pull $IMAGE:v1.29.9
+            docker tag $IMAGE:v1.29.9 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.29.9
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.29.9
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
             docker pull $IMAGE:v1.0.4
             docker tag $IMAGE:v1.0.4 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.4

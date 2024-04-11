@@ -31,11 +31,11 @@ docker run -d --env-file .env -p 80:8080 -v `pwd`/:/local/config juspaydotin/hyp
 
 # Installing Hyperswitch control center
 
-docker pull juspaydotin/hyperswitch-control-center:v1.17.0
+docker pull juspaydotin/hyperswitch-control-center:v1.29.9
 
 cat << EOF >> .env
 apiBaseUrl=http://$(curl ifconfig.me):80
 sdkBaseUrl=http://$(curl ifconfig.me):80
 EOF
 
-docker run -d --env-file .env -p 9000:9000 juspaydotin/hyperswitch-control-center:v1.17.0
+docker run -d --env-file .env -p 9000:9000 juspaydotin/hyperswitch-control-center:v1.29.9

@@ -92,7 +92,7 @@ hyperswitch-app:
     consumer:
       image: juspaydotin/hyperswitch-consumer:v1.107.0-standalone
     controlCenter:
-      image: juspaydotin/hyperswitch-control-center:v1.17.0
+      image: juspaydotin/hyperswitch-control-center:v1.29.9.0
     producer:
       image: juspaydotin/hyperswitch-producer:v1.107.0-standalone
     router:
