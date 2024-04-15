@@ -44,7 +44,7 @@ hyperswitch-app:
         podAnnotations:
           traffic_sidecar_istio_io_excludeOutboundIPRanges: 10.23.6.12/32
         recon_admin_api_key: AQICAHhXMCuxg4Fz4JWf/CjhwJdyDY/DNvlAYhBst6fzVTELrgHfjxOyE8+KJWUELtthA2TVAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeCHZUPtHsWH1/x2rAgEQgCQzE9OihfRjemdo2ogV3kigpQLBv3coP/t6hjKm6DhLHqPk2h4=
-      secrets_manager: aws_kms
+      secrets_manager: no_encryption
       server_base_url: https://sandbox.hyperswitch.io
       serviceAccountAnnotations:
         eks.amazonaws.com/role-arn: arn:aws:iam::225681119357:role/hyperswitch-HyperswitchServiceAccountRoleCC06B446-y2eMDKNYhHQ2

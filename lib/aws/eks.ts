@@ -428,6 +428,7 @@ export class EksStack {
       publicReadAccess: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       cors: [sdkCorsRule],
+      autoDeleteObjects: true,
     });
 
     const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
@@ -488,7 +489,7 @@ export class EksStack {
           },
           application: {
             server: {
-              secrets_manager: "aws_kms",
+              secrets_manager: "no_encryption",
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },
