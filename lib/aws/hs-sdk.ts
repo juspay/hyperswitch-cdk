@@ -8,6 +8,8 @@ import * as cdk from "aws-cdk-lib/core";
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { EksStack } from "./eks";
 import * as iam from "aws-cdk-lib/aws-iam";
+import { readFileSync } from "fs";
+import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 
 export class HyperswitchSDKStack {
   constructor(
@@ -89,19 +91,62 @@ export class HyperswitchSDKStack {
 
     project.node.addDependency(eks.lokiChart);
 
-    // Create a custom resource that starts a build when the project is created
-    new cr.AwsCustomResource(scope, "StartBuild", {
-      onCreate: {
-        service: "CodeBuild",
-        action: "startBuild",
-        parameters: {
-          projectName: project.projectName,
-        },
-        physicalResourceId: cr.PhysicalResourceId.of("StartBuild"),
-      },
-      policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
-        resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
-      }),
+    const lambdaStartBuildCode = readFileSync('./dependencies/code_builder/start_build.py').toString();
+
+    const triggerCodeBuildRole = new iam.Role(scope, "SdkAssetsUploadLambdaRole", {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
     });
+
+    const triggerCodeBuildPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "codebuild:StartBuild",
+          ],
+          resources: [project.projectArn],
+        }),
+      ]
+    });
+
+    const logsPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+          ],
+          resources: ["*"],
+        })
+      ]
+    })
+
+    triggerCodeBuildRole.attachInlinePolicy(
+      new iam.Policy(scope, "SdkAssetsUploadLambdaPolicy", {
+        document: triggerCodeBuildPolicy,
+      }),
+    );
+
+    triggerCodeBuildRole.attachInlinePolicy(
+      new iam.Policy(scope, "SdkAssetsUploadLambdaLogsPolicy", {
+        document: logsPolicy,
+      }),
+    );
+
+    const triggerCodeBuild = new Function(scope, "SdkAssetsUploadLambda", {
+      runtime: Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: Code.fromInline(lambdaStartBuildCode),
+      timeout: cdk.Duration.minutes(15),
+      role: triggerCodeBuildRole,
+      environment: {
+        PROJECT_NAME: project.projectName,
+      },
+    });
+
+    const codebuildTrigger = new cdk.CustomResource(scope, "SdkAssetsUploadCR", {
+      serviceToken: triggerCodeBuild.functionArn,
+    });
+
   }
 }

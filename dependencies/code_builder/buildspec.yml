@@ -5,7 +5,7 @@ phases:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
-        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web", "bitnami/metrics-server")
+        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server")
         PULL_FROM_AWS=("eks/aws-load-balancer-controller" "ebs-csi-driver/aws-ebs-csi-driver" "eks-distro/kubernetes-csi/external-provisioner" "eks-distro/kubernetes-csi/external-attacher" "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" "eks-distro/kubernetes-csi/livenessprobe" "eks-distro/kubernetes-csi/external-resizer" "eks-distro/kubernetes-csi/node-driver-registrar" "ebs-csi-driver/volume-modifier-for-k8s")
 
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
