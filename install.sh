@@ -426,6 +426,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
+        aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
         helm get values -n hyperswitch hypers-v1 > values.yaml
         sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
         exit 0

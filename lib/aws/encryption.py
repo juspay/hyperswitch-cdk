@@ -121,9 +121,10 @@ def lambda_handler(event, context):
             for key in keys:
                 parameter_name="/hyperswitch/{}".format(key)
                 try:
-                    ssm.delete_parameter(parameter_name)
+                    ssm.delete_parameter(Name=parameter_name)
                 except:
                     print("Parameter {} doesn't exist.".format(parameter_name))
+
             send(event, context, "SUCCESS", {"message": "No action required"})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
