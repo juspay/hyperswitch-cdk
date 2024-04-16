@@ -305,6 +305,31 @@ export class EksStack {
 
     const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
 
+    const delete_stack_code = readFileSync(
+      "lib/aws/delete_stack.py",
+    ).toString();
+
+
+    const delete_stack_function = new Function(scope, "hyperswitch-stack-delete", {
+      functionName: "HyperswitchStackDeletionLambda",
+      runtime: Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: Code.fromInline(delete_stack_code),
+      timeout: cdk.Duration.minutes(15),
+      role: lambda_role,
+      environment: {
+        SECRET_MANAGER_ARN: secret.secretArn,
+      },
+    });
+
+    new cdk.CustomResource(
+      scope,
+      "HyperswitchStackDeletionCR",
+      {
+        serviceToken: delete_stack_function.functionArn,
+      },
+    );
+
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
       vpc: cluster.vpc,
