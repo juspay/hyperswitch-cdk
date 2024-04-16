@@ -149,6 +149,11 @@ export class EksStack {
           resources: [kms_key.keyArn],
         }),
         new iam.PolicyStatement({
+          actions: ["elasticloadbalancing:DeleteLoadBalancer",
+            "elasticloadbalancing:DescribeLoadBalancers"],
+          resources: ["*"],
+        }),
+        new iam.PolicyStatement({
           actions: ["ssm:*"],
           resources: ["*"],
         }),
@@ -481,7 +486,7 @@ export class EksStack {
                 recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
                 forex_api_key: kmsSecrets.kms_forex_api_key,
                 forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
-                apple_pay_ppc: kmsSecrets.apple_pay_ppc, 
+                apple_pay_ppc: kmsSecrets.apple_pay_ppc,
                 apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
                 apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
                 apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
@@ -523,7 +528,7 @@ export class EksStack {
                 password: kmsSecrets.kms_encrypted_db_pass,
                 plainpassword: config.rds.password,
               },
-  
+
             }
           },
           redis: {
@@ -604,7 +609,7 @@ export class EksStack {
       },
     });
 
-    hypersChart.node.addDependency(albControllerChart);
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {

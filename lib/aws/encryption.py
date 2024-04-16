@@ -121,9 +121,20 @@ def lambda_handler(event, context):
             for key in keys:
                 parameter_name="/hyperswitch/{}".format(key)
                 try:
-                    ssm.delete_parameter(parameter_name)
+                    ssm.delete_parameter(Name=parameter_name)
                 except:
                     print("Parameter {} doesn't exist.".format(parameter_name))
+
+            # Also try to delete the loadbalancer created also
+            loadbalancers = ["hyperswitch", "hyperswitch-control-center", "hyperswitch-logs", "hyperswitch-sdk-demo", "hyperswitch-web"]
+            elbv2 = boto3.client('elbv2')
+            reponse = elbv2.describe_load_balancers(Names=loadbalancers)
+            for lb in reponse["LoadBalancers"]:
+                try:
+                    elbv2.delete_load_balancer(LoadBalancerArn=lb["LoadBalancerArn"])
+                except:
+                    print("Loadbalancer {} doesn't exist.".format(lb["LoadBalancerArn"]))
+
             send(event, context, "SUCCESS", {"message": "No action required"})
         else:
             send(event, context, "SUCCESS", {"message": "No action required"})
