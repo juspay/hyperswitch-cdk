@@ -33,7 +33,7 @@ phases:
             docker pull $IMAGE:v1.0.4
             docker tag $IMAGE:v1.0.4 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.4
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.4
-          elif [[ $IMAGE == "bitnami/metrics-server"]]
+          elif [[ $IMAGE == "bitnami/metrics-server"]]; then
             docker pull $IMAGE:v0.7.0
             docker tag $IMAGE:v0.7.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.7.0
           else
