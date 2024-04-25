@@ -104,6 +104,20 @@ fi
 
 export AWS_DEFAULT_REGION;
 
+# delete the load balancers created by the ingress. names: hyperswitch, hyperswitch-sdk-demo, hyperswitch-control-center, hyperswitch-web, hyperswitch-logs
+load_balancers=("hyperswitch" "hyperswitch-sdk-demo" "hyperswitch-control-center" "hyperswitch-web" "hyperswitch-logs")
+
+# Loop over each load balancer
+for lb in "${load_balancers[@]}"; do
+  # Get the ARN of the load balancer
+  lb_arn=$(aws elbv2 describe-load-balancers --names $lb --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+
+  # Delete the load balancer
+  aws elbv2 delete-load-balancer --load-balancer-arn $lb_arn
+done
+
+# destroy the stack
+AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 # destroy the stack
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn )
 cdk destroy --require-approval never -c aws_arn=$AWS_ARN --force
