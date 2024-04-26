@@ -495,8 +495,8 @@ export class EksStack {
                 kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
                 kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
                 kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-                kms_jwekey_vault_encryption_key: locker?.locker_ec2.locker_pair.public_key || kmsSecrets.kms_jwekey_vault_encryption_key,
-                kms_jwekey_vault_private_key: locker?.locker_ec2.tenant.private_key || kmsSecrets.kms_jwekey_vault_private_key,
+                kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
+                kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
                 kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
                 kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
                 kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
@@ -626,7 +626,7 @@ export class EksStack {
           autoBuild: {
             forceBuild: true,
             gitCloneParam: {
-              gitVersion: "0.27.2"
+              gitVersion: sdk_version
             },
             nginxConfig: { extraPath: "v0" }
           }
