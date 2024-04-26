@@ -477,7 +477,7 @@ export class EksStack {
           },
           application: {
             server: {
-              secrets_manager: "no_encryption",
+              secrets_manager: "aws_kms",
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },
@@ -591,7 +591,7 @@ export class EksStack {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.27.2",
+              image: "juspaydotin/hyperswitch-web:v1.0.10",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
