@@ -634,7 +634,7 @@ export class EksStack {
       },
     });
 
-    hypersChart.node.addDependency(albControllerChart);
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {

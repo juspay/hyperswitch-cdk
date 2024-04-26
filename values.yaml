@@ -8,46 +8,46 @@ hyperswitch-app:
       locker:
         hyperswitch_private_key: locker-key
         locker_readonly_key: locker-key
-      master_enc_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAElxqCFjue+Lpitt3a6IkgUAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDCJKUO73GHcYnr51twIBEIBbpU8MP7RObiMkN7M9wBldxTfN2+7Ieq70DLEA72DU5z/jlZcQszuYqn0qsJ16sO4dsk8PHG31lRMeqkuZsmmlN8rLZWEDooxCvlu9fMDekxnvvaBXKycoGdfP5g==
+      master_enc_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAG35h1ageO3GzkAGaQx8rK0AAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDD//bTBCCfFDvp2AoQIBEIBbUZsGsSgAtTTq54TSmxTbPMTeW8eOAJ78LjXUeQk/TtvZL8rq54DdTGm8/30SqtxhkCFl/nr0VQaS1PYlDm0yan1PHL+ABJ+wBRIo8z16JKnJhvf/wJldHpLzhA==
       secrets:
-        admin_api_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAEVKLoXIazbnORPTzbiXVLRAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMq+/3dvUCdzeGaILTAgEQgCVaXDLHxpKloWO7+OLbf7j4zlH5n7CLniXNTk9Wh4rBKNduH6QJ
-        api_hash_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAGzcKkdCGYWifXqcGtIiAXzAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDDrG9AiqEbZo4CKtFAIBEIBb1VpAvk1dGAlePAHcJOgb04+olH8EhVwGySiuU/N/MLibRepAUkGrcCb/60OlWliVNAQ0Hj8ahncY+nq7Xr4ncTQBCTR++uL1XrGJ7zM3FoTIOxb4gAT5jj6+PA==
-        apple_pay_merchant_cert: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_merchant_cert_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_merchant_conf_merchant_cert: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_merchant_conf_merchant_cert_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_merchant_conf_merchant_id: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_ppc: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        apple_pay_ppc_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        forex_api_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        forex_fallback_api_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        jwt_secret: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAENRDUYyvtNCzg6/mneAEtYAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMo/tRPQi7HuaJGIv/AgEQgCUsO4UQTEMyTjciQ5IvPeBlR10fkfg2wnj9sUpWIgix+5sButYE
-        kms_admin_api_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAEVKLoXIazbnORPTzbiXVLRAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMq+/3dvUCdzeGaILTAgEQgCVaXDLHxpKloWO7+OLbf7j4zlH5n7CLniXNTk9Wh4rBKNduH6QJ
-        kms_connector_onboarding_paypal_client_id: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_connector_onboarding_paypal_client_secret: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_connector_onboarding_paypal_partner_id: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_encrypted_api_hash_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAGzcKkdCGYWifXqcGtIiAXzAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDDrG9AiqEbZo4CKtFAIBEIBb1VpAvk1dGAlePAHcJOgb04+olH8EhVwGySiuU/N/MLibRepAUkGrcCb/60OlWliVNAQ0Hj8ahncY+nq7Xr4ncTQBCTR++uL1XrGJ7zM3FoTIOxb4gAT5jj6+PA==
-        kms_jwekey_locker_decryption_key1: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_locker_decryption_key2: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_locker_encryption_key1: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_locker_encryption_key2: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_locker_identifier1: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_locker_identifier2: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_rust_locker_encryption_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_tunnel_private_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
-        kms_jwekey_vault_encryption_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAEeFRffMgtFGTq0LfvT9tE7AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMbBsaPpa6Nol34oYvAgEQgCXdfIaKzrJaauRU4qmunN4loRUBsDhD/jOD00h+zRtYmOha29q3
-        kms_jwekey_vault_private_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFAZygKzvM2t/gV8tlAgForAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMMgIuQlkZZY86Nvs/AgEQgCXHVg5wWBko6y+/cDDuz+c3sxpkKuFnHQoFEFbCRAHJtTnXxbYA
-        kms_jwt_secret: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAENRDUYyvtNCzg6/mneAEtYAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMo/tRPQi7HuaJGIv/AgEQgCUsO4UQTEMyTjciQ5IvPeBlR10fkfg2wnj9sUpWIgix+5sButYE
-        kms_key_id: 5c88f6dc-4772-42fa-b41b-c3bfad06dedc
+        admin_api_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFQ534Wh7rzztJQ5VRyONI6AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMTdv8jcXH60zJC6oqAgEQgCXm+FVDiX2sAHJ6fRYFGloVnms0DfVYzHhVhCes6o5b4z9ESl49
+        api_hash_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAE/2+lpKSEpz/z2CngQBXrKAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDMJofGE3NygYUraKUAIBEIBb0LHP245D+HkZuw1+LtZODz23qqWhB3d6UpngxKYMp18P0jgOPs64piDRu1Wo35Qkgsntq2kaQ66KCyKnnJg7RTG/2sE8IhVd+4oUJ4fdKYVrukB2lduZO9Jquw==
+        apple_pay_merchant_cert: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_merchant_cert_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_merchant_conf_merchant_cert: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_merchant_conf_merchant_cert_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_merchant_conf_merchant_id: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_ppc: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        apple_pay_ppc_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        forex_api_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        forex_fallback_api_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        jwt_secret: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtmdnaT88qTqx34LFathd3AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM3FRTY1cSscoJ3RJXAgEQgCXSj1b6K5hdYdxvAF+VrpU//BJlg219NiTLIVwW1oDHTASAk8wn
+        kms_admin_api_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFQ534Wh7rzztJQ5VRyONI6AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMTdv8jcXH60zJC6oqAgEQgCXm+FVDiX2sAHJ6fRYFGloVnms0DfVYzHhVhCes6o5b4z9ESl49
+        kms_connector_onboarding_paypal_client_id: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_connector_onboarding_paypal_client_secret: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_connector_onboarding_paypal_partner_id: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_encrypted_api_hash_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAE/2+lpKSEpz/z2CngQBXrKAAAAojCBnwYJKoZIhvcNAQcGoIGRMIGOAgEAMIGIBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDMJofGE3NygYUraKUAIBEIBb0LHP245D+HkZuw1+LtZODz23qqWhB3d6UpngxKYMp18P0jgOPs64piDRu1Wo35Qkgsntq2kaQ66KCyKnnJg7RTG/2sE8IhVd+4oUJ4fdKYVrukB2lduZO9Jquw==
+        kms_jwekey_locker_decryption_key1: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_locker_decryption_key2: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_locker_encryption_key1: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_locker_encryption_key2: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_locker_identifier1: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_locker_identifier2: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_rust_locker_encryption_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_tunnel_private_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
+        kms_jwekey_vault_encryption_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAE7FhpDZE89S1P1gHbcv93rAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM9sRJxpSJ0l0NnUZLAgEQgCXDvUK3XvlM3uJnwYQwbDBudDr9x5oTGJqxX2bHPW9efFnKvgnZ
+        kms_jwekey_vault_private_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFN8NfAot7VoCjbQ5UHz9/EAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMGY18t2pTT3mvLztaAgEQgCX02pHVBE42Xq+lwX8KyF5iT5kIxzYofUQgqRMJ35dS7PJYgH5Z
+        kms_jwt_secret: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtmdnaT88qTqx34LFathd3AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM3FRTY1cSscoJ3RJXAgEQgCXSj1b6K5hdYdxvAF+VrpU//BJlg219NiTLIVwW1oDHTASAk8wn
+        kms_key_id: 39f2c0c8-0941-46f2-a988-84af0ff9b5c6
         kms_key_region: us-east-1
-        pm_auth_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
+        pm_auth_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
         podAnnotations:
           traffic_sidecar_istio_io_excludeOutboundIPRanges: 10.23.6.12/32
-        recon_admin_api_key: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAFE2MpKFdab5eKrKZwNPv11AAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMBDtZgCTY1K0GEv5mAgEQgCTQjkaHIxi51EcIK8ZjzxiDUUEdHUZrF+gND3Zgh1rjUdzinKQ=
+        recon_admin_api_key: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAFtdsNQJLAkmT+Y0eBJ/vQPAAAAZzBlBgkqhkiG9w0BBwagWDBWAgEAMFEGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDSQDb41cxE4RaEk2AgEQgCRYaHGWSFT6H8cBM6oHVsGaz+zoX0EAV+ytO3zD5ThVgOd7p4Y=
       secrets_manager: aws_kms
       server_base_url: https://sandbox.hyperswitch.io
       serviceAccountAnnotations:
-        eks.amazonaws.com/role-arn: arn:aws:iam::225681119357:role/hyperswitch-HyperswitchServiceAccountRoleCC06B446-EfTLI7eNXJet
+        eks.amazonaws.com/role-arn: arn:aws:iam::225681119357:role/hyperswitch-HyperswitchServiceAccountRoleCC06B446-hQ95y8j6lrm9
   autoscaling:
     enabled: true
     maxReplicas: 5
@@ -58,17 +58,17 @@ hyperswitch-app:
     primary:
       auth:
         database: hyperswitch
-        password: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAF6vTm2QWKAcnxzfJz5P693AAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMMB6RGFuFAThE7DbcAgEQgCML+QQMYgmslRE35VRa3jBMgCJPYZAVCCePyiuLaNjT6NhjTg==
+        password: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAGyPQxEsQIK1uOfA5KaXtnbAAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDINTpWbj2Mvl/8DjAgEQgCMLgxXaUiSv+QpYABQQWHrv+7g6Hf76fQE+M4RWlE2ZT1+Qeg==
         plainpassword: Camel123
         username: db_user
-      host: hyperswitch-hyperswitchdbcluster6afb6ee5-wruvqfstcsya.cluster-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
+      host: hyperswitch-hyperswitchdbcluster6afb6ee5-gjy30iebdhyo.cluster-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
     readOnly:
       auth:
         database: hyperswitch
-        password: AQICAHiZzvr2eAKNcPSi2yi2GGWe4lGa2PeQpe/NpmqjuOp8xAF6vTm2QWKAcnxzfJz5P693AAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMMB6RGFuFAThE7DbcAgEQgCML+QQMYgmslRE35VRa3jBMgCJPYZAVCCePyiuLaNjT6NhjTg==
+        password: AQICAHgJhH/UJmMAU4bCyCse9oi5A/Dj/fAfc1NvtN2Xez6PCAGyPQxEsQIK1uOfA5KaXtnbAAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMDINTpWbj2Mvl/8DjAgEQgCMLgxXaUiSv+QpYABQQWHrv+7g6Hf76fQE+M4RWlE2ZT1+Qeg==
         plainpassword: Camel123
         username: db_user
-      host: hyperswitch-hyperswitchdbcluster6afb6ee5-wruvqfstcsya.cluster-ro-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
+      host: hyperswitch-hyperswitchdbcluster6afb6ee5-gjy30iebdhyo.cluster-ro-ccpofvgo2wzr.us-east-1.rds.amazonaws.com
   externalRedis:
     enabled: true
     host: hs-elasticache.4x7hjl.0001.use1.cache.amazonaws.com
@@ -83,7 +83,7 @@ hyperswitch-app:
         master_key: ""
         tenant_public_key: ""
   loadBalancer:
-    targetSecurityGroup: sg-0a8d906b47becbb9e
+    targetSecurityGroup: sg-09af3d7cc4c51a625
   postgresql:
     enabled: false
   redis:
@@ -118,7 +118,7 @@ hyperswitchsdk:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
       alb.ingress.kubernetes.io/load-balancer-name: hyperswitch-web
       alb.ingress.kubernetes.io/scheme: internet-facing
-      alb.ingress.kubernetes.io/security-groups: sg-0a8d906b47becbb9e
+      alb.ingress.kubernetes.io/security-groups: sg-09af3d7cc4c51a625
       alb.ingress.kubernetes.io/tags: stack=hyperswitch-lb
       alb.ingress.kubernetes.io/target-type: ip
     className: alb
@@ -128,13 +128,13 @@ hyperswitchsdk:
       - path: /
         pathType: Prefix
   loadBalancer:
-    targetSecurityGroup: sg-0a8d906b47becbb9e
+    targetSecurityGroup: sg-09af3d7cc4c51a625
   services:
     router:
       host: http://localhost:8080
     sdkDemo:
       hyperswitchPublishableKey: pub_key
       hyperswitchSecretKey: secret_key
-      image: juspaydotin/hyperswitch-web:v1.27.2
+      image: juspaydotin/hyperswitch-web:v1.0.10
 loadBalancer:
-  targetSecurityGroup: sg-0a8d906b47becbb9e
+  targetSecurityGroup: sg-09af3d7cc4c51a625
