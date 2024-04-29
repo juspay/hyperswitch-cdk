@@ -35,7 +35,6 @@ export class EksStack {
 
     const ecrTransfer = new DockerImagesToEcr(scope);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
-    console.log("privateEcrRepository", privateEcrRepository);
     let vpn_ips: string[] = (scope.node.tryGetContext("vpn_ips") || "0.0.0.0").split(",");
     vpn_ips = vpn_ips.map((ip: string) => {
       if (ip === "0.0.0.0") {

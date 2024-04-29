@@ -13,27 +13,11 @@ phases:
           aws ecr describe-repositories --repository-names "$repo_name" >/dev/null 2>&1
         }
 
-        image_exists() {
-          local repo_name="$1"
-          local image_tag="$2"
-          aws ecr describe-images --repository-name "$repo_name" --image-ids imageTag="$image_tag" >/dev/null 2>&1
-        }
-
-        delete_image() {
-          local repo_name="$1"
-          local image_tag="$2"
-          aws ecr batch-delete-image --repository-name "$repo_name" --image-ids imageTag="$image_tag"
-        }
-
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
           REPO_NAME="$IMAGE"
           if ! repository_exists "$REPO_NAME"; then
               aws ecr create-repository --repository-name "$REPO_NAME" --image-scanning-configuration scanOnPush=true
           fi
-          if image_exists "$REPO_NAME" "latest"; then
-              delete_image "$REPO_NAME" "latest"
-          fi
-          docker pull "$IMAGE" && docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest" && docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest"
         done
 
         for IMAGE in "${PULL_FROM_AWS[@]}"; do
