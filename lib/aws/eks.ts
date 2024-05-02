@@ -34,8 +34,7 @@ export class EksStack {
   ) {
 
     const ecrTransfer = new DockerImagesToEcr(scope);
-    // const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
-    // console.log("privateEcrRepository", privateEcrRepository);
+    const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
     let vpn_ips: string[] = (scope.node.tryGetContext("vpn_ips") || "0.0.0.0").split(",");
     vpn_ips = vpn_ips.map((ip: string) => {
       if (ip === "0.0.0.0") {
@@ -363,10 +362,10 @@ export class EksStack {
       namespace: "kube-system",
       values: {
         clusterName: cluster.clusterName,
-        // image: {
-        //   repository: `${privateEcrRepository}/eks/aws-load-balancer-controller`,
-        //   tag: "v2.7.1"
-        // }
+        image: {
+          repository: `${privateEcrRepository}/eks/aws-load-balancer-controller`,
+          tag: "v2.7.1"
+        }
       },
     });
 
@@ -388,57 +387,57 @@ export class EksStack {
       namespace: 'kube-system',
       values: {
         clusterName: cluster.clusterName,
-        // image: {
-        //   repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
-        //   tag: 'v1.28.0'
-        // },
-        // sidecars: {
-        //   provisioner: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-provisioner`,
-        //       tag: 'v4.0.0-eks-1-29-5'
-        //     }
-        //   },
-        //   attacher: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-attacher`,
-        //       tag: 'v4.5.0-eks-1-29-5'
-        //     }
-        //   },
-        //   snapshotter: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter`,
-        //       tag: 'v7.0.0-eks-1-29-5'
-        //     }
-        //   },
-        //   livenessProbe: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/livenessprobe`,
-        //       tag: 'v2.12.0-eks-1-29-5'
-        //     }
-        //   },
-        //   resizer: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-resizer`,
-        //       tag: 'v1.10.0-eks-1-29-5'
-        //     }
-        //   },
-        //   nodeDriverRegistrar: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/node-driver-registrar`,
-        //       tag: 'v2.10.0-eks-1-29-5'
-        //     }
-        //   },
-        //   volumemodifier: {
-        //     image: {
-        //       repository: `${privateEcrRepository}/ebs-csi-driver/volume-modifier-for-k8s`,
-        //       tag: 'v0.2.1'
-        //     }
-        //   }
-        // }
+        image: {
+          repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
+          tag: 'v1.28.0'
+        },
+        sidecars: {
+          provisioner: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-provisioner`,
+              tag: 'v4.0.0-eks-1-29-5'
+            }
+          },
+          attacher: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-attacher`,
+              tag: 'v4.5.0-eks-1-29-5'
+            }
+          },
+          snapshotter: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter`,
+              tag: 'v7.0.0-eks-1-29-5'
+            }
+          },
+          livenessProbe: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/livenessprobe`,
+              tag: 'v2.12.0-eks-1-29-5'
+            }
+          },
+          resizer: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-resizer`,
+              tag: 'v1.10.0-eks-1-29-5'
+            }
+          },
+          nodeDriverRegistrar: {
+            image: {
+              repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/node-driver-registrar`,
+              tag: 'v2.10.0-eks-1-29-5'
+            }
+          },
+          volumemodifier: {
+            image: {
+              repository: `${privateEcrRepository}/ebs-csi-driver/volume-modifier-for-k8s`,
+              tag: 'v0.2.1'
+            }
+          }
+        }
       },
     });
-    
+
     const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
@@ -451,24 +450,23 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        "hyperswitch-app": {
+        "hyperswitch-app":{
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
+
           services: {
             router: {
-              version: "v1.107.0",
-              image: `juspaydotin/hyperswitch-router:v1.107.0-standalone`,
-              host: "http://localhost:8080"
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.107.0-standalone`
             },
             producer: {
-              image: `juspaydotin/hyperswitch-producer:v1.107.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.107.0-standalone`
             },
             consumer: {
-              image: `juspaydotin/hyperswitch-consumer:v1.107.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.107.0-standalone`
             },
             controlCenter: {
-              image: `juspaydotin/hyperswitch-control-center:v1.17.0`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.29.9`
             },
             sdk: {
               host: "http://localhost:9090",
@@ -511,7 +509,7 @@ export class EksStack {
                 recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
                 forex_api_key: kmsSecrets.kms_forex_api_key,
                 forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
-                apple_pay_ppc: kmsSecrets.apple_pay_ppc,
+                apple_pay_ppc: kmsSecrets.apple_pay_ppc, 
                 apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
                 apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
                 apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
@@ -556,13 +554,14 @@ export class EksStack {
 
             }
           },
+
           redis: {
-            enabled: false
+          enabled: false
           },
           externalRedis: {
-            enabled: true,
-            host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-            port: 6379
+          enabled: true,
+          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+          port: 6379
           },
           autoscaling: {
             enabled: true,
@@ -630,7 +629,7 @@ export class EksStack {
             },
             nginxConfig: { extraPath: "v0" }
           }
-        }
+        },
       },
     });
 
@@ -720,9 +719,9 @@ export class EksStack {
       release: "loki",
       values: {
         grafana: {
-          // global: {
-          //   imageRegisrty: `${privateEcrRepository}`,
-          // },
+          global: {
+            imageRegisrty: `${privateEcrRepository}`,
+          },
           image: {
             tag: "latest",
           },
@@ -736,9 +735,9 @@ export class EksStack {
         },
         loki: {
           enabled: true,
-          // global: {
-          //   imageRegisrty: `${privateEcrRepository}`,
-          // },
+          global: {
+            imageRegisrty: `${privateEcrRepository}`,
+          },
           serviceAccount: {
             annotations: {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
@@ -747,9 +746,9 @@ export class EksStack {
         },
         promtail: {
           enabled: true,
-          // global: {
-          //   imageRegisrty: `${privateEcrRepository}`,
-          // },
+          global: {
+            imageRegisrty: `${privateEcrRepository}`,
+          },
           image: {
             tag: "latest",
           },
@@ -776,12 +775,12 @@ export class EksStack {
       repository: "https://kubernetes-sigs.github.io/metrics-server/",
       namespace: "kube-system",
       release: "metrics-server",
-      // values: {
-      //   image: {
-      //     repository: `${privateEcrRepository}/bitnami/metrics-server`,
-      //     tag: "v0.7.0",
-      //   },
-      // }
+      values: {
+        image: {
+          repository: `${privateEcrRepository}/bitnami/metrics-server`,
+          tag: "v0.7.0",
+        },
+      }
     });
 
     // Import an existing load balancer by its ARN
@@ -932,7 +931,7 @@ class DockerImagesToEcr {
       environment: {
         buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
       },
-      role: ecrRole,
+    role: ecrRole,
       buildSpec: codebuild.BuildSpec.fromAsset("./dependencies/code_builder/buildspec.yml"),
     });
 
