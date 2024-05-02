@@ -6,11 +6,13 @@ import { Vpc, SubnetNames } from "./networking";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
+import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
 
 export class AWSStack extends cdk.Stack {
@@ -172,6 +174,101 @@ export class AWSStack extends cdk.Stack {
         ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
+      const kms_key = new kms.Key(this, "hyperswitch-ssm-kms-key", {
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        pendingWindow: cdk.Duration.days(7),
+        keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
+        keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
+        alias: "alias/hyperswitch-ssm-kms-key",
+        description: "KMS key for encrypting the objects in an S3 bucket",
+        enableKeyRotation: false,
+      });
+
+      const external_jump_role = external_jump.getInstance().role;
+      const ext_jump_policy = new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: [
+              "ssmmessages:CreateControlChannel",
+              "ssmmessages:CreateDataChannel",
+              "ssmmessages:OpenControlChannel",
+              "ssmmessages:OpenDataChannel",
+              "ssm:UpdateInstanceInformation"
+            ],
+            resources: ["*"],
+          }),
+          new iam.PolicyStatement({
+            actions: [
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+              "logs:DescribeLogGroups",
+              "logs:DescribeLogStreams"
+            ],
+            resources: ["*"],
+          }),
+          new iam.PolicyStatement({
+            actions: [
+              "s3:GetEncryptionConfiguration"
+            ],
+            resources: ["*"],
+          }),
+          new iam.PolicyStatement({
+            actions: [
+              "kms:Decrypt"
+            ],
+            resources: [kms_key.keyArn],
+          }),
+          new iam.PolicyStatement({
+            actions: [
+              "kms:GenerateDataKey"
+            ],
+            resources: ["*"],
+          }),
+
+        ]
+      });
+      external_jump_role.attachInlinePolicy(
+        new iam.Policy(this, "SessionManagerPolicies", {
+          document: ext_jump_policy,
+        }),
+      );
+      const sgCfg = { "name": "vpce-sg", "description": "stack vpce sg" };
+
+
+      const sg = new ec2.SecurityGroup(this, sgCfg.name, {
+        vpc: vpc.vpc,
+        description: sgCfg.description,
+        allowAllOutbound: false,
+
+      });
+
+      sg.addIngressRule(ec2.Peer.ipv4("10.0.0.0/16"), ec2.Port.tcp(443));
+      external_jump.sg.addEgressRule(sg, ec2.Port.tcp(443));
+
+      const vpc_endpoint1 = new ec2.InterfaceVpcEndpoint(this, "SSMMessagesEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
+        securityGroups: [sg],
+        subnets: {
+          subnets: vpc.vpc.publicSubnets,
+        },
+      });
+      const vpc_endpoint2 = new ec2.InterfaceVpcEndpoint(this, "IncomingWebServerSSMEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SSM,
+        securityGroups: [sg],
+        subnets: {
+          subnets: vpc.vpc.publicSubnets,
+        },
+      });
+      const vpc_endpoint3 = new ec2.InterfaceVpcEndpoint(this, "EC2MessagesEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
+        securityGroups: [sg],
+        subnets: {
+          subnets: vpc.vpc.publicSubnets,
+        },
+      });
 
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
