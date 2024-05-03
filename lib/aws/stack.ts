@@ -170,10 +170,7 @@ export class AWSStack extends cdk.Stack {
       internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
       internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
       external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
-      external_jump.sg.addIngressRule(
-        ec2.Peer.ipv4("0.0.0.0/0"),
-        ec2.Port.tcp(22),
-      );
+
       const kms_key = new kms.Key(this, "hyperswitch-ssm-kms-key", {
         removalPolicy: cdk.RemovalPolicy.DESTROY,
         pendingWindow: cdk.Duration.days(7),
@@ -185,7 +182,7 @@ export class AWSStack extends cdk.Stack {
       });
 
       const external_jump_role = external_jump.getInstance().role;
-      const ext_jump_policy = new iam.PolicyDocument({
+      const external_jump_policy = new iam.PolicyDocument({
         statements: [
           new iam.PolicyStatement({
             actions: [
@@ -227,13 +224,15 @@ export class AWSStack extends cdk.Stack {
 
         ]
       });
-      external_jump_role.attachInlinePolicy(
-        new iam.Policy(this, "SessionManagerPolicies", {
-          document: ext_jump_policy,
-        }),
-      );
-      const sgCfg = { "name": "vpce-sg", "description": "stack vpce sg" };
+      const ext_jump_policy = new iam.ManagedPolicy(this, 'SessionManagerPolicies', {
+        managedPolicyName: "SessionManagerPolicies",
+        description: "SessionManagerPolicies",
+        document: external_jump_policy
+      });
 
+      ext_jump_policy.attachToRole(external_jump_role);
+
+      const sgCfg = { "name": "vpce-sg", "description": "stack vpce sg" };
 
       const sg = new ec2.SecurityGroup(this, sgCfg.name, {
         vpc: vpc.vpc,
