@@ -1,84 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
-
 Resources:
-  HyperswitchAwsEksAccessRole:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          -
-            Sid: AllowEksAccess
-            Effect: Allow
-            Action:
-              - eks:*
-              - sts:GetCallerIdentity
-            Resource: "*"
-  AwsIamRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
-        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
-        - arn:aws:iam::aws:policy/IAMReadOnlyAccess
-        - !Ref HyperswitchAwsEksAccessRole
-      Path: /
-      Policies:
-        - PolicyName: CdkPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Action:
-                  - cloudformation:*
-                Resource: '*'
-                Effect: Allow
-              - Condition:
-                  ForAnyValue:StringEquals:
-                    aws:CalledVia:
-                      - cloudformation.amazonaws.com
-                Action: '*'
-                Resource: '*'
-                Effect: Allow
-              - Action: s3:*
-                Resource: '*'
-                Effect: Allow
-              - Action: [
-                  "ssm:Describe*",
-                  "ssm:Get*",
-                  "ssm:List*"
-                ]
-                Resource: '*'
-                Effect: Allow
-              - Action:
-                  - sts:AssumeRole
-                Effect: Allow
-                Resource:
-                  - arn:aws:iam::*:role/cdk-*
-  InstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Path: /
-      Roles:
-        - !Ref AwsIamRole
   HyperswitchCDKBootstrapEC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      VpcId: !If [UseCustomVpc, !Ref CustomVpcId, !Ref AWS::NoValue]
+      VpcId: !Ref 'HyperswitchCDKBootstrapVPC'
       GroupDescription: Hyperswitch CDK Bootstrap Security Group
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+  HyperswitchCDKBootstrapVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
   HyperswitchCDKBootstrapEC2:
     Type: AWS::EC2::Instance
     CreationPolicy:
@@ -112,18 +50,72 @@ Resources:
           fi
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
-          aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
-      NetworkInterfaces:
-        - DeviceIndex: 0
-          SubnetId: !If [UseCustomSubnet, !Ref CustomSubnetId, !Ref AWS::NoValue]
-          GroupSet:
-            - !Ref HyperswitchCDKBootstrapEC2SecurityGroup
-          AssociatePublicIpAddress: true
-Conditions:
-  UseCustomVpc: !Not [!Equals [!Ref CustomVpcId, ""]]
-  UseCustomSubnet: !Not [!Equals [!Ref CustomSubnetId, ""]]
+          # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
+  AwsIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
+        - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+      Path: /
+      Policies:
+        - PolicyName: CdkPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - cloudformation:*
+                Resource: '*'
+                Effect: Allow
+              - Condition:
+                  ForAnyValue:StringEquals:
+                    aws:CalledVia:
+                      - cloudformation.amazonaws.com
+                Action: '*'
+                Resource: '*'
+                Effect: Allow
+              - Action: s3:*
+                Resource: '*'
+                Effect: Allow
+              - Action: [
+                  "ssm:Describe*",
+                  "ssm:Get*",
+                  "ssm:List*"
+                ]
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/cdk-*
+        - PolicyName: EksAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - eks:*
+                  - sts:GetCallerIdentity
+                Resource: "*"
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref AwsIamRole
 Parameters:
   HyperswitchInstallMode:
     Type: String
@@ -132,14 +124,6 @@ Parameters:
       - Free Tier
       - Enterprise
     Description: "Please select the Hyperswitch Installation Mode"
-  CustomVpcId:
-    Type: AWS::EC2::VPC::Id
-    AllowedPattern : ".{10,}"
-    Description: "Select a VPC where the resources will be deployed."
-  CustomSubnetId:
-    Type: AWS::EC2::Subnet::Id
-    AllowedPattern : ".{10,}"
-    Description: "Select a Subnet where the EC2 instance will be deployed. Please make sure that subnet exists inside VPC selected above."
   DBPassword:
     Type: String
     Default: "testadmin"
