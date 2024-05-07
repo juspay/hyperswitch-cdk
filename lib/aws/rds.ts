@@ -266,7 +266,7 @@ def lambda_handler(event, context):
             }),
           ],
         vpc,
-        vpcSubnets: { subnetType: isStandalone ? SubnetType.PUBLIC : SubnetType.PRIVATE_WITH_EGRESS },
+        vpcSubnets: { subnetGroupName: "database-zone"},
         engine,
         storageEncrypted: true,
         port: rds_config.port,
