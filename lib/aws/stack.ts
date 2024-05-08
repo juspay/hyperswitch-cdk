@@ -249,7 +249,7 @@ export class AWSStack extends cdk.Stack {
         service: ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
         securityGroups: [sg],
         subnets: {
-          subnets: vpc.vpc.publicSubnets,
+          subnetGroupName: "incoming-web-envoy-zone",
         },
       });
       const vpc_endpoint2 = new ec2.InterfaceVpcEndpoint(this, "IncomingWebServerSSMEP", {
@@ -257,7 +257,7 @@ export class AWSStack extends cdk.Stack {
         service: ec2.InterfaceVpcEndpointAwsService.SSM,
         securityGroups: [sg],
         subnets: {
-          subnets: vpc.vpc.publicSubnets,
+          subnetGroupName: "incoming-web-envoy-zone",
         },
       });
       const vpc_endpoint3 = new ec2.InterfaceVpcEndpoint(this, "EC2MessagesEP", {
@@ -265,7 +265,7 @@ export class AWSStack extends cdk.Stack {
         service: ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
         securityGroups: [sg],
         subnets: {
-          subnets: vpc.vpc.publicSubnets,
+          subnetGroupName: "incoming-web-envoy-zone",
         },
       });
 
