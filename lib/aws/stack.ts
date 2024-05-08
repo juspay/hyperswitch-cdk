@@ -241,7 +241,7 @@ export class AWSStack extends cdk.Stack {
 
       });
 
-      sg.addIngressRule(ec2.Peer.ipv4("10.0.0.0/16"), ec2.Port.tcp(443));
+      sg.addIngressRule(ec2.Peer.ipv4("10.63.0.0/16"), ec2.Port.tcp(443));
       external_jump.sg.addEgressRule(sg, ec2.Port.tcp(443));
 
       const vpc_endpoint1 = new ec2.InterfaceVpcEndpoint(this, "SSMMessagesEP", {
