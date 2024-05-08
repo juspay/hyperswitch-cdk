@@ -31,6 +31,7 @@ export class Vpc {
           cidrMask: 24,
         },
       ],
+      cidr: "10.63.0.0/16",
     });
 
     this.vpc = vpc;
