@@ -634,14 +634,14 @@ export class EksStack {
             ]
           },
           autoBuild: {
-            forceBuild: true,
+            forceBuild: false,
             gitCloneParam: {
               gitVersion: sdk_version
             },
             buildParam: {
-              envSdkUrl: `https://${this.sdkDistribution.distributionDomainName}`
+              envSdkUrl: `http://${this.sdkDistribution.distributionDomainName}`
             },
-            nginxConfig: { extraPath: "v0" }
+            // nginxConfig: { extraPath: "v0" }
           }
         }
       },

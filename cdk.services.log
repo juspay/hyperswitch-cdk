@@ -41,3 +41,14 @@
 --------------------------------------------------------------------------------
 ##########################################
 [34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d37dnaraf6z213.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1921040594.us-east-2.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-283962654.us-east-2.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-2086218063.us-east-2.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-369924607.us-east-2.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
