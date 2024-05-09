@@ -183,3 +183,6 @@ node_modules
 # Bun Lock files
 bun.lockb
 cdk.context.json
+
+values.yaml
+cdk.services.log

@@ -7,9 +7,9 @@ sudo usermod -a -G docker ec2-user
 
 # Installing Hyperswitch Router application [Backend application]
 
-docker pull juspaydotin/hyperswitch-router:v1.105.0-standalone
+docker pull juspaydotin/hyperswitch-router:v1.107.0-standalone
 
-curl https://raw.githubusercontent.com/juspay/hyperswitch/v1.105.0/config/development.toml > production.toml
+curl https://raw.githubusercontent.com/juspay/hyperswitch/v1.107.0/config/development.toml > production.toml
 cat << EOF >> .env
 ROUTER__REDIS__HOST={{redis_host}}
 ROUTER__MASTER_DATABASE__HOST={{db_host}}
