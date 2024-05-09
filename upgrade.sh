@@ -48,7 +48,7 @@ APP_ENV="hyperswitch-app"
 SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
 HYPERLOADER="http://$SDK_URL/0.27.2/v0/HyperLoader.js"
-helm upgrade --install hypers-v1 hs/hyperswitch-stack --set "$SDK_ENV.router.host=http://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=http://$SDK_WEB_HOST,$APP_ENV.services.router.host=http://$APP_HOST,$SDK_BUILD.envSdkUrl=http://$SDK_WEB_HOST,$SDK_BUILD.envBackendUrl=http://$APP_HOST" -n hyperswitch -f values.yaml
+helm upgrade --install hypers-v1 hs/hyperswitch-stack --set "$SDK_ENV.router.host=http://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=http://$SDK_URL,$APP_ENV.services.router.host=http://$APP_HOST,$SDK_BUILD.envSdkUrl=http://$SDK_URL,$SDK_BUILD.envBackendUrl=http://$APP_HOST" -n hyperswitch -f values.yaml
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$bold Service                           Host$reset"
 echoLog "--------------------------------------------------------------------------------"

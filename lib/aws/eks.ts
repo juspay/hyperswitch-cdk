@@ -308,30 +308,30 @@ export class EksStack {
 
     const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
 
-    const delete_stack_code = readFileSync(
-      "lib/aws/delete_stack.py",
-    ).toString();
+    // const delete_stack_code = readFileSync(
+    //   "lib/aws/delete_stack.py",
+    // ).toString();
 
 
-    const delete_stack_function = new Function(scope, "hyperswitch-stack-delete", {
-      functionName: "HyperswitchStackDeletionLambda",
-      runtime: Runtime.PYTHON_3_9,
-      handler: "index.lambda_handler",
-      code: Code.fromInline(delete_stack_code),
-      timeout: cdk.Duration.minutes(15),
-      role: lambda_role,
-      environment: {
-        SECRET_MANAGER_ARN: secret.secretArn,
-      },
-    });
+    // const delete_stack_function = new Function(scope, "hyperswitch-stack-delete", {
+    //   functionName: "HyperswitchStackDeletionLambda",
+    //   runtime: Runtime.PYTHON_3_9,
+    //   handler: "index.lambda_handler",
+    //   code: Code.fromInline(delete_stack_code),
+    //   timeout: cdk.Duration.minutes(15),
+    //   role: lambda_role,
+    //   environment: {
+    //     SECRET_MANAGER_ARN: secret.secretArn,
+    //   },
+    // });
 
-    new cdk.CustomResource(
-      scope,
-      "HyperswitchStackDeletionCR",
-      {
-        serviceToken: delete_stack_function.functionArn,
-      },
-    );
+    // new cdk.CustomResource(
+    //   scope,
+    //   "HyperswitchStackDeletionCR",
+    //   {
+    //     serviceToken: delete_stack_function.functionArn,
+    //   },
+    // );
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -450,7 +450,7 @@ export class EksStack {
     }
 
     let sdkBucket = new s3.Bucket(scope, "HyperswitchSDKBucket", {
-      bucketName: "hyperswitch-sdk",
+      bucketName: `hyperswitch-sdk-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: true,
       }),
@@ -464,6 +464,7 @@ export class EksStack {
     sdkBucket.grantRead(oai);
 
     this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
       originConfigs: [
         {
         s3OriginSource: {
@@ -517,7 +518,7 @@ export class EksStack {
           },
           application: {
             server: {
-              secrets_manager: "no_encryption",
+              secrets_manager: "aws_kms",
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },
