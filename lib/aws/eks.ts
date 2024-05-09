@@ -17,12 +17,16 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
+  sdkBucket: s3.Bucket;
+  sdkDistribution: cloudfront.CloudFrontWebDistribution;
   constructor(
     scope: Construct,
     config: Config,
@@ -304,30 +308,30 @@ export class EksStack {
 
     const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
 
-    const delete_stack_code = readFileSync(
-      "lib/aws/delete_stack.py",
-    ).toString();
+    // const delete_stack_code = readFileSync(
+    //   "lib/aws/delete_stack.py",
+    // ).toString();
 
 
-    const delete_stack_function = new Function(scope, "hyperswitch-stack-delete", {
-      functionName: "HyperswitchStackDeletionLambda",
-      runtime: Runtime.PYTHON_3_9,
-      handler: "index.lambda_handler",
-      code: Code.fromInline(delete_stack_code),
-      timeout: cdk.Duration.minutes(15),
-      role: lambda_role,
-      environment: {
-        SECRET_MANAGER_ARN: secret.secretArn,
-      },
-    });
+    // const delete_stack_function = new Function(scope, "hyperswitch-stack-delete", {
+    //   functionName: "HyperswitchStackDeletionLambda",
+    //   runtime: Runtime.PYTHON_3_9,
+    //   handler: "index.lambda_handler",
+    //   code: Code.fromInline(delete_stack_code),
+    //   timeout: cdk.Duration.minutes(15),
+    //   role: lambda_role,
+    //   environment: {
+    //     SECRET_MANAGER_ARN: secret.secretArn,
+    //   },
+    // });
 
-    new cdk.CustomResource(
-      scope,
-      "HyperswitchStackDeletionCR",
-      {
-        serviceToken: delete_stack_function.functionArn,
-      },
-    );
+    // new cdk.CustomResource(
+    //   scope,
+    //   "HyperswitchStackDeletionCR",
+    //   {
+    //     serviceToken: delete_stack_function.functionArn,
+    //   },
+    // );
 
     // Create a security group for the load balancer
     const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
@@ -438,6 +442,44 @@ export class EksStack {
       },
     });
 
+    const sdkCorsRule: s3.CorsRule = {
+      allowedOrigins: ["*"],
+      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+      allowedHeaders: ["*"],
+      maxAge: 3000,
+    }
+
+    let sdkBucket = new s3.Bucket(scope, "HyperswitchSDKBucket", {
+      bucketName: `hyperswitch-sdk-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      cors: [sdkCorsRule],
+      autoDeleteObjects: true,
+    });
+
+    const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
+    sdkBucket.grantRead(oai);
+
+    this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
+      originConfigs: [
+        {
+        s3OriginSource: {
+          s3BucketSource: sdkBucket,
+          originAccessIdentity: oai,
+        },
+        behaviors: [{isDefaultBehavior: true}, {pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD}]
+      }
+      ]
+    });
+    this.sdkDistribution.node.addDependency(sdkBucket);
+    new cdk.CfnOutput(scope, 'SdkDistribution', {
+      value: this.sdkDistribution.distributionDomainName,
+    });
+
     const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
@@ -509,7 +551,7 @@ export class EksStack {
                 recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
                 forex_api_key: kmsSecrets.kms_forex_api_key,
                 forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
-                apple_pay_ppc: kmsSecrets.apple_pay_ppc, 
+                apple_pay_ppc: kmsSecrets.apple_pay_ppc,
                 apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
                 apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
                 apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
@@ -551,7 +593,6 @@ export class EksStack {
                 password: kmsSecrets.kms_encrypted_db_pass,
                 plainpassword: config.rds.password,
               },
-
             }
           },
 
@@ -623,16 +664,20 @@ export class EksStack {
             ]
           },
           autoBuild: {
-            forceBuild: true,
+            forceBuild: false,
             gitCloneParam: {
               gitVersion: sdk_version
             },
-            nginxConfig: { extraPath: "v0" }
+            buildParam: {
+              envSdkUrl: `http://${this.sdkDistribution.distributionDomainName}`
+            },
+            // nginxConfig: { extraPath: "v0" }
           }
         },
       },
     });
 
+    this.sdkBucket = sdkBucket;
     hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
