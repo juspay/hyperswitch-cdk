@@ -400,7 +400,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
             echo "Please enter the password for your RDS instance (Minimum 8 characters; includes [A-Z], [a-z], [0-9]): "
             read -r -s LOCKER_DB_PASS
             if validate_password "$LOCKER_DB_PASS"; then
-                break
+            breakup
             fi
         done
         LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
