@@ -7,6 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
+import { LogsBucket } from "./log_bucket";
 import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
@@ -56,6 +57,7 @@ export class EksStack {
       clusterName: "hs-eks-cluster",
     });
 
+    const logsBucket = new LogsBucket(scope, cluster, "app-logs-s3-service-account");
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
