@@ -179,7 +179,6 @@ export class EksStack {
       "AmazonEKS_CNI_Policy",
       "AmazonEC2ContainerRegistryReadOnly",
       "CloudWatchAgentServerPolicy",
-      "AWSXrayWriteOnlyAccess",
     ];
 
     for (const policyName of managedPolicies) {
@@ -258,6 +257,190 @@ export class EksStack {
       nodeRole: nodegroupRole,
     });
 
+    const nodegroupRoleNew = new iam.Role(scope, "HSApNodegroupRole", {
+      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+    });   
+    
+    const managedPoliciesNew = [
+      "AmazonEC2ContainerRegistryReadOnly",
+      "AmazonEC2ReadOnlyAccess",
+      "AmazonEKS_CNI_Policy",
+      "AmazonEKSWorkerNodePolicy",
+    ];
+
+    for (const policyName of managedPoliciesNew) {
+      nodegroupRoleNew.addManagedPolicy(
+        iam.ManagedPolicy.fromAwsManagedPolicyName(policyName),
+      );
+    }
+
+    const autopilotnodegroup = cluster.addNodegroupCapacity("HSAutopilotNodegroup", {
+      nodegroupName: "autopilot-od",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 1,
+      maxSize: 2,
+      desiredSize: 1,
+      labels: {
+        "service": "autopilot",
+        "node-type": "autopilot-od",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const ckhzookeepernodegroup = cluster.addNodegroupCapacity("HSCkhZookeeperNodegroup", {
+      nodegroupName: "ckh-zookeeper-compute",
+      minSize: 3,
+      maxSize: 8,
+      desiredSize: 3,
+      labels: {
+        "node-type": "ckh-zookeeper-compute",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const ckhcomputenodegroup = cluster.addNodegroupCapacity("HSCkhcomputeNodegroup", {
+      nodegroupName: "clickhouse-compute-OD",
+      minSize: 2,
+      maxSize: 3,
+      desiredSize: 2,
+      labels: {
+        "node-type": "clickhouse-compute",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const controlcenternodegroup = cluster.addNodegroupCapacity("HSControlcentreNodegroup", {
+      nodegroupName: "control-center",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 1,
+      maxSize: 5,
+      desiredSize: 1,
+      labels: {
+        "node-type": "control-center",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const kafkacomputenodegroup = cluster.addNodegroupCapacity("HSKafkacomputeNodegroup", {
+      nodegroupName: "kafka-compute-OD",
+      minSize: 3,
+      maxSize: 6,
+      desiredSize: 3,
+      labels: {
+        "node-type": "kafka-compute",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
+      nodegroupName: "memory-optimized-od",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 1,
+      maxSize: 5,
+      desiredSize: 2,
+      labels: {
+        "node-type": "memory-optimized",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
+      nodegroupName: "monitoring-od",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 3,
+      maxSize: 63,
+      desiredSize: 6,
+      labels: {
+        "node-type": "monitoring",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const pomeriumnodegroup = cluster.addNodegroupCapacity("HSPomeriumNodegroup", {
+      nodegroupName: "pomerium",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 2,
+      maxSize: 2,
+      desiredSize: 2,
+      labels: {
+        "service": "pomerium",
+        "node-type": "pomerium",
+        "function": "SSO",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const systemnodegroup = cluster.addNodegroupCapacity("HSSystemNodegroup", {
+      nodegroupName: "system-nodes-od",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 1,
+      maxSize: 5,
+      desiredSize: 1,
+      labels: {
+        "node-type": "system-nodes",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const utilsnodegroup = cluster.addNodegroupCapacity("HSUtilsNodegroup", {
+      nodegroupName: "utils-compute-od",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 5,
+      maxSize: 8,
+      desiredSize: 5,
+      labels: {
+        "node-type": "elasticsearch",
+      },
+      subnets:{ subnetGroupName: "utils-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+
+    const zookeepernodegroup = cluster.addNodegroupCapacity("HSZkcomputeNodegroup", {
+      nodegroupName: "zookeeper-compute",
+      minSize: 3,
+      maxSize: 10,
+      desiredSize: 3,
+      labels: {
+        "node-type": "zookeeper-compute",
+      },
+      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRoleNew,
+
+    });
+    
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       inlinePolicies: {
