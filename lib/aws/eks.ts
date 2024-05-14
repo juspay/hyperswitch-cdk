@@ -521,6 +521,7 @@ export class EksStack {
           application: {
             server: {
               secrets_manager: "aws_kms",
+              bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },

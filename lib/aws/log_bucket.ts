@@ -11,7 +11,7 @@ export class LogsBucket {
     constructor(scope: Construct, cluster: eks.Cluster, serviceAccountName?: string) {
         this.bucket = new s3.Bucket(scope, "LogsBucket", {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            bucketName: "logs-bucket-eks-hs-2023-05-12",
+            bucketName: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
         });
         cluster.node.addDependency(this.bucket);
         const ns = cluster.addManifest("logging-ns",  {
