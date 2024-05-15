@@ -459,22 +459,22 @@ else
         DEMO_APP=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DemoApp'].OutputValue" --output text)
         echo "Please wait for instances to be initialized. Approximate time is 2 minutes."
         printf "${bold}Initializing Instances${reset} "
-        # Start the spinner in the background
-        (
-            while :; do
-                for s in '/' '-' '\\' '|'; do
-                    printf "\r$s"
-                    sleep 1
-                done
-            done
-        ) &
-        spinner_pid=$!
-        # Sleep for 10 seconds to simulate work
+        # # Start the spinner in the background
+        # (
+        #     while :; do
+        #         for s in '/' '-' '\\' '|'; do
+        #             printf "\r$s"
+        #             sleep 1
+        #         done
+        #     done
+        # ) &
+        # spinner_pid=$!
+        # # Sleep for x seconds to simulate work
         sleep 60
         # Kill the spinner
-        kill $spinner_pid >/dev/null 2>&1
-        wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
-        printf "\r"                   # Clear the spinner character
+        # kill $spinner_pid >/dev/null 2>&1
+        # wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
+        # printf "\r"                   # Clear the spinner character
         printf "\nInitialization complete.\n"
         printf "\n"
         echoLog "--------------------------------------------------------------------------------"

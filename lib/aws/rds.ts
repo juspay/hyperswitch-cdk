@@ -223,7 +223,7 @@ def lambda_handler(event, context):
           SCHEMA_FILE_KEY: "schema.sql",
         },
         vpc: vpc,
-        vpcSubnets: { subnetGroupName: "database-zone" },
+        vpcSubnets: { subnetGroupName: "isolated-subnet-1" },
         securityGroups: [lambdaSecurityGroup],
         timeout: Duration.minutes(15),
         role: lambdaRole,
