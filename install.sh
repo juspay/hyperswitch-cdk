@@ -452,7 +452,7 @@ else
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY; then
+    if cdk deploy --require-approval never -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY; then
         STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneURL'].OutputValue" --output text)
         CONTROL_CENTER_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='ControlCenterURL'].OutputValue" --output text)
         SDK_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkAssetsURL'].OutputValue" --output text)
