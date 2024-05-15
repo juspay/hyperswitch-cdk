@@ -8,6 +8,9 @@ yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 source ./bash/utils.sh
+function echoLog() {
+    echo "$1" | tee -a $LOG_FILE
+}
 
 # Function to display error messages in red
 display_error() {
