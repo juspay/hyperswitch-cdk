@@ -226,7 +226,7 @@ export class AWSStack extends cdk.Stack {
         ]
       });
       const ext_jump_policy = new iam.ManagedPolicy(this, 'SessionManagerPolicies', {
-        managedPolicyName: "SessionManagerPolicies",
+        managedPolicyName: `SessionManagerPolicies-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
         description: "SessionManagerPolicies",
         document: external_jump_policy
       });
