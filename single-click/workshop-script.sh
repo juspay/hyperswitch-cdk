@@ -25,45 +25,17 @@ npm install
 if [ "$INSTALLATION_MODE" -eq 1 ]; then
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
     cdk deploy --require-approval never -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
-    # aws eks update-kubeconfig --region $AWS_REGION --name hs-eks-cluster
     export KUBECONFIG=~/.kube/config
     sleep 10
     STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneURL'].OutputValue" --output text)
     CONTROL_CENTER_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='ControlCenterURL'].OutputValue" --output text)
     SDK_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkAssetsURL'].OutputValue" --output text)
     DEMO_APP=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DemoApp'].OutputValue" --output text)
-    # helm repo add hs https://juspay.github.io/hyperswitch-helm
-    export MERCHANT_ID=$(
-        curl --silent --location --request POST 'http://'$APP_HOST'/user/v2/signin'
-        --header 'Content-Type: application/json'
-        --data-raw '{
-"email": "test@gmail.com",
-"password": "admin"
-}' | jq -r '.merchant_id'
-    )
-    export PUB_KEY=$(
-        curl --silent --location --request GET 'http://'$APP_HOST'/accounts/'$MERCHANT_ID
-        --header 'Accept: application/json'
-        --header 'api-key: '$ADMIN_API_KEY | jq -r '.publishable_key'
-    )
-    export API_KEY=$(
-        curl --silent --location --request POST 'http://'$APP_HOST'/api_keys/'$MERCHANT_ID
-        --header 'Content-Type: application/json'
-        --header 'Accept: application/json'
-        --header 'api-key: '$ADMIN_API_KEY
-        --data-raw '{"name":"API Key 1","description":null,"expiration":"2038-01-19T03:14:08.000Z"}' | jq -r '.api_key'
-    )
-    export CONNECTOR_KEY=$(
-        curl --silent --location --request POST 'http://'$APP_HOST'/account/'$MERCHANT_ID'/connectors'
-        --header 'Content-Type: application/json'
-        --header 'Accept: application/json'
-        --header 'api-key: '$ADMIN_API_KEY
-        --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}'
-    )
-    # helm get values -n hyperswitch hypers-v1 > values.yaml
-    # helm upgrade --install hypers-v1 hs/hyperswitch-helm --set "application.dashboard.env.apiBaseUrl=http://$APP_HOST,application.sdk.env.hyperswitchPublishableKey=$PUB_KEY,application.sdk.env.hyperswitchSecretKey=$API_KEY,application.sdk.env.hyperswitchServerUrl=http://$APP_HOST,application.sdk.env.hyperSwitchClientUrl=$SDK_URL,application.dashboard.env.sdkBaseUrl=$SDK_URL/HyperLoader.js,application.server.server_base_url=http://$APP_HOST" -n hyperswitch -f values.yaml
+    export MERCHANT_ID=$( curl --silent --location --request POST 'http://'$STANDALONE_HOST'/user/v2/signin' --header 'Content-Type: application/json' --data-raw '{ "email": "test@gmail.com", "password": "admin"}' | jq -r '.merchant_id')
+    export PUB_KEY=$( curl --silent --location --request GET 'http://'$STANDALONE_HOST'/accounts/'$MERCHANT_ID --header 'Accept: application/json' --header 'api-key: '$ADMIN_API_KEY | jq -r '.publishable_key')
+    export API_KEY=$( curl --silent --location --request POST 'http://'$STANDALONE_HOST'/api_keys/'$MERCHANT_ID --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: '$ADMIN_API_KEY --data-raw '{"name":"API Key 1","description":null,"expiration":"2038-01-19T03:14:08.000Z"}' | jq -r '.api_key')
+    export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$STANDALONE_HOST'/account/'$MERCHANT_ID'/connectors' --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: '$ADMIN_API_KEY --data-raw '{"connector_type":"fiz_operations","connector_name":"stripe_test","connector_account_details":{"auth_type":"HeaderKey","api_key":"test_key"},"test_mode":true,"disabled":false,"payment_methods_enabled":[{"payment_method":"card","payment_method_types":[{"payment_method_type":"credit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"debit","card_networks":["Visa","Mastercard"],"minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]},{"payment_method":"pay_later","payment_method_types":[{"payment_method_type":"klarna","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"affirm","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true},{"payment_method_type":"afterpay_clearpay","payment_experience":"redirect_to_url","minimum_amount":1,"maximum_amount":68607706,"recurring_enabled":true,"installment_payment_enabled":true}]}],"metadata":{"city":"NY","unit":"245"},"connector_webhook_details":{"merchant_secret":"MyWebhookSecret"}}')
     sleep 240
-    # SDK_URL=$SDK_URL/HyperLoader.js
 
     # Generate the HTML content
     HTML_CONTENT="
@@ -81,7 +53,7 @@ if [ "$INSTALLATION_MODE" -eq 1 ]; then
 </tr>
 <tr>
 <td>App server running on</td>
-<td><a href="$APP_HOST" id="app_host">$APP_HOST</a></td>
+<td><a href="$STANDALONE_HOST" id="app_host">$STANDALONE_HOST</a></td>
 </tr>
 <tr>
 <td>Logs server running on</td>
