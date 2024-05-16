@@ -11,7 +11,7 @@ function echoLog() {
 }
 
 sh ./bash/deps.sh
-aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
+# aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
 # Deploy Load balancer and Ingress
 echo "##########################################"
 ADMIN_API_KEY=$1
