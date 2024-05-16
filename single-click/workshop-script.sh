@@ -16,7 +16,7 @@ chmod +x /usr/local/bin/kubectl
 kubectl version --client
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn)
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
-wget https://github.com/juspay/hyperswitch-cdk/archive/refs/heads/main.zip
+wget https://github.com/juspay/hyperswitch-cdk/archive/3ea5236a794859e64a2ec7faf6b40d69c7f3f13c.zip
 unzip main.zip
 cd $(unzip -Z -1 main.zip | head -1)
 
