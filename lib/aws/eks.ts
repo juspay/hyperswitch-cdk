@@ -179,6 +179,7 @@ export class EksStack {
       "AmazonEKS_CNI_Policy",
       "AmazonEC2ContainerRegistryReadOnly",
       "CloudWatchAgentServerPolicy",
+      "AmazonEC2ReadOnlyAccess",
     ];
 
     for (const policyName of managedPolicies) {
@@ -257,23 +258,6 @@ export class EksStack {
       nodeRole: nodegroupRole,
     });
 
-    const nodegroupRoleNew = new iam.Role(scope, "HSApNodegroupRole", {
-      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
-    });   
-    
-    const managedPoliciesNew = [
-      "AmazonEC2ContainerRegistryReadOnly",
-      "AmazonEC2ReadOnlyAccess",
-      "AmazonEKS_CNI_Policy",
-      "AmazonEKSWorkerNodePolicy",
-    ];
-
-    for (const policyName of managedPoliciesNew) {
-      nodegroupRoleNew.addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName(policyName),
-      );
-    }
-
     const autopilotnodegroup = cluster.addNodegroupCapacity("HSAutopilotNodegroup", {
       nodegroupName: "autopilot-od",
       instanceTypes:[
@@ -287,7 +271,7 @@ export class EksStack {
         "node-type": "autopilot-od",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -300,7 +284,7 @@ export class EksStack {
         "node-type": "ckh-zookeeper-compute",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -313,7 +297,7 @@ export class EksStack {
         "node-type": "clickhouse-compute",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -329,7 +313,7 @@ export class EksStack {
         "node-type": "control-center",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -342,7 +326,7 @@ export class EksStack {
         "node-type": "kafka-compute",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -358,7 +342,7 @@ export class EksStack {
         "node-type": "memory-optimized",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -374,7 +358,7 @@ export class EksStack {
         "node-type": "monitoring",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -392,7 +376,7 @@ export class EksStack {
         "function": "SSO",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -408,7 +392,7 @@ export class EksStack {
         "node-type": "system-nodes",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -424,7 +408,7 @@ export class EksStack {
         "node-type": "elasticsearch",
       },
       subnets:{ subnetGroupName: "utils-zone"},
-      nodeRole: nodegroupRoleNew,
+      nodeRole: nodegroupRole,
 
     });
 
@@ -437,10 +421,9 @@ export class EksStack {
         "node-type": "zookeeper-compute",
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRoleNew,
-
+      nodeRole: nodegroupRole,
     });
-    
+
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       inlinePolicies: {
