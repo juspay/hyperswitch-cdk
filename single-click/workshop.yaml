@@ -91,7 +91,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/01da01169d2ef137c807329f11bde51e0ffc247c/single-click/workshop-script.sh > var/log/hyperswitch-script.log 2>&1
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/v0.3.0/single-click/workshop-script.sh > var/log/hyperswitch-script.log 2>&1
           chmod a+x run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
 
           # export env variables
