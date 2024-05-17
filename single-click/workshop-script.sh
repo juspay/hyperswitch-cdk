@@ -24,7 +24,7 @@ npm install
 
 if [ "$INSTALLATION_MODE" -eq 1 ]; then
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
-    cdk deploy --require-approval never -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
+    cdk deploy -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN
     export KUBECONFIG=~/.kube/config
     sleep 10
     STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneURL'].OutputValue" --output text)
