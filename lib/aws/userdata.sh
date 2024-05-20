@@ -25,6 +25,7 @@ ROUTER__SERVER__HOST=0.0.0.0
 ROUTER__SERVER__BASE_URL=$(curl ifconfig.me)
 ROUTER__SECRETS__ADMIN_API_KEY={{admin_api_key}}
 EOF
+sed '/^origins/d; s/^wildcard_origin = false/wildcard_origin = true/' production.toml
 
 docker run -d --env-file .env -p 80:8080 -v `pwd`/:/local/config juspaydotin/hyperswitch-router:v1.107.0-standalone ./router -f /local/config/production.toml
 
