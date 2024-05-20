@@ -639,6 +639,13 @@ export class EksStack {
       namespace: "istio-system",
       release: "istio-discorvery",
       version: "1.21.2",
+      values: {
+        defaults: {
+          global: {
+            hub: `${privateEcrRepository}/isito`,
+          }
+      },
+      }
     });
 
     const gateway = cluster.addHelmChart("Gateway", {
