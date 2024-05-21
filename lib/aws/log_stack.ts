@@ -182,6 +182,8 @@ export class LogsStack {
         });
 
         kAnalyticsNS.node.addDependency(this.domain);
+        let open_search_master_user_name = scope.node.tryGetContext('open_search_master_user_name');
+        let open_search_master_password = scope.node.tryGetContext('open_search_master_password');
 
         const openSearchFluentdChart = cluster.addHelmChart("fluentd-opensearch", {
             chart: "fluentd",
@@ -238,11 +240,11 @@ export class LogsStack {
                     },
                     {
                         name: "FLUENT_OPENSEARCH_USER_NAME",
-                        value: `${process.env.MASTER_USER_NAME}`,
+                        value: `${open_search_master_user_name}`,
                     },
                     {
                         name: "FLUENT_OPENSEARCH_PASSWORD",
-                        value: `${process.env.MASTER_PASSWORD}`,
+                        value: `${open_search_master_password}`,
                     },
                     {
                         name: "FLUENT_OPENSEARCH_SCHEME",

@@ -406,11 +406,11 @@ echo "Do you want to push logs to S3 and Open Search? [y/n]: "
 read -r OPEN_SEARCH_SERVICE
 
 if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
-    read -p "Please enter the Master UserName for Open Search Service: " MASTER_USER_NAME
+    read -p "Please enter the Master UserName for Open Search Service: " OPEN_SEARCH_MASTER_USER_NAME
     while true; do
         echo "Please enter the Master Password for Open Search Service: "
-        read -r -s MASTER_PASSWORD
-        if validate_master_password "$MASTER_PASSWORD"; then
+        read -r -s OPEN_SEARCH_MASTER_PASSWORD
+        if validate_master_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
             break
         fi
     done
@@ -483,7 +483,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
+    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
