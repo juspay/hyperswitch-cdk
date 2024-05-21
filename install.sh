@@ -363,6 +363,66 @@ while true; do
     fi
 done
 
+validate_master_password() {
+    local master_password=$1
+
+    # Check length (at least 8 characters)
+    if [[ ${#master_password} -lt 8 ]]; then
+        display_error "Error: Password must be at least 8 characters."
+        return 1
+    fi
+
+    # Check if it starts with an alphabet
+    if [[ ! $master_password =~ ^[A-Za-z] ]]; then
+        display_error "Error: Password must start with a letter."
+        return 1
+    fi
+
+    # Check for at least one uppercase letter and one lowercase letter
+    if [[ ! $master_password =~ [A-Z] || ! $master_password =~ [a-z] ]]; then
+        display_error "Error: Password must include at least one uppercase and one lowercase letter."
+        return 1
+    fi
+
+    # Check for at least one digit
+    if [[ ! $master_password =~ [0-9] ]]; then
+        display_error "Error: Password must include at least one digit."
+        return 1
+    fi
+
+    # read password again to confirm
+    echo "Please re-enter the password: "
+    read -r -s master_password_confirm
+    if [[ "$master_password" != "$master_password_confirm" ]]; then
+        display_error "Error: Passwords do not match."
+        return 1
+    fi
+
+    return 0
+
+}
+
+echo "Do you want to push logs to S3 and Open Search? [y/n]: "
+read -r OPEN_SEARCH_SERVICE
+
+if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
+    read -p "Please enter the Master UserName for Open Search Service: " MASTER_USER_NAME
+    while true; do
+        echo "Please enter the Master Password for Open Search Service: "
+        read -r -s MASTER_PASSWORD
+        if validate_master_password "$MASTER_PASSWORD"; then
+            break
+        fi
+    done
+    
+elif [[ "$OPEN_SEARCH_SERVICE" == "n" ]]; then
+    break
+else
+    echo "Invalid input. Please enter 'y' or 'n'."
+    read -r OPEN_SEARCH_SERVICE
+fi
+
+
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
     while true; do
