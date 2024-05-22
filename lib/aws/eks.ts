@@ -625,7 +625,7 @@ export class EksStack {
     //   values: {
     //     defaults: {
     //       global: {
-    //         hub: `${privateEcrRepository}/isito`,
+    //         hub: `${privateEcrRepository}/istio`,
     //       }
     //   },
     //   }

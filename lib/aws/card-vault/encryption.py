@@ -14,14 +14,20 @@ def worker():
     secrets_manager = boto3.client('secretsmanager')
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
-
+    print("Clients Initialized")
     secret_arn = os.environ['SECRET_MANAGER_ARN']
+    print("Secret ARN: ", secret_arn)
     secret_value_response = secrets_manager.get_secret_value(SecretId=secret_arn)
+    print("Secret Value Response: ", secret_value_response)
     credentials = json.loads(secret_value_response['SecretString'])
+    print("Credentials: ", credentials)
 
     kms_fun = kms_encryptor(credentials["kms_id"], credentials["region"], kms_client)
+    print("KMS Function: ", kms_fun)
     enc_pl = lambda x: kms_fun(credentials[x])
+    print("Encrypted PL: ", enc_pl)
     pl = lambda x: credentials[x]
+    print("Plain Text: ", pl)
 
 
 
@@ -100,11 +106,13 @@ def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             try:
+                print(event)
                 worker()
                 message = "Completed Successfully"
                 status = "SUCCESS"
             except Exception as e:
                 message = str(e)
+                print(message)
                 status = "FAILED"
 
             send(event, context, status, { "message": message})

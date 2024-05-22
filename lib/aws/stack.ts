@@ -270,6 +270,15 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const vpc_endpoint4 = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "locker-database-zone",
+        },
+      });
+
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
       if (locker)
