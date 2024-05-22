@@ -28,7 +28,6 @@ Resources:
           - 1
           - Fn::GetAZs: !Ref AWS::Region
       MapPublicIpOnLaunch: true
-      VpcId: !Ref HyperswitchCDKBootstrapVPC
   SSMVpcEndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
