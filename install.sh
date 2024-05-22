@@ -430,6 +430,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
         aws eks update-cluster-config --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster --logging '{"clusterLogging":[{"types":["api","audit","authenticator","controllerManager","scheduler"],"enabled":true}]}'
+        
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
         helm get values -n hyperswitch hypers-v1 > values.yaml
         sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"

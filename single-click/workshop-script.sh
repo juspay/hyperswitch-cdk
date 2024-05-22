@@ -93,6 +93,7 @@ else
     cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION -c aws_arn=$AWS_ARN
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER; then
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
+        aws eks update-cluster-config --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster --logging '{"clusterLogging":[{"types":["api","audit","authenticator","controllerManager","scheduler"],"enabled":true}]}'
         aws eks update-kubeconfig --region "$AWS_REGION" --name hs-eks-cluster
         # Deploy Load balancer and Ingress
         echo "##########################################"
