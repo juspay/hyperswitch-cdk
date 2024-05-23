@@ -279,6 +279,15 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.KMS,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "database-zone",
+        },
+      });
+
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
       if (locker)

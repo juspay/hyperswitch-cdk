@@ -254,7 +254,7 @@ export class EksStack {
       labels: {
         "node-type": "generic-compute",
       },
-      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
     });
 
