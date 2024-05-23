@@ -11,19 +11,19 @@ export class LogsBucket {
     constructor(scope: Construct, cluster: eks.Cluster, serviceAccountName?: string) {
         this.bucket = new s3.Bucket(scope, "LogsBucket", {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            bucketName: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+            bucketName: `application-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
         });
         cluster.node.addDependency(this.bucket);
-        const ns = cluster.addManifest("logging-ns", {
+        const ns = cluster.addManifest("kube-analytics-ns", {
             "apiVersion": "v1",
             "kind": "Namespace",
             "metadata": {
-                "name": "logging"
+                "name": "kube-analytics"
             }
         })
         const sa = cluster.addServiceAccount("app-logs-s3-service-account", {
             name: serviceAccountName,
-            namespace: "logging"
+            namespace: "kube-analytics"
         });
         sa.node.addDependency(ns);
         this.bucket.grantReadWrite(sa);
@@ -31,7 +31,7 @@ export class LogsBucket {
         const fluentdChart = cluster.addHelmChart("fluentd", {
             chart: "fluentd",
             repository: "https://fluent.github.io/helm-charts",
-            namespace: "logging",
+            namespace: "kube-analytics",
             wait: false,
             values: {
                 kind: "DaemonSet",
@@ -129,7 +129,5 @@ export class LogsBucket {
             }
 
         });
-
-        new cdk.CfnOutput(scope, 'LogsS3Bucket', { value: this.bucket.bucketName });
     }
 }
