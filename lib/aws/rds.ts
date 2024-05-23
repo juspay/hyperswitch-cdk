@@ -252,8 +252,8 @@ def lambda_handler(event, context):
       const dbCluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
         writer: ClusterInstance.provisioned("Writer Instance", {
           instanceType: InstanceType.of(
-            rds_config.writer_instance_class,
-            rds_config.writer_instance_size
+            InstanceClass.T3,     //stack size can be configurable as per the requirement
+            InstanceSize.MEDIUM
           ),
           publiclyAccessible: isStandalone,
         }),
@@ -261,8 +261,8 @@ def lambda_handler(event, context):
           [
             ClusterInstance.provisioned("Reader Instance", {
               instanceType: InstanceType.of(
-                rds_config.reader_instance_class,
-                rds_config.reader_instance_size
+                InstanceClass.T3,   //stack size can be configurable as per the requirement
+                InstanceSize.MEDIUM
               ),
             }),
           ],

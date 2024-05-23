@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { Config, EC2Config } from "./config";
+import { Config, EC2Config} from "./config";
 import { Vpc, SubnetNames } from "./networking";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
@@ -168,7 +168,8 @@ export class AWSStack extends cdk.Stack {
         get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"),
       );
       internal_jump.addClient(external_jump.sg, ec2.Port.tcp(22));
-      internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
+      // internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
+      rds.addClient(internal_jump.sg, 5432, "internal jump box");
       internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
       external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
 
@@ -226,7 +227,7 @@ export class AWSStack extends cdk.Stack {
         ]
       });
       const ext_jump_policy = new iam.ManagedPolicy(this, 'SessionManagerPolicies', {
-        managedPolicyName: "SessionManagerPolicies",
+        managedPolicyName: `SessionManagerPolicies-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
         description: "SessionManagerPolicies",
         document: external_jump_policy
       });
