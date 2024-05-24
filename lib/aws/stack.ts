@@ -279,6 +279,11 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.GatewayVpcEndpointAwsService.S3,
+      });
+
       const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.KMS,

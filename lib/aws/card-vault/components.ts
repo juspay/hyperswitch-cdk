@@ -67,7 +67,7 @@ export class LockerEc2 extends Construct {
         blockPublicAcls: true,
       }),
       publicReadAccess: false,
-      encryption: s3.BucketEncryption.KMS,
+      encryptionKey: kms_key,
       enforceSSL: true,
       autoDeleteObjects: true,
       bucketName:

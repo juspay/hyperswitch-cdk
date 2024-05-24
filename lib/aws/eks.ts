@@ -635,7 +635,7 @@ export class EksStack {
     //   chart: "gateway",
     //   repository: "https://istio-release.storage.googleapis.com/charts",
     //   namespace: "istio-system",
-    //   release: "istio-gateway",
+    //   release: "istio-ingressgateway",
     //   version: "1.21.2",
     //   values: {
     //     defaults: {
