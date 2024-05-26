@@ -608,43 +608,51 @@ export class EksStack {
       },
     });
 
-    // const istioBase = cluster.addHelmChart("IstioBase", {
-    //   chart: "base",
-    //   repository: "https://istio-release.storage.googleapis.com/charts",
-    //   namespace: "istio-system",
-    //   release: "istio-base",
-    //   version: "1.21.2",
-    // });
+    const istioBase = cluster.addHelmChart("IstioBase", {
+      chart: "base",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-base",
+      version: "1.21.2",
+    });
 
-    // const istiod = cluster.addHelmChart("Istiod", {
-    //   chart: "istiod",
-    //   repository: "https://istio-release.storage.googleapis.com/charts",
-    //   namespace: "istio-system",
-    //   release: "istio-discorvery",
-    //   version: "1.21.2",
-    //   values: {
-    //     defaults: {
-    //       global: {
-    //         hub: `${privateEcrRepository}/istio`,
-    //       }
-    //   },
-    //   }
-    // });
+    const istiod = cluster.addHelmChart("Istiod", {
+      chart: "istiod",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-discorvery",
+      version: "1.21.2",
+      values: {
+        defaults: {
+          global: {
+            hub: `${privateEcrRepository}/istio`,
+          },
+          pilot: {
+            nodeSelector: {
+              "node-type": "memory-optimized",
+            },
+          }
+      },
+      }
+    });
 
-    // const gateway = cluster.addHelmChart("Gateway", {
-    //   chart: "gateway",
-    //   repository: "https://istio-release.storage.googleapis.com/charts",
-    //   namespace: "istio-system",
-    //   release: "istio-ingressgateway",
-    //   version: "1.21.2",
-    //   values: {
-    //     defaults: {
-    //       service: {
-    //         type: "ClusterIP"
-    //       }
-    //     }
-    //   },
-    // });
+    const gateway = cluster.addHelmChart("Gateway", {
+      chart: "gateway",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-ingressgateway",
+      version: "1.21.2",
+      values: {
+        defaults: {
+          service: {
+            type: "ClusterIP"
+          },
+          nodeSelector: {
+            "node-type": "memory-optimized",
+          },
+        }
+      },
+    });
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],

@@ -43,6 +43,11 @@ phases:
           elif [[ $IMAGE == "bitnami/metrics-server" ]]; then
               docker pull "$IMAGE:v0.7.0" && \
               docker tag "$IMAGE:v0.7.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.7.0"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.7.0"
+          elif [[ $IMAGE == "istio/proxyv2" || $IMAGE == "istio/pilot" ]]; then
+              docker pull "$IMAGE:1.21.2" && \
+              docker tag "$IMAGE:1.21.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.21.2"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.21.2"
           else
               docker pull "$IMAGE" && \
               docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest" && \
