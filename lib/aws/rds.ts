@@ -75,7 +75,7 @@ export class DataBaseConstruct {
         vpcSubnets: { subnetGroupName: "database-zone" },
         securityGroups: [this.sg],
         databaseName: rds_config.db_name,
-        credentials: Credentials.fromSecret(secret),
+        // credentials: Credentials.fromSecret(secret),
         port: rds_config.port,
         removalPolicy: RemovalPolicy.DESTROY,
       });
