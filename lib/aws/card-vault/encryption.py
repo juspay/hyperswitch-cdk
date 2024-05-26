@@ -101,7 +101,6 @@ def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             try:
-                print(event)
                 worker()
                 message = "Completed Successfully"
                 status = "SUCCESS"
