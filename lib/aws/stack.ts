@@ -271,6 +271,14 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const rdsEndpoint = new ec2.InterfaceVpcEndpoint(this, "RdsEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.RDS,
+        subnets: {
+          subnetGroupName: "database-zone"
+        },
+      });
+
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
       if (locker)
