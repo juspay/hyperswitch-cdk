@@ -7,6 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
+import { LogsBucket } from "./log_bucket";
 import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
@@ -63,6 +64,7 @@ export class EksStack {
       ]
     });
 
+    const logsBucket = new LogsBucket(scope, cluster, "app-logs-s3-service-account");
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -690,6 +692,7 @@ export class EksStack {
           application: {
             server: {
               secrets_manager: "aws_kms",
+              bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },
