@@ -7,6 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
+import { LogsBucket } from "./log_bucket";
 import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
@@ -54,8 +55,16 @@ export class EksStack {
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
       clusterName: "hs-eks-cluster",
+      clusterLogging:[
+        eks.ClusterLoggingTypes.API,
+        eks.ClusterLoggingTypes.AUDIT,
+        eks.ClusterLoggingTypes.AUTHENTICATOR,
+        eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
+        eks.ClusterLoggingTypes.SCHEDULER,
+      ]
     });
 
+    const logsBucket = new LogsBucket(scope, cluster, "app-logs-s3-service-account");
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -343,9 +352,7 @@ export class EksStack {
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
-
     });
-
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
       instanceTypes:[
@@ -731,6 +738,7 @@ export class EksStack {
           application: {
             server: {
               secrets_manager: "aws_kms",
+              bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
                 "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
               },
@@ -843,7 +851,7 @@ export class EksStack {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.0.10",
+              image: "juspaydotin/hyperswitch-web:v1.0.12",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
