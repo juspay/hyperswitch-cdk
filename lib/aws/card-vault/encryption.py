@@ -14,15 +14,16 @@ def worker():
     secrets_manager = boto3.client('secretsmanager')
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
-
     secret_arn = os.environ['SECRET_MANAGER_ARN']
     secret_value_response = secrets_manager.get_secret_value(SecretId=secret_arn)
+
     credentials = json.loads(secret_value_response['SecretString'])
 
     kms_fun = kms_encryptor(credentials["kms_id"], credentials["region"], kms_client)
-    enc_pl = lambda x: kms_fun(credentials[x])
-    pl = lambda x: credentials[x]
 
+    enc_pl = lambda x: kms_fun(credentials[x])
+
+    pl = lambda x: credentials[x]
 
 
     output = f"""
@@ -54,7 +55,7 @@ LOCKER__KMS__REGION={pl("region")}
     filename = os.environ['ENV_FILE']
 
     s3_client.put_object(Bucket=bucket_name, Key=filename, Body=output.encode("utf-8"))
-    
+
 
 
 
@@ -105,6 +106,7 @@ def lambda_handler(event, context):
                 status = "SUCCESS"
             except Exception as e:
                 message = str(e)
+                print(message)
                 status = "FAILED"
 
             send(event, context, status, { "message": message})
