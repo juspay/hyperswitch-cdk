@@ -72,7 +72,7 @@ export class DataBaseConstruct {
           InstanceSize.MICRO
         ),
         vpc,
-        vpcSubnets: { subnetType: SubnetType.PUBLIC },
+        vpcSubnets: { subnetGroupName: "database-zone" },
         securityGroups: [this.sg],
         databaseName: rds_config.db_name,
         credentials: Credentials.fromSecret(secret),
@@ -80,7 +80,7 @@ export class DataBaseConstruct {
         removalPolicy: RemovalPolicy.DESTROY,
       });
 
-      this.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432));
+      // this.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432));
 
       const schemaBucket = new Bucket(scope, "SchemaBucket", {
         removalPolicy: RemovalPolicy.DESTROY,
@@ -255,7 +255,7 @@ def lambda_handler(event, context):
             InstanceClass.T3,     //stack size can be configurable as per the requirement
             InstanceSize.MEDIUM
           ),
-          publiclyAccessible: isStandalone,
+          publiclyAccessible: false,
         }),
         readers: isStandalone ? [] :
           [
