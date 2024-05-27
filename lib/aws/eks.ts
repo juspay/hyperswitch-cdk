@@ -805,7 +805,7 @@ export class EksStack {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.0.10",
+              image: "juspaydotin/hyperswitch-web:v1.0.12",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
