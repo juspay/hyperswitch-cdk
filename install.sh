@@ -363,7 +363,7 @@ while true; do
     fi
 done
 
-validate_master_password() {
+validate_opensearch_password() {
     local master_password=$1
 
     # Check length (at least 8 characters)
@@ -390,6 +390,12 @@ validate_master_password() {
         return 1
     fi
 
+    # Check for special characters
+    if [[ $password == [^A-Za-z0-9] ]]; then
+        display_error "Error: Password should include special characters."
+        return 1
+    fi
+
     # read password again to confirm
     echo "Please re-enter the password: "
     read -r -s master_password_confirm
@@ -410,7 +416,7 @@ if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
     while true; do
         echo "Please enter the Master Password for Open Search Service: "
         read -r -s OPEN_SEARCH_MASTER_PASSWORD
-        if validate_master_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
+        if validate_opensearch_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
             break
         fi
     done

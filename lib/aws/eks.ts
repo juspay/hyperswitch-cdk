@@ -56,8 +56,9 @@ export class EksStack {
       vpc: vpc,
       clusterName: "hs-eks-cluster",
     });
-    let open_search_service = scope.node.tryGetContext('open_search_service');
-    if (`${open_search_service}` == "y"){
+    
+    let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
+    if (`${push_logs}` == "y"){
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
     }
     
