@@ -8,6 +8,9 @@ yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 source ./bash/utils.sh
+function echoLog() {
+    echo "$1" | tee -a $LOG_FILE
+}
 
 # Function to display error messages in red
 display_error() {
@@ -492,6 +495,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
+
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
         helm get values -n hyperswitch hypers-v1 > values.yaml
         sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
@@ -518,29 +522,29 @@ else
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY; then
+    if cdk deploy --require-approval never -c aws_arn=$AWS_ARN -c free_tier=true -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY; then
         STANDALONE_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='StandaloneURL'].OutputValue" --output text)
         CONTROL_CENTER_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='ControlCenterURL'].OutputValue" --output text)
         SDK_HOST=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkAssetsURL'].OutputValue" --output text)
         DEMO_APP=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='DemoApp'].OutputValue" --output text)
         echo "Please wait for instances to be initialized. Approximate time is 2 minutes."
         printf "${bold}Initializing Instances${reset} "
-        # Start the spinner in the background
-        (
-            while :; do
-                for s in '/' '-' '\\' '|'; do
-                    printf "\r$s"
-                    sleep 1
-                done
-            done
-        ) &
-        spinner_pid=$!
-        # Sleep for 10 seconds to simulate work
+        # # Start the spinner in the background
+        # (
+        #     while :; do
+        #         for s in '/' '-' '\\' '|'; do
+        #             printf "\r$s"
+        #             sleep 1
+        #         done
+        #     done
+        # ) &
+        # spinner_pid=$!
+        # # Sleep for x seconds to simulate work
         sleep 60
         # Kill the spinner
-        kill $spinner_pid >/dev/null 2>&1
-        wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
-        printf "\r"                   # Clear the spinner character
+        # kill $spinner_pid >/dev/null 2>&1
+        # wait $spinner_pid 2>/dev/null # Ensures the spinner process is properly terminated before moving on
+        # printf "\r"                   # Clear the spinner character
         printf "\nInitialization complete.\n"
         printf "\n"
         echoLog "--------------------------------------------------------------------------------"

@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { Config, EC2Config } from "./config";
+import { Config, EC2Config} from "./config";
 import { Vpc, SubnetNames } from "./networking";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
@@ -168,7 +168,8 @@ export class AWSStack extends cdk.Stack {
         get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"),
       );
       internal_jump.addClient(external_jump.sg, ec2.Port.tcp(22));
-      internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
+      // internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
+      rds.addClient(internal_jump.sg, 5432, "internal jump box");
       internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
       external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
 
@@ -267,6 +268,37 @@ export class AWSStack extends cdk.Stack {
         securityGroups: [sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
+        },
+      });
+
+      const vpc_endpoint4 = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "locker-database-zone",
+        },
+      });
+
+      const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.GatewayVpcEndpointAwsService.S3,
+      });
+
+      const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.KMS,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "database-zone",
+        }
+      });
+
+      const rdsEndpoint = new ec2.InterfaceVpcEndpoint(this, "RdsEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.RDS,
+        subnets: {
+          subnetGroupName: "database-zone"
         },
       });
 

@@ -395,8 +395,5 @@ export class LogsStack {
         });
         openSearchFluentdChart.node.addDependency(kAnalyticsNS);
 
-
-        new cdk.CfnOutput(scope, 'LogsS3Bucket', { value: this.bucket.bucketName });
-        new cdk.CfnOutput(scope, 'OpenSearch Endpoint', { value: this.domain.domainEndpoint });
     }
 }

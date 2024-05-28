@@ -67,6 +67,8 @@ export class LockerEc2 extends Construct {
         blockPublicAcls: true,
       }),
       publicReadAccess: false,
+      encryptionKey: kms_key,
+      enforceSSL: true,
       autoDeleteObjects: true,
       bucketName:
         "locker-env-store-" +
@@ -98,6 +100,25 @@ export class LockerEc2 extends Construct {
         "use-kms-sm-s3": kms_policy,
       },
     });
+
+    lambda_role.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "secretsmanager:GetSecretValue",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "s3:GetObject",
+          "s3:PutObject"
+        ],
+        resources: ["*"],
+      })
+    );
 
     const { privateKey: locker_private_key, publicKey: locker_public_key } =
       generateKeyPairSync("rsa", {
@@ -164,6 +185,10 @@ export class LockerEc2 extends Construct {
         ENV_BUCKET_NAME: envBucket.bucketName,
         ENV_FILE: env_file,
       },
+      vpc: vpc,
+      vpcSubnets: {
+        subnetGroupName: "locker-database-zone",
+      },
       logRetention: RetentionDays.INFINITE,
     });
 
@@ -221,7 +246,7 @@ export class LockerEc2 extends Construct {
       };
     } else {
       vpcSubnets = {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        subnetGroupName: "locker-server-zone",
       };
     }
 
@@ -325,7 +350,7 @@ export class LockerSetup extends Construct {
       };
     } else {
       vpcSubnetsDb = {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        subnetGroupName: "locker-database-zone",
       };
     }
 

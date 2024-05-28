@@ -88,10 +88,13 @@ Resources:
       ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
       InstanceType: 't3.medium'
       IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: Name
+          Value: 'Hyperswitch Launcher'
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click/workshop-script.sh > var/log/hyperswitch-script.log 2>&1
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refs/tags/v0.3.0/single-click/workshop-script.sh > var/log/hyperswitch-script.log 2>&1
           chmod a+x run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
 
           # export env variables

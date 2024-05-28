@@ -72,7 +72,7 @@ export class DataBaseConstruct {
           InstanceSize.MICRO
         ),
         vpc,
-        vpcSubnets: { subnetType: SubnetType.PUBLIC },
+        vpcSubnets: { subnetGroupName: "database-zone" },
         securityGroups: [this.sg],
         databaseName: rds_config.db_name,
         credentials: Credentials.fromSecret(secret),
@@ -80,7 +80,7 @@ export class DataBaseConstruct {
         removalPolicy: RemovalPolicy.DESTROY,
       });
 
-      this.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432));
+      // this.sg.addIngressRule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5432));
 
       const schemaBucket = new Bucket(scope, "SchemaBucket", {
         removalPolicy: RemovalPolicy.DESTROY,
@@ -150,7 +150,7 @@ def lambda_handler(event, context):
         # Call the upload_file_from_url function to upload two files to S3
         if event['RequestType'] == 'Create':
           upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/migration_runner.zip", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "migration_runner.zip")
-          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
+          upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/v1.107.0/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
           upload_file_from_url("https://hyperswitch-bucket.s3.amazonaws.com/locker-schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "locker-schema.sql")
           send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
         else:
@@ -223,7 +223,7 @@ def lambda_handler(event, context):
           SCHEMA_FILE_KEY: "schema.sql",
         },
         vpc: vpc,
-        vpcSubnets: { subnetGroupName: "database-zone" },
+        vpcSubnets: { subnetGroupName: "isolated-subnet-1" },
         securityGroups: [lambdaSecurityGroup],
         timeout: Duration.minutes(15),
         role: lambdaRole,
@@ -252,17 +252,17 @@ def lambda_handler(event, context):
       const dbCluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
         writer: ClusterInstance.provisioned("Writer Instance", {
           instanceType: InstanceType.of(
-            rds_config.writer_instance_class,
-            rds_config.writer_instance_size
+            InstanceClass.T3,     //stack size can be configurable as per the requirement
+            InstanceSize.MEDIUM
           ),
-          publiclyAccessible: isStandalone,
+          publiclyAccessible: false,
         }),
         readers: isStandalone ? [] :
           [
             ClusterInstance.provisioned("Reader Instance", {
               instanceType: InstanceType.of(
-                rds_config.reader_instance_class,
-                rds_config.reader_instance_size
+                InstanceClass.T3,   //stack size can be configurable as per the requirement
+                InstanceSize.MEDIUM
               ),
             }),
           ],
