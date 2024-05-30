@@ -38,7 +38,7 @@ export class EksStack {
     locker: LockerSetup | undefined,
   ) {
 
-    const ecrTransfer = new DockerImagesToEcr(scope);
+    const ecrTransfer = new DockerImagesToEcr(scope, vpc);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
     let vpn_ips: string[] = (scope.node.tryGetContext("vpn_ips") || "0.0.0.0").split(",");
     vpn_ips = vpn_ips.map((ip: string) => {
@@ -615,6 +615,52 @@ export class EksStack {
       },
     });
 
+    const istioBase = cluster.addHelmChart("IstioBase", {
+      chart: "base",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-base",
+      version: "1.21.2",
+    });
+
+    const istiod = cluster.addHelmChart("Istiod", {
+      chart: "istiod",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-discorvery",
+      version: "1.21.2",
+      values: {
+        defaults: {
+          global: {
+            hub: `${privateEcrRepository}/istio`,
+          },
+          pilot: {
+            nodeSelector: {
+              "node-type": "memory-optimized",
+            },
+          }
+      },
+      }
+    });
+
+    const gateway = cluster.addHelmChart("Gateway", {
+      chart: "gateway",
+      repository: "https://istio-release.storage.googleapis.com/charts",
+      namespace: "istio-system",
+      release: "istio-ingressgateway",
+      version: "1.21.2",
+      values: {
+        defaults: {
+          service: {
+            type: "ClusterIP"
+          },
+          nodeSelector: {
+            "node-type": "memory-optimized",
+          },
+        }
+      },
+    });
+
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
@@ -857,27 +903,27 @@ export class EksStack {
             targetCPUUtilizationPercentage: 80,
           },
           "hyperswitch-card-vault": {
-            enabled: locker ? true : false,
+            enabled: false,
             postgresql: {
-              enabled: locker ? true : false,
+              enabled: false,
             },
-            server: {
-              secrets: {
-                locker_private_key: locker?.locker_ec2.locker_pair.private_key || '',
-                tenant_public_key: locker?.locker_ec2.tenant.public_key || '',
-                master_key: locker ? config.locker.master_key : ""
-              }
-            }
+            // server: {
+            //   secrets: {
+            //     locker_private_key: locker?.locker_ec2.locker_pair.private_key || '',
+            //     tenant_public_key: locker?.locker_ec2.tenant.public_key || '',
+            //     master_key: locker ? config.locker.master_key : ""
+            //   }
+            // }
           }
         },
         "hyperswitchsdk": {
-          enabled: true,
+          enabled: false,
           services: {
             router: {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.0.10",
+              image: "juspaydotin/hyperswitch-web:v1.0.12",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
@@ -917,7 +963,7 @@ export class EksStack {
             buildParam: {
               envSdkUrl: `http://${this.sdkDistribution.distributionDomainName}`
             },
-            // nginxConfig: { extraPath: "v0" }
+            nginxConfig: { extraPath: "v0" }
           }
         },
       },
@@ -1270,7 +1316,7 @@ class DockerImagesToEcr {
   codebuildProject: codebuild.Project;
   codebuildTrigger: cdk.CustomResource;
 
-  constructor(scope: Construct) {
+  constructor(scope: Construct, vpc: ec2.Vpc) {
 
     const ecrRole = new iam.Role(scope, "ECRRole", {
       assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
@@ -1351,6 +1397,25 @@ class DockerImagesToEcr {
       }),
     );
 
+    triggerCodeBuildRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "secretsmanager:GetSecretValue",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "s3:GetObject",
+          "s3:PutObject"
+        ],
+        resources: ["*"],
+      })
+    );
+
     triggerCodeBuildRole.attachInlinePolicy(
       new iam.Policy(scope, "ECRImageTransferLambdaLogsPolicy", {
         document: logsPolicy,
@@ -1366,6 +1431,10 @@ class DockerImagesToEcr {
       environment: {
         PROJECT_NAME: this.codebuildProject.projectName,
       },
+      vpc: vpc,
+      vpcSubnets: {
+        subnetGroupName: "isolated-subnet-1"
+      }
     });
 
     this.codebuildTrigger = new cdk.CustomResource(scope, "ECRImageTransferCR", {

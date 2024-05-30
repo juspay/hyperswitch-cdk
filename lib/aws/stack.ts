@@ -271,6 +271,29 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const vpc_endpoint4 = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEP", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "locker-database-zone",
+        },
+      });
+
+      const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.GatewayVpcEndpointAwsService.S3,
+      });
+
+      const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.KMS,
+        securityGroups: [sg],
+        subnets: {
+          subnetGroupName: "database-zone",
+        }
+      });
+
       const rdsEndpoint = new ec2.InterfaceVpcEndpoint(this, "RdsEndpoint", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.RDS,

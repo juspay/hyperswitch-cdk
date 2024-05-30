@@ -67,5 +67,5 @@ HYPERSWITCH_SERVER_URL=http://$backend_url:80
 HYPERSWITCH_CLIENT_URL=http://$hyperswitch_client_url:9090/0.27.2/v0
 EOF
 
-docker pull juspaydotin/hyperswitch-web:v1.0.10
-docker run --env-file .env -p 5252:5252 juspaydotin/hyperswitch-web:v1.0.10
+docker pull juspaydotin/hyperswitch-web:v1.0.12
+docker run --env-file .env -p 5252:5252 juspaydotin/hyperswitch-web:v1.0.12
