@@ -639,7 +639,7 @@ export class EksStack {
               "node-type": "memory-optimized",
             },
           }
-      },
+        },
       }
     });
 
@@ -888,9 +888,6 @@ export class EksStack {
           redis: {
             enabled: false
           },
-          loki:{
-            namespace: "loki",
-          },
           externalRedis: {
             enabled: true,
             host: elasticache.cluster.attrRedisEndpointAddress || "redis",
@@ -1054,14 +1051,14 @@ export class EksStack {
     });
 
     const loki_ns = cluster.addManifest("loki-ns", {
-        "apiVersion": "v1",
-        "kind": "Namespace",
-        "metadata": {
-            "name": "loki"
-        }
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "loki"
+      }
     });
     hypersChart.node.addDependency(loki_ns);
-    
+
     const lokiSA = cluster.addServiceAccount("loki-sa", {
       namespace: "loki"
     });
@@ -1091,6 +1088,39 @@ export class EksStack {
           },
           nodeSelector: {
             "node-type": "monitoring",
+          },
+          ingress: {
+            enabled: true,
+            ingressClassName: "alb",
+            annotations: {
+              "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+              "alb.ingress.kubernetes.io/group.name": "hyperswitch-logs-alb-ingress-group",
+              "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+              "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-logs",
+              "alb.ingress.kubernetes.io/scheme": "internet-facing",
+              "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+              "alb.ingress.kubernetes.io/target-type": "ip"
+
+            },
+            hosts: ["logs.hyperswitch.local"],
+            extraPaths: [
+              {
+                path: "/",
+                pathType: "Prefix",
+                backend: {
+                  service: {
+                    name: "loki-grafana",
+                    port: {
+                      number: 80
+                    }
+                  }
+                }
+              }
+
+            ]
+
           }
         },
         loki: {
@@ -1105,15 +1135,15 @@ export class EksStack {
           nodeSelector: {
             "node-type": "monitoring",
           },
-          config:{
-            limits_config:{
+          config: {
+            limits_config: {
               enforce_metric_name: false,
               max_entries_limit_per_query: 5000,
               max_query_lookback: "90d",
               reject_old_samples: true,
               reject_old_samples_max_age: "168h",
               retention_period: "100d",
-              retention_stream:[
+              retention_stream: [
                 {
                   period: "7d",
                   priority: 1,
@@ -1159,8 +1189,8 @@ export class EksStack {
                 cache_location: "/data/tsdb-cache",
                 shared_store: "s3",
               },
-              aws:{
-                bucketnames:loki_s3.bucketName,
+              aws: {
+                bucketnames: loki_s3.bucketName,
                 region: `${process.env.CDK_DEFAULT_REGION}`
               }
             }
