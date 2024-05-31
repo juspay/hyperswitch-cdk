@@ -900,6 +900,62 @@ export class EksStack {
     this.sdkBucket = sdkBucket;
     hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
+    const lbSubents = cluster.vpc.selectSubnets({
+      subnetGroupName: "service-layer-zone",
+    });
+
+    const trafficControl = cluster.addHelmChart("TrafficControl", {
+      chart: "hyperswitch-istio",
+      repository: "https://juspay.github.io/hyperswitch-helm/charts/incubator/hyperswitch-istio",
+      release: "hs-istio",
+      values: {
+        image: {
+          version: "v1o107o0"
+        },
+        ingress : {
+          enabled: true,
+          className: "alb",
+          annotations: {
+            "alb.ingress.kubernetes.io/backend-protocol" : "HTTP",
+            "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
+            "alb.ingress.kubernetes.io/group.name": "hyperswitch-istio-app-alb-ingress-group",
+            "alb.ingress.kubernetes.io/healthcheck-interval-seconds": "5",
+            "alb.ingress.kubernetes.io/healthcheck-path": "/healthz/ready",
+            "alb.ingress.kubernetes.io/healthcheck-port": "15021",
+            "alb.ingress.kubernetes.io/healthcheck-protocol": "HTTP",
+            "alb.ingress.kubernetes.io/healthcheck-timeout-seconds": "2",
+            "alb.ingress.kubernetes.io/healthy-threshold-count": "5",
+            "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+            "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+            "alb.ingress.kubernetes.io/load-balancer-attributes": "routing.http.drop_invalid_header_fields.enabled=true,routing.http.xff_client_port.enabled=true,routing.http.preserve_host_header.enabled=true",
+            "alb.ingress.kubernetes.io/scheme": "internal",
+            "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+            "alb.ingress.kubernetes.io/subnets": lbSubents.subnetIds.join(","),
+            "alb.ingress.kubernetes.io/target-type": "ip",
+            "alb.ingress.kubernetes.io/unhealthy-threshold-count": "3",
+          },
+          hosts: {
+            paths: [
+            {
+              path: "/",
+              pathType: "Prefix",
+              port: 80,
+              name: "istio-ingressgateway",
+            },
+            {
+              path: "/healthz/ready",
+              pathType: "Prefix",
+              port: 15021,
+              name: "istio-ingressgateway",
+            }
+          ]
+          }
+        }
+      },
+    });
+
+    trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
+
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
