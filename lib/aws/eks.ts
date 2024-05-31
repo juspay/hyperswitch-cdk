@@ -20,6 +20,9 @@ import { Trigger } from "aws-cdk-lib/triggers";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing package
+import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
+import { env } from "process";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -845,7 +848,7 @@ export class EksStack {
           }
         },
         "hyperswitchsdk": {
-          enabled: false,
+          enabled: true,
           services: {
             router: {
               host: "http://localhost:8080"
@@ -956,6 +959,106 @@ export class EksStack {
 
     trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
 
+    const envoyAmi = scope.node.tryGetContext("envoy_ami");
+    if(envoyAmi) {
+      const internalLoadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
+        loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-istio-app-alb-ingress-group' },
+      });
+
+      internalLoadBalancer.node.addDependency(trafficControl);
+
+      const externalAppLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "ExternalAppLoadBalancer", {
+        vpc: cluster.vpc,
+        internetFacing: true,
+        securityGroup: lbSecurityGroup,
+        loadBalancerName: "external-app-lb",
+        vpcSubnets: {
+        subnetGroupName: "external-incoming-zone",x
+        }
+      });
+
+      const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
+        bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+        blockPublicAccess: new s3.BlockPublicAccess({
+          blockPublicAcls: true,
+        }),
+        publicReadAccess: false,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
+      });
+
+      let envoyConfig = readFileSync("lib/aws/configurations/envoy.yaml", "utf8")
+      .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
+      .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
+
+      const uploadConfig = new s3deploy.BucketDeployment(scope, "proxy-config-deployment", {
+        sources: [s3deploy.Source.yamlData("envoy/envoy.yaml", envoyConfig)],
+        destinationBucket: proxyBucket,
+      });
+
+      uploadConfig.node.addDependency(internalLoadBalancer, externalAppLoadBalncer);
+
+      let envoy_userdata = readFileSync("lib/aws/userdata/envoy_userdata.sh", "utf8")
+      .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
+
+      // create an envoy policy with access to the s3 bucket
+      const envoyPolicy = new iam.Policy(scope, 'envoy-policy', {
+        statements: [
+          new iam.PolicyStatement({
+            actions: ['*'],
+            resources: [`${proxyBucket.bucketArn}/*`],
+            effect: iam.Effect.ALLOW,
+          }),
+        ],
+      });
+
+      const envoyRole = new iam.Role(scope, 'envoy-role', {
+        assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+      });
+
+      envoyRole.attachInlinePolicy(envoyPolicy);
+
+      const envoyKeyPair = new ec2.KeyPair(scope, 'envoy-keypair', {
+        keyPairName: "hyperswitch-envoy-keypair",
+      });
+
+      const envoyLaunchTemplate = new ec2.LaunchTemplate(scope, 'envoy-launch-template', {
+        machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: envoyAmi}),
+        instanceType: new ec2.InstanceType("t3.medium"),
+        securityGroup: lbSecurityGroup,
+        keyName: "hyperswitch-envoy-keypair",
+        userData: ec2.UserData.custom(envoy_userdata.toString()),
+        role: envoyRole,
+      });
+
+      envoyLaunchTemplate.node.addDependency(envoyKeyPair);
+
+      const envoyASG = new AutoScalingGroup(scope, 'envoy-asg', {
+        vpc: cluster.vpc,
+        minCapacity: 1,
+        maxCapacity: 1,
+        desiredCapacity: 1,
+        launchTemplate: envoyLaunchTemplate,
+        vpcSubnets: {subnetGroupName: "external-incoming-zone"}
+      });
+
+      envoyASG.node.addDependency(uploadConfig);
+
+      const listener = externalAppLoadBalncer.addListener('Listener', {
+        port: 80,
+        open: true,
+      });
+
+      listener.addTargets('Target', {
+        port: 80,
+        targets: [envoyASG],
+        healthCheck: {
+          path: "/health",
+          port: "80",
+          protocol: elbv2.Protocol.HTTP,
+        }
+      });
+    }
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
@@ -963,7 +1066,6 @@ export class EksStack {
           "system:serviceaccount:hyperswitch:loki-grafana",
       },
     });
-
 
     const grafanaServiceAccountRole = new iam.Role(
       scope,

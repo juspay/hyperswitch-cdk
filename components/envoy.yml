@@ -22,3 +22,4 @@ phases:
                 - sudo yum-config-manager --add-repo '/tmp/tetrate-getenvoy-rpm-stable.repo'
                 - sudo yum makecache --disablerepo='*' --enablerepo='tetrate-getenvoy-rpm-stable'
                 - sudo yum install -y getenvoy-envoy
+                - sudo systemctl start envoy
