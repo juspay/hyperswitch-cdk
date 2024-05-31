@@ -1099,7 +1099,7 @@ export class EksStack {
       values: {
         image: {
           repository: `${privateEcrRepository}/bitnami/metrics-server`,
-          tag: "v0.7.0",
+          tag: "0.7.0",
         },
       }
     });
