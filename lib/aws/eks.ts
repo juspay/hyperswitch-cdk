@@ -961,24 +961,19 @@ export class EksStack {
 
     const squidAmi = scope.node.tryGetContext("squid_ami");
     if(squidAmi) {
-      // const internalLoadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
-      //   loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-istio-app-alb-ingress-group' },
-      // });
 
-      // internalLoadBalancer.node.addDependency(trafficControl);
+      const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
+        vpc: cluster.vpc,
+        internetFacing: true,
+        securityGroup: lbSecurityGroup,
+        loadBalancerName: "hyperswitch-outgoing-proxy",
+        vpcSubnets: {
+        subnetGroupName: "service-layer-zone",
+        }
+      });
 
-      // const externalAppLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "ExternalAppLoadBalancer", {
-      //   vpc: cluster.vpc,
-      //   internetFacing: true,
-      //   securityGroup: lbSecurityGroup,
-      //   loadBalancerName: "external-app-lb",
-      //   vpcSubnets: {
-      //   subnetGroupName: "external-incoming-zone",x
-      //   }
-      // });
-
-      const outboundProxyBucket = new s3.Bucket(scope, "outbound-proxy-logs-hs", {
-        bucketName: `outbound-proxy-logs-hs-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+      const logsBucket = new s3.Bucket(scope, "hyperswitch-outgoing-proxy-logs-bucket", {
+        bucketName: `outgoing-proxy-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
         blockPublicAccess: new s3.BlockPublicAccess({
           blockPublicAcls: true,
         }),
@@ -987,27 +982,35 @@ export class EksStack {
         autoDeleteObjects: true,
       });
 
-      let squidConfig = readFileSync("lib/aws/configurations/squid.yaml", "utf8")
-      .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
-      .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
-
-      const uploadConfig = new s3deploy.BucketDeployment(scope, "outbound-proxy-config-deployment", {
-        sources: [s3deploy.Source.yamlData("envoy/envoy.yaml", squidConfig)],
-        destinationBucket: outboundProxyBucket,
+      const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
+        bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+        blockPublicAccess: new s3.BlockPublicAccess({
+          blockPublicAcls: true,
+        }),
+        publicReadAccess: false,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
       });
 
-      uploadConfig.node.addDependency(internalLoadBalancer, externalAppLoadBalncer);
-
+      const uploadConfig = new s3deploy.BucketDeployment(scope, "proxy-config-deployment", {
+        sources: [s3deploy.Source.asset("lib/aws/configurations/")],
+        destinationBucket: proxyBucket,
+      });
 
       let squid_userdata = readFileSync("lib/aws/userdata/squid_userdata.sh", "utf8")
-      .replaceAll("{{bucket-name}}", outboundProxyBucket.bucketName);
+      .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
 
       // create an envoy policy with access to the s3 bucket
       const squidPolicy = new iam.Policy(scope, 'envoy-policy', {
         statements: [
           new iam.PolicyStatement({
             actions: ['*'],
-            resources: [`${outboundProxyBucket.bucketArn}/*`],
+            resources: [`${proxyBucket.bucketArn}/*`],
+            effect: iam.Effect.ALLOW,
+          }),
+          new iam.PolicyStatement({
+            actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
+            resources: [`${logsBucket.bucketArn}/*`],
             effect: iam.Effect.ALLOW,
           }),
         ],
@@ -1019,16 +1022,11 @@ export class EksStack {
 
       squidRole.attachInlinePolicy(squidPolicy);
 
-      const uploadConfigurattions =  new s3deploy.BucketDeployment(this, 'outbound-proxy-config-deployment', {
-        sources: [s3deploy.Source.asset('lib/aws/assets/whitelist.txt')],
-        destinationBucket: outboundProxyBucket,
-      });
-
       const squidKeyPair = new ec2.KeyPair(scope, 'squid-keypair', {
         keyPairName: "hyperswitch-squid-keypair",
       });
 
-      const squidLaunchTemplate = new ec2.LaunchTemplate(scope, 'squid-launch-template', {
+      const squidLaunchTemplate = new ec2.LaunchTemplate(scope, 'outgoing-proxy-launch-template', {
         machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: squidAmi}),
         instanceType: new ec2.InstanceType("t3.medium"),
         securityGroup: lbSecurityGroup,
@@ -1039,18 +1037,18 @@ export class EksStack {
 
       squidLaunchTemplate.node.addDependency(squidKeyPair);
 
-      const squidASG = new AutoScalingGroup(scope, 'squid-asg', {
+      const squidASG = new AutoScalingGroup(scope, 'hyperswitch-outgoing-proxy-asg', {
         vpc: cluster.vpc,
         minCapacity: 2,
         maxCapacity: 10,
         desiredCapacity: 2,
         launchTemplate: squidLaunchTemplate,
-        vpcSubnets: {subnetGroupName: "external-incoming-zone"}
+        vpcSubnets: {subnetGroupName: "outgoing-proxy-zone"}
       });
 
       squidASG.node.addDependency(uploadConfig);
 
-      const listener = externalAppLoadBalncer.addListener('Listener', {
+      const listener = squidLoadBalncer.addListener('Listener', {
         port: 80,
         open: true,
       });
