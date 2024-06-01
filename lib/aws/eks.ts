@@ -7,7 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
-import { LogsBucket } from "./log_bucket";
+import { LogsStack } from "./log_stack";
 import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
@@ -63,8 +63,12 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
-
-    const logsBucket = new LogsBucket(scope, cluster, "app-logs-s3-service-account");
+    
+    let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
+    if (`${push_logs}` == "y"){
+      const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
+    }
+    
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
