@@ -19,10 +19,10 @@ import { HyperswitchSDKStack } from "./hs-sdk";
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
     super(scope, config.stack.name, {
-      // env: {
-      //   account: process.env.CDK_DEFAULT_ACCOUNT,
-      //   region: process.env.CDK_DEFAULT_REGION
-      // },
+      env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
+        region: process.env.CDK_DEFAULT_REGION
+      },
       stackName: config.stack.name,
     });
 
