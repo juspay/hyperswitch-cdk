@@ -1223,8 +1223,7 @@ export class EksStack {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
-          ["system:serviceaccount:loki:loki-grafana",
-            "system:serviceaccount:loki:loki"
+          ["system:serviceaccount:loki:loki-grafana"
           ]
       },
     });
