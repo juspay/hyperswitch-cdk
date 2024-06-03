@@ -749,7 +749,7 @@ export class EksStack {
                         {
                           key: "node-type",
                           operator: "In",
-                          values: ["generic-compute",]
+                          values: ["generic-compute"]
                         }
                       ]
                     }
@@ -819,7 +819,7 @@ export class EksStack {
                       {
                         key: "node-type",
                         operator: "In",
-                        values: ["generic-compute",]
+                        values: ["generic-compute"]
                       }
                     ]
                   }
@@ -836,7 +836,7 @@ export class EksStack {
                       {
                         key: "node-type",
                         operator: "In",
-                        values: ["generic-compute",]
+                        values: ["generic-compute"]
                       }
                     ]
                   }
@@ -853,7 +853,7 @@ export class EksStack {
                       {
                         key: "node-type",
                         operator: "In",
-                        values: ["control-center",]
+                        values: ["control-center"]
                       }
                     ]
                   }
@@ -1030,7 +1030,7 @@ export class EksStack {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
-          "system:serviceaccount:hyperswitch:loki-grafana",
+          "system:serviceaccount:loki:loki-grafana",
       },
     });
 
@@ -1103,10 +1103,17 @@ export class EksStack {
       }),
     );
 
+    const loki_ns = cluster.addManifest("loki-ns", {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "loki"
+      }
+    });
     const lokiChart = cluster.addHelmChart("LokiController", {
       chart: "loki-stack",
       repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
+      namespace: "loki",
       release: "loki",
       values: {
         grafana: {
