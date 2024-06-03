@@ -411,25 +411,29 @@ validate_opensearch_password() {
 
 }
 
-echo "Do you want to push logs to S3 and Open Search? [y/n]: "
-read -r OPEN_SEARCH_SERVICE
-
-if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
-    read -p "Please enter the Master UserName for Open Search Service: " OPEN_SEARCH_MASTER_USER_NAME
-    while true; do
-        echo "Please enter the Master Password for Open Search Service: "
-        read -r -s OPEN_SEARCH_MASTER_PASSWORD
-        if validate_opensearch_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
-            break
-        fi
-    done
-    
-elif [[ "$OPEN_SEARCH_SERVICE" == "n" ]]; then
-    break
-else
-    echo "Invalid input. Please enter 'y' or 'n'."
+while true; do
+    echo "Do you want to push logs to S3 and Open Search? [y/n]: "
     read -r OPEN_SEARCH_SERVICE
-fi
+    
+    if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
+        read -p "Please enter the Master UserName for Open Search Service: " OPEN_SEARCH_MASTER_USER_NAME
+        while true; do
+            echo "Please enter the Master Password for Open Search Service: "
+            read -r -s OPEN_SEARCH_MASTER_PASSWORD
+            if validate_opensearch_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
+                break
+            fi
+        done
+        break
+    
+    elif [[ "$OPEN_SEARCH_SERVICE" == "n" ]]; then
+        echo "Logs will not be pushed to S3 and Open Search."
+        break
+    
+    else
+        echo "Invalid input. Please enter 'y' or 'n'."
+    fi
+done
 
 
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
