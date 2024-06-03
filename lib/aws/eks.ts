@@ -55,7 +55,7 @@ export class EksStack {
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
       clusterName: "hs-eks-cluster",
-      clusterLogging:[
+      clusterLogging: [
         eks.ClusterLoggingTypes.API,
         eks.ClusterLoggingTypes.AUDIT,
         eks.ClusterLoggingTypes.AUTHENTICATOR,
@@ -273,7 +273,7 @@ export class EksStack {
 
     const autopilotnodegroup = cluster.addNodegroupCapacity("HSAutopilotNodegroup", {
       nodegroupName: "autopilot-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -283,7 +283,7 @@ export class EksStack {
         "service": "autopilot",
         "node-type": "autopilot-od",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -296,7 +296,7 @@ export class EksStack {
       labels: {
         "node-type": "ckh-zookeeper-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -309,14 +309,14 @@ export class EksStack {
       labels: {
         "node-type": "clickhouse-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const controlcenternodegroup = cluster.addNodegroupCapacity("HSControlcentreNodegroup", {
       nodegroupName: "control-center",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -325,7 +325,7 @@ export class EksStack {
       labels: {
         "node-type": "control-center",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -338,14 +338,14 @@ export class EksStack {
       labels: {
         "node-type": "kafka-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
       nodegroupName: "memory-optimized-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -354,12 +354,12 @@ export class EksStack {
       labels: {
         "node-type": "memory-optimized",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
     });
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 3,
@@ -368,14 +368,14 @@ export class EksStack {
       labels: {
         "node-type": "monitoring",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const pomeriumnodegroup = cluster.addNodegroupCapacity("HSPomeriumNodegroup", {
       nodegroupName: "pomerium",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 2,
@@ -386,14 +386,14 @@ export class EksStack {
         "node-type": "pomerium",
         "function": "SSO",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const systemnodegroup = cluster.addNodegroupCapacity("HSSystemNodegroup", {
       nodegroupName: "system-nodes-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -402,14 +402,14 @@ export class EksStack {
       labels: {
         "node-type": "system-nodes",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const utilsnodegroup = cluster.addNodegroupCapacity("HSUtilsNodegroup", {
       nodegroupName: "utils-compute-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 5,
@@ -418,7 +418,7 @@ export class EksStack {
       labels: {
         "node-type": "elasticsearch",
       },
-      subnets:{ subnetGroupName: "utils-zone"},
+      subnets: { subnetGroupName: "utils-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -431,7 +431,7 @@ export class EksStack {
       labels: {
         "node-type": "zookeeper-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
     });
 
@@ -643,7 +643,7 @@ export class EksStack {
               "node-type": "memory-optimized",
             },
           }
-      },
+        },
       }
     });
 
@@ -690,12 +690,12 @@ export class EksStack {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
       originConfigs: [
         {
-        s3OriginSource: {
-          s3BucketSource: sdkBucket,
-          originAccessIdentity: oai,
-        },
-        behaviors: [{isDefaultBehavior: true}, {pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD}]
-      }
+          s3OriginSource: {
+            s3BucketSource: sdkBucket,
+            originAccessIdentity: oai,
+          },
+          behaviors: [{ isDefaultBehavior: true }, { pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD }]
+        }
       ]
     });
     this.sdkDistribution.node.addDependency(sdkBucket);
@@ -715,7 +715,7 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        "hyperswitch-app":{
+        "hyperswitch-app": {
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
@@ -741,6 +741,21 @@ export class EksStack {
           },
           application: {
             server: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions: [
+                        {
+                          key: "node-type",
+                          operator: "In",
+                          values: ["generic-compute",]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
               secrets_manager: "aws_kms",
               bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
@@ -793,7 +808,62 @@ export class EksStack {
               basilisk: {
                 host: "basilisk-host",
               },
+            },
+            consumer: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions:
+                        [
+                          {
+                            key: "node-type",
+                            operator: "In",
+                            values: ["generic-compute",]
+                          }
+                        ]
+                    }
+                  ]
+                }
+              },
+            },
+            producer: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions:
+                        [
+                          {
+                            key: "node-type",
+                            operator: "In",
+                            values: ["generic-compute",]
+                          }
+                        ]
+                    }
+                  ]
+                }
+              },
+            },
+            controlCenter: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions:
+                        [
+                          {
+                            key: "node-type",
+                            operator: "In",
+                            values: ["control-center",]
+                          }
+                        ]
+                    }
+                  ]
+                }
+              },
             }
+
           },
           postgresql: {
             enabled: false
@@ -819,14 +889,13 @@ export class EksStack {
               },
             }
           },
-
           redis: {
-          enabled: false
+            enabled: false
           },
           externalRedis: {
-          enabled: true,
-          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          port: 6379
+            enabled: true,
+            host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+            port: 6379
           },
           autoscaling: {
             enabled: true,
@@ -968,7 +1037,6 @@ export class EksStack {
       },
     });
 
-
     const grafanaServiceAccountRole = new iam.Role(
       scope,
       "GrafanaServiceAccountRole",
@@ -1037,10 +1105,31 @@ export class EksStack {
       }),
     );
 
+    const loki_s3 = new s3.Bucket(scope, "HyperswitchLokiBucket", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      bucketName: `hs-loki-logs-storage-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+    });
+
+    const loki_ns = cluster.addManifest("loki-ns", {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "loki"
+      }
+    });
+    hypersChart.node.addDependency(loki_ns);
+
+    const lokiSA = cluster.addServiceAccount("loki-sa", {
+      namespace: "loki"
+    });
+    lokiSA.node.addDependency(loki_ns);
+    loki_s3.grantReadWrite(lokiSA);
+    cluster.node.addDependency(loki_s3);
+
     const lokiChart = cluster.addHelmChart("LokiController", {
       chart: "loki-stack",
       repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
+      namespace: "loki",
       release: "loki",
       values: {
         grafana: {
@@ -1057,6 +1146,42 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
             },
           },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
+          ingress: {
+            enabled: true,
+            ingressClassName: "alb",
+            annotations: {
+              "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+              "alb.ingress.kubernetes.io/group.name": "hyperswitch-logs-alb-ingress-group",
+              "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+              "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-logs",
+              "alb.ingress.kubernetes.io/scheme": "internet-facing",
+              "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
+              "alb.ingress.kubernetes.io/target-type": "ip"
+
+            },
+            hosts: ["logs.hyperswitch.local"],
+            extraPaths: [
+              {
+                path: "/",
+                pathType: "Prefix",
+                backend: {
+                  service: {
+                    name: "loki-grafana",
+                    port: {
+                      number: 80
+                    }
+                  }
+                }
+              }
+
+            ]
+
+          }
         },
         loki: {
           enabled: true,
@@ -1064,10 +1189,73 @@ export class EksStack {
             imageRegisrty: `${privateEcrRepository}`,
           },
           serviceAccount: {
-            annotations: {
-              "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
-            },
+            create: false,
+            name: lokiSA.serviceAccountName,
           },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
+          config: {
+            limits_config: {
+              enforce_metric_name: false,
+              max_entries_limit_per_query: 5000,
+              max_query_lookback: "90d",
+              reject_old_samples: true,
+              reject_old_samples_max_age: "168h",
+              retention_period: "100d",
+              retention_stream: [
+                {
+                  period: "7d",
+                  priority: 1,
+                  selector: '{level="debug"}'
+                }
+              ]
+            },
+            schema_config: {
+              configs: [
+                {
+                  chunks: {
+                    period: "24h",
+                    prefix: "loki_chunk_",
+                  },
+                  from: "2024-05-01",
+                  index: {
+                    prefix: "loki_index_",
+                    period: "24h",
+                  },
+                  object_store: "s3",
+                  schema: "v12",
+                  store: "tsdb"
+                },
+              ],
+            },
+            storage_config: {
+              boltdb_shipper: {
+                active_index_directory: "/data/loki/boltdb-shipper-active",
+                cache_location: "/data/loki/boltdb-shipper-cache",
+                cache_ttl: "24h",
+                shared_store: "filesystem"
+              },
+              filesystem: {
+                directory: "/data/loki/chunks"
+              },
+              hedging: {
+                at: "250ms",
+                max_per_second: 20,
+                up_to: 3
+              },
+              tsdb_shipper: {
+                active_index_directory: "/data/tsdb-index",
+                cache_location: "/data/tsdb-cache",
+                shared_store: "s3",
+              },
+              aws: {
+                bucketnames: loki_s3.bucketName,
+                region: `${process.env.CDK_DEFAULT_REGION}`
+              }
+            }
+          }
+
         },
         promtail: {
           enabled: true,
@@ -1087,6 +1275,9 @@ export class EksStack {
                 },
               ],
             }
+          },
+          nodeSelector: {
+            "node-type": "monitoring",
           }
         }
       },
@@ -1256,7 +1447,7 @@ class DockerImagesToEcr {
       environment: {
         buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
       },
-    role: ecrRole,
+      role: ecrRole,
       buildSpec: codebuild.BuildSpec.fromAsset("./dependencies/code_builder/buildspec.yml"),
     });
 
