@@ -741,6 +741,21 @@ export class EksStack {
           },
           application: {
             server: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions: [
+                        {
+                          key: "node-type",
+                          operator: "In",
+                          values: ["generic-compute",]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
               secrets_manager: "aws_kms",
               bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
@@ -794,6 +809,57 @@ export class EksStack {
                 host: "basilisk-host",
               },
             }
+          },
+          consumer: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["generic-compute",]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+          },
+          producer: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["generic-compute",]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+          },
+          controlCenter: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["control-center",]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
           },
           postgresql: {
             enabled: false
@@ -1057,6 +1123,9 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
             },
           },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
         },
         loki: {
           enabled: true,
@@ -1067,6 +1136,9 @@ export class EksStack {
             annotations: {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
             },
+          },
+          nodeSelector: {
+            "node-type": "monitoring",
           },
         },
         promtail: {
@@ -1087,7 +1159,10 @@ export class EksStack {
                 },
               ],
             }
-          }
+          },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
         }
       },
     });
