@@ -23,6 +23,8 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing package
 import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
 import { env } from "process";
+import { WAF } from "./waf";
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -533,6 +535,8 @@ export class EksStack {
       "Allow inbound traffic from an existing load balancer security group",
     );
 
+    const waf = new WAF(scope, "HyperswitchWAF");
+
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
       wait: true,
@@ -995,6 +999,12 @@ export class EksStack {
         vpcSubnets: {
         subnetGroupName: "external-incoming-zone",
         }
+      });
+
+      // Attach the WAF to the external ALB
+      const waf_v2 = new wafv2.CfnWebACLAssociation(scope, 'WebACLAssociation-To-ExtALB', {
+        resourceArn: externalAppLoadBalncer.loadBalancerArn,
+        webAclArn: waf.waf_arn,
       });
 
       let envoyConfig = readFileSync("lib/aws/configurations/envoy/envoy.yaml", "utf8")
