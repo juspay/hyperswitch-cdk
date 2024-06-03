@@ -411,8 +411,8 @@ validate_opensearch_password() {
 
 }
 
+echo "Do you want to push logs to S3 and Open Search? [y/n]: "
 while true; do
-    echo "Do you want to push logs to S3 and Open Search? [y/n]: "
     read -r OPEN_SEARCH_SERVICE
     
     if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then

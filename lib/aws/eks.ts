@@ -1223,7 +1223,8 @@ export class EksStack {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
-          ["system:serviceaccount:loki:loki-grafana"
+          ["system:serviceaccount:loki:loki-grafana",
+          "system:serviceaccount:loki:loki"
           ]
       },
     });
@@ -1302,13 +1303,13 @@ export class EksStack {
       }),
     );
 
-    const loki_ns = cluster.addManifest("loki-ns", {
-      "apiVersion": "v1",
-      "kind": "Namespace",
-      "metadata": {
-        "name": "loki"
-      }
-    });
+    // const loki_ns = cluster.addManifest("loki-ns", {
+    //   "apiVersion": "v1",
+    //   "kind": "Namespace",
+    //   "metadata": {
+    //     "name": "loki"
+    //   }
+    // });
 
     // const lokiSA = cluster.addServiceAccount("loki-sa", {
     //   namespace: "loki"
@@ -1441,7 +1442,6 @@ export class EksStack {
       },
     });
 
-    lokiChart.node.addDependency(loki_ns);
 
     lokiChart.node.addDependency(hypersChart);
     this.lokiChart = lokiChart;
