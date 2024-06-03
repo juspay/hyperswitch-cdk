@@ -383,7 +383,7 @@ function get_internal_jump_ec2_config(config: Config, id: string) {
       ec2.InstanceSize.MEDIUM,
     ),
     machineImage: new ec2.AmazonLinuxImage(),
-    vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+    vpcSubnets: { subnetGroupName: "utils-zone" },
     associatePublicIpAddress: false,
     allowOutboundTraffic: false,
   };
@@ -402,7 +402,7 @@ function get_external_jump_ec2_config(config: Config, id: string) {
       ec2.InstanceSize.MEDIUM,
     ),
     machineImage: new ec2.AmazonLinuxImage(props),
-    vpcSubnets: { subnetGroupName: SubnetNames.PublicSubnet },
+    vpcSubnets: { subnetGroupName: "management-zone" },
     ssmSessionPermissions: true,
     allowOutboundTraffic: false,
   };
