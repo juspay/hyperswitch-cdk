@@ -496,7 +496,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
+    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=ami-0eef9b659b6ea66eb -c squid_ami=ami-09936e5818938b6b9 $LOCKER -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
         # Wait for the EKS Cluster to be deployed
         echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
 

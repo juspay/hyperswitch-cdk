@@ -58,6 +58,9 @@ export class EksStack {
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
       clusterName: "hs-eks-cluster",
+      vpcSubnets: [{
+        subnetGroupName: "eks-control-plane-zone",
+      }],
       clusterLogging:[
         eks.ClusterLoggingTypes.API,
         eks.ClusterLoggingTypes.AUDIT,
@@ -66,7 +69,7 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
-    
+
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y"){
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
@@ -258,8 +261,25 @@ export class EksStack {
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
-    const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
-      nodegroupName: "hs-nodegroup",
+    const eksWorkerCommonSg = new ec2.SecurityGroup(scope, "generic-compute-sg", {
+      vpc: vpc,
+      allowAllOutbound: true,
+      securityGroupName: "eks-worker-common-sg",
+    });
+
+    const genericComputeSg = new ec2.SecurityGroup(scope, "generic-compute-sg", {
+      vpc: vpc,
+      allowAllOutbound: true,
+      securityGroupName: "generic-compute-sg",
+    });
+
+    const genericComputeLT = new ec2.LaunchTemplate(scope, "generic-compute-lt", {
+      securityGroup: genericComputeSg,
+      instanceType: new ec2.InstanceType("t3.medium"),
+    });
+
+    const nodegroup = cluster.addNodegroupCapacity("generic-compute", {
+      nodegroupName: "generic-compute",
       instanceTypes: [
         new ec2.InstanceType("t3.medium"),
         new ec2.InstanceType("t3.medium"),
@@ -1072,7 +1092,7 @@ export class EksStack {
       .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
 
       const uploadConfig = new s3deploy.BucketDeployment(scope, "proxy-config-deployment", {
-        sources: [s3deploy.Source.yamlData("envoy/envoy.yaml", envoyConfig)],
+        sources: [s3deploy.Source.data("envoy.yaml", envoyConfig)],
         destinationBucket: proxyBucket,
       });
 
@@ -1086,6 +1106,8 @@ export class EksStack {
       });
 
       envoyRole.attachInlinePolicy(proxyBucketPolicy);
+
+      proxyBucket.grantReadWrite(envoyRole);
 
       const envoyKeyPair = new ec2.KeyPair(scope, 'envoy-keypair', {
         keyPairName: "hyperswitch-envoy-keypair",
@@ -1125,6 +1147,9 @@ export class EksStack {
           path: "/health",
           port: "80",
           protocol: elbv2.Protocol.HTTP,
+          timeout: cdk.Duration.seconds(5),
+          healthyThresholdCount: 2,
+          interval: cdk.Duration.seconds(30),
         }
       });
     }
@@ -1132,11 +1157,11 @@ export class EksStack {
     const squidAmi = scope.node.tryGetContext("squid_ami");
     if(squidAmi) {
 
-      const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
+      const squidLoadBalncer = new elbv2.NetworkLoadBalancer(scope, "hsOutgoingProxy", {
         vpc: cluster.vpc,
         internetFacing: true,
-        securityGroup: lbSecurityGroup,
         loadBalancerName: "hyperswitch-outgoing-proxy",
+        securityGroups: [lbSecurityGroup],
         vpcSubnets: {
         subnetGroupName: "service-layer-zone",
         }
@@ -1205,16 +1230,17 @@ export class EksStack {
 
       const listener = squidLoadBalncer.addListener('Listener', {
         port: 80,
-        open: true,
       });
 
       listener.addTargets('Target', {
-        port: 80,
+        port: 3128,
+        protocol: elbv2.Protocol.TCP,
         targets: [squidASG],
         healthCheck: {
-          path: "/health",
-          port: "80",
-          protocol: elbv2.Protocol.HTTP,
+          protocol: elbv2.Protocol.TCP,
+          timeout: cdk.Duration.seconds(10),
+          healthyThresholdCount: 5,
+          interval: cdk.Duration.seconds(30),
         }
       });
     }
@@ -1424,17 +1450,17 @@ export class EksStack {
           image: {
             tag: "latest",
           },
-          config: {
-            snippets: {
-              extraRelabelConfigs: [
-                {
-                  action: "keep",
-                  regex: "hyperswitch-.*",
-                  source_labels: ["__meta_kubernetes_pod_label_app"],
-                },
-              ],
-            }
-          },
+          // config: {
+          //   snippets: {
+          //     extraRelabelConfigs: [
+          //       {
+          //         action: "keep",
+          //         regex: "hyperswitch-.*",
+          //         source_labels: ["__meta_kubernetes_pod_label_app"],
+          //       },
+          //     ],
+          //   }
+          // },
           nodeSelector: {
             "node-type": "monitoring",
           },
@@ -1683,7 +1709,7 @@ class DockerImagesToEcr {
       },
       vpc: vpc,
       vpcSubnets: {
-        subnetGroupName: "isolated-subnet-1"
+        subnetGroupName: "utils-zone"
       }
     });
 

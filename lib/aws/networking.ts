@@ -15,21 +15,21 @@ export class Vpc {
     const vpc = new ec2.Vpc(scope, config.name, {
       maxAzs: config.maxAzs,
       subnetConfiguration: [
-        {
-          name: SubnetNames.PublicSubnet,
-          subnetType: ec2.SubnetType.PUBLIC,
-          cidrMask: 24,
-        },
-        {
-          name: SubnetNames.IsolatedSubnet,
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
-        },
-        {
-          name: SubnetNames.DatabaseSubnet,
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
-        },
+        // {
+        //   name: SubnetNames.PublicSubnet,
+        //   subnetType: ec2.SubnetType.PUBLIC,
+        //   cidrMask: 24,
+        // },
+        // {
+        //   name: SubnetNames.IsolatedSubnet,
+        //   subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        //   cidrMask: 24,
+        // },
+        // {
+        //   name: SubnetNames.DatabaseSubnet,
+        //   subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        //   cidrMask: 24,
+        // },
         {
           name: "eks-worker-nodes-one-zone",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
