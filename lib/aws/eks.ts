@@ -7,7 +7,7 @@ import { Construct } from "constructs";
 import { Config } from "./config";
 import { ElasticacheStack } from "./elasticache";
 import { DataBaseConstruct } from "./rds";
-import { LogsBucket } from "./log_bucket";
+import { LogsStack } from "./log_stack";
 import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
@@ -68,8 +68,12 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
-
-    const logsBucket = new LogsBucket(scope, cluster, "app-logs-s3-service-account");
+    
+    let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
+    if (`${push_logs}` == "y"){
+      const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
+    }
+    
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -744,6 +748,21 @@ export class EksStack {
           },
           application: {
             server: {
+              nodeAffinity: {
+                requiredDuringSchedulingIgnoredDuringExecution: {
+                  nodeSelectorTerms: [
+                    {
+                      matchExpressions: [
+                        {
+                          key: "node-type",
+                          operator: "In",
+                          values: ["generic-compute"]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
               secrets_manager: "aws_kms",
               bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
               serviceAccountAnnotations: {
@@ -797,6 +816,57 @@ export class EksStack {
                 host: "basilisk-host",
               },
             }
+          },
+          consumer: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["generic-compute"]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+          },
+          producer: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["generic-compute"]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+          },
+          controlCenter: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions:[
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["control-center"]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
           },
           postgresql: {
             enabled: false
@@ -1163,9 +1233,17 @@ export class EksStack {
       value: {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
-          "system:serviceaccount:hyperswitch:loki-grafana",
+          ["system:serviceaccount:loki:loki-grafana",
+          "system:serviceaccount:loki:loki"
+          ]
       },
     });
+
+    const loki_s3 = new s3.Bucket(scope, "HyperswitchLokiBucket", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      bucketName: `hs-loki-logs-storage-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+    });
+
 
     const grafanaServiceAccountRole = new iam.Role(
       scope,
@@ -1235,10 +1313,25 @@ export class EksStack {
       }),
     );
 
+    // const loki_ns = cluster.addManifest("loki-ns", {
+    //   "apiVersion": "v1",
+    //   "kind": "Namespace",
+    //   "metadata": {
+    //     "name": "loki"
+    //   }
+    // });
+
+    // const lokiSA = cluster.addServiceAccount("loki-sa", {
+    //   namespace: "loki"
+    // });
+    // lokiSA.node.addDependency(loki_ns);
+    loki_s3.grantReadWrite(grafanaServiceAccountRole);
+    cluster.node.addDependency(loki_s3);
+
     const lokiChart = cluster.addHelmChart("LokiController", {
       chart: "loki-stack",
       repository: "https://grafana.github.io/helm-charts/",
-      namespace: "hyperswitch",
+      namespace: "loki",
       release: "loki",
       values: {
         grafana: {
@@ -1255,6 +1348,9 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
             },
           },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
         },
         loki: {
           enabled: true,
@@ -1266,6 +1362,69 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": grafanaServiceAccountRole.roleArn,
             },
           },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
+          config: {
+            limits_config: {
+              enforce_metric_name: false,
+              max_entries_limit_per_query: 5000,
+              max_query_lookback: "90d",
+              reject_old_samples: true,
+              reject_old_samples_max_age: "168h",
+              retention_period: "100d",
+              retention_stream: [
+                {
+                  period: "7d",
+                  priority: 1,
+                  selector: '{level="debug"}'
+                }
+              ]
+            },
+            schema_config: {
+              configs: [
+                {
+                  chunks: {
+                    period: "24h",
+                    prefix: "loki_chunk_",
+                  },
+                  from: "2024-05-01",
+                  index: {
+                    prefix: "loki_index_",
+                    period: "24h",
+                  },
+                  object_store: "s3",
+                  schema: "v12",
+                  store: "tsdb"
+                },
+              ],
+            },
+            storage_config: {
+              boltdb_shipper: {
+                active_index_directory: "/data/loki/boltdb-shipper-active",
+                cache_location: "/data/loki/boltdb-shipper-cache",
+                cache_ttl: "24h",
+                shared_store: "filesystem"
+              },
+              filesystem: {
+                directory: "/data/loki/chunks"
+              },
+              hedging: {
+                at: "250ms",
+                max_per_second: 20,
+                up_to: 3
+              },
+              tsdb_shipper: {
+                active_index_directory: "/data/tsdb-index",
+                cache_location: "/data/tsdb-cache",
+                shared_store: "s3",
+              },
+              aws: {
+                bucketnames: loki_s3.bucketName,
+                region: `${process.env.CDK_DEFAULT_REGION}`
+              }
+            }
+          }
         },
         promtail: {
           enabled: true,
@@ -1285,10 +1444,14 @@ export class EksStack {
                 },
               ],
             }
-          }
+          },
+          nodeSelector: {
+            "node-type": "monitoring",
+          },
         }
       },
     });
+
 
     lokiChart.node.addDependency(hypersChart);
     this.lokiChart = lokiChart;
@@ -1301,7 +1464,7 @@ export class EksStack {
       values: {
         image: {
           repository: `${privateEcrRepository}/bitnami/metrics-server`,
-          tag: "v0.7.0",
+          tag: "0.7.0",
         },
       }
     });
