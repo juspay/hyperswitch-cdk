@@ -539,7 +539,7 @@ export class EksStack {
       "Allow inbound traffic from an existing load balancer security group",
     );
 
-    const waf = new WAF(scope, "HyperswitchWAF");
+
 
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
@@ -638,7 +638,7 @@ export class EksStack {
       chart: "istiod",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
-      release: "istio-discorvery",
+      release: "istio-discovery",
       version: "1.21.2",
       values: {
         defaults: {
@@ -1053,6 +1053,25 @@ export class EksStack {
       ],
     });
 
+    const waf = new WAF(scope, "HyperswitchWAF");
+    const externalAppLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "ExternalAppLoadBalancer", {
+      vpc: cluster.vpc,
+      internetFacing: true,
+      securityGroup: lbSecurityGroup,
+      loadBalancerName: "external-app-lb",
+      vpcSubnets: {
+      subnetGroupName: "external-incoming-zone",
+      }
+    });
+
+    // Attach the WAF to the external ALB
+    const waf_v2 = new wafv2.CfnWebACLAssociation(scope, 'WebACLAssociation-To-ExtALB', {
+      resourceArn: externalAppLoadBalncer.loadBalancerArn,
+      webAclArn: waf.waf_arn,
+    });
+
+    externalAppLoadBalncer.node.addDependency(waf);
+
     const envoyAmi = scope.node.tryGetContext("envoy_ami");
     if(envoyAmi) {
       const internalLoadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
@@ -1060,22 +1079,6 @@ export class EksStack {
       });
 
       internalLoadBalancer.node.addDependency(trafficControl);
-
-      const externalAppLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "ExternalAppLoadBalancer", {
-        vpc: cluster.vpc,
-        internetFacing: true,
-        securityGroup: lbSecurityGroup,
-        loadBalancerName: "external-app-lb",
-        vpcSubnets: {
-        subnetGroupName: "external-incoming-zone",
-        }
-      });
-
-      // Attach the WAF to the external ALB
-      const waf_v2 = new wafv2.CfnWebACLAssociation(scope, 'WebACLAssociation-To-ExtALB', {
-        resourceArn: externalAppLoadBalncer.loadBalancerArn,
-        webAclArn: waf.waf_arn,
-      });
 
       let envoyConfig = readFileSync("lib/aws/configurations/envoy/envoy.yaml", "utf8")
       .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
