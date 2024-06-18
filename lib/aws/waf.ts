@@ -2,6 +2,7 @@ import { Construct } from "constructs";
 import { aws_wafv2 as wafv2 } from "aws-cdk-lib";
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cdk from "aws-cdk-lib";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 export class WAF extends Construct {
   readonly waf_arn: string;
@@ -492,20 +493,106 @@ export class WAF extends Construct {
       ],
     });
 
-    // let waf_logs_bucket = new s3.Bucket(scope, "awsWAFLogsHyperswitch", {
-    //   bucketName: `aws-waf-logs-hyperswitch-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
-    //   blockPublicAccess: new s3.BlockPublicAccess({
-    //     blockPublicAcls: true,
-    //   }),
-    //   publicReadAccess: false,
-    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
-    //   autoDeleteObjects: true,
-    // });
 
-    // const weblogging = new wafv2.CfnLoggingConfiguration(this, "WebACLLogging", {
-    //   resourceArn: webAcl.attrArn,
-    //   logDestinationConfigs:[waf_logs_bucket.bucketArn]
-    // });
+    let server_access_logs_bucket =  new s3.Bucket(scope, "serverLogsHyperswitch", {
+      bucketName: `serveraccesslogs-hyperswitch-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    const serverAccessLogsPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('logging.s3.amazonaws.com')],
+      actions: ['s3:PutObject'],
+      resources: [`${server_access_logs_bucket.bucketArn}/*`],
+      conditions: {
+        StringEquals: {
+          'aws:SourceAccount': process.env.CDK_DEFAULT_ACCOUNT,
+        },
+      },
+    });
+
+    const allowSSLReqOnlyServerAccessPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.DENY,
+      principals: [new iam.AnyPrincipal()],
+      actions: ['s3:*'],
+      resources: [server_access_logs_bucket.bucketArn, `${server_access_logs_bucket.bucketArn}/*`],
+      conditions: {
+        Bool: {
+          'aws:SecureTransport': 'false',
+        },
+      },
+    });
+
+    server_access_logs_bucket.addToResourcePolicy(allowSSLReqOnlyServerAccessPolicy);
+
+    let waf_logs_bucket = new s3.Bucket(scope, "awsWAFLogsHyperswitch", {
+      bucketName: `aws-waf-logs-hyperswitch-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+      }),
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      serverAccessLogsBucket:server_access_logs_bucket,
+      targetObjectKeyFormat: s3.TargetObjectKeyFormat.simplePrefix(),
+    });
+
+    const weblogging = new wafv2.CfnLoggingConfiguration(this, "WebACLLogging", {
+      resourceArn: webAcl.attrArn,
+      logDestinationConfigs: [waf_logs_bucket.bucketArn]
+    });
+
+    const wafLogsPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('delivery.logs.amazonaws.com')],
+      actions: ['s3:PutObject'],
+      resources: [`${waf_logs_bucket.bucketArn}/AWSLogs/*`],
+      conditions: {
+        StringEquals: {
+          's3:x-amz-acl': 'bucket-owner-full-control',
+          'aws:SourceAccount': process.env.CDK_DEFAULT_ACCOUNT,
+        },
+        ArnLike: {
+          'aws:SourceArn': `arn:aws:logs:${process.env.CDK_DEFAULT_REGION}:${process.env.CDK_DEFAULT_ACCOUNT}:*`,
+        },
+      },
+    });
+    
+    const wafLogsAclPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('delivery.logs.amazonaws.com')],
+      actions: ['s3:GetBucketAcl'],
+      resources: [waf_logs_bucket.bucketArn],
+      conditions: {
+        StringEquals: {
+          'aws:SourceAccount': process.env.CDK_DEFAULT_ACCOUNT,
+        },
+        ArnLike: {
+          'aws:SourceArn': `arn:aws:logs:${process.env.CDK_DEFAULT_REGION}:${process.env.CDK_DEFAULT_ACCOUNT}:*`,
+        },
+      },
+    });
+    
+    const denyUnsecuredAccessPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.DENY,
+      principals: [new iam.AnyPrincipal()],
+      actions: ['s3:*'],
+      resources: [waf_logs_bucket.bucketArn, `${waf_logs_bucket.bucketArn}/*`],
+      conditions: {
+        Bool: {
+          'aws:SecureTransport': 'false',
+        },
+      },
+    });
+    
+    waf_logs_bucket.addToResourcePolicy(wafLogsPolicy);
+    waf_logs_bucket.addToResourcePolicy(wafLogsAclPolicy);
+    waf_logs_bucket.addToResourcePolicy(denyUnsecuredAccessPolicy);
 
     this.waf_arn = webAcl.attrArn;
     this.waf_acl_id = webAcl.attrId;
