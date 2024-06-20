@@ -528,6 +528,7 @@ export class WAF extends Construct {
       },
     });
 
+    server_access_logs_bucket.addToResourcePolicy(serverAccessLogsPolicy);
     server_access_logs_bucket.addToResourcePolicy(allowSSLReqOnlyServerAccessPolicy);
 
     let waf_logs_bucket = new s3.Bucket(scope, "awsWAFLogsHyperswitch", {
