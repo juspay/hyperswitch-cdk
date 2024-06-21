@@ -1331,6 +1331,16 @@ export class EksStack {
     loki_s3.grantReadWrite(grafanaServiceAccountRole);
     cluster.node.addDependency(loki_s3);
 
+    const grafana_ingress_lb_sg = new ec2.SecurityGroup(scope, "grafana-ingress-lb", {
+      vpc: cluster.vpc,
+      allowAllOutbound: true,
+      securityGroupName: "grafana-ingress-lb",
+    });
+
+    const ext_incoming_zone_subnet = cluster.vpc.selectSubnets({
+      subnetGroupName: "external-incoming-zone",
+    });
+
     const lokiChart = cluster.addHelmChart("LokiController", {
       chart: "loki-stack",
       repository: "https://grafana.github.io/helm-charts/",
@@ -1342,7 +1352,17 @@ export class EksStack {
             imageRegisrty: `${privateEcrRepository}`,
           },
           image: {
+            repository: `${privateEcrRepository}/grafana/grafana`,
             tag: "latest",
+          },
+          sidecar:{
+            image:{
+              repository: `${privateEcrRepository}/kiwigrid/k8s-sidecar`,
+              tag: "1.19.2",
+              sha: ""
+            },
+            imagePullPolicy: "IfNotPresent",
+            resources: {}
           },
           enabled: true,
           adminPassword: "admin",
@@ -1354,6 +1374,40 @@ export class EksStack {
           nodeSelector: {
             "node-type": "monitoring",
           },
+          ingress: {
+            enabled: true,
+            ingressClassName: "alb",
+            annotations: {
+              "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
+              "alb.ingress.kubernetes.io/group.name": "hyperswitch-logs-alb-ingress-group",
+              "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
+              "alb.ingress.kubernetes.io/healthcheck-path": "/api/health",
+              "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
+              "alb.ingress.kubernetes.io/load-balancer-attributes": "routing.http.drop_invalid_header_fields.enabled=true",
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-logs",
+              "alb.ingress.kubernetes.io/scheme": "internet-facing",
+              "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
+              "alb.ingress.kubernetes.io/security-groups": grafana_ingress_lb_sg.securityGroupId,
+              "alb.ingress.kubernetes.io/subnets": ext_incoming_zone_subnet.subnetIds.join(","),
+              "alb.ingress.kubernetes.io/target-type": "ip"
+            },
+            extraPaths: [
+              {
+                path: "/",
+                pathType: "Prefix",
+                backend: {
+                  service: {
+                    name: "loki-grafana",
+                    port: {
+                      number: 80
+                    }
+                  }
+                }
+              }
+
+            ]
+
+          }
         },
         loki: {
           enabled: true,
@@ -1427,15 +1481,21 @@ export class EksStack {
                 region: `${process.env.CDK_DEFAULT_REGION}`
               }
             }
-          }
+          },
+          image: {
+            repository: `${privateEcrRepository}/grafana/loki`,
+            tag: "latest",
+          },
         },
         promtail: {
           enabled: true,
           global: {
             imageRegisrty: `${privateEcrRepository}`,
           },
-          image: {
-            tag: "latest",
+          image:{
+            registry: `${privateEcrRepository}`,
+            repository: "grafana/promtail",
+            tag: "latest"
           },
           config: {
             snippets: {
