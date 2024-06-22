@@ -17,12 +17,16 @@ display_error() {
     echo "${bold}${red}$1${reset}"
 }
 
-# Checking for AWS credentials
-if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
+if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
     display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
     exit 1
 fi
 
+if [[ -z "$AWS_SESSION_TOKEN" ]]; then
+    echo "${bold}${yellow}Missing AWS session token. If you are using 2FA, please export the temporary session token as the AWS_SESSION_TOKEN environment variable."
+    echo "Proceeding anyway...${reset}"
+    sleep 2
+fi
 function box_out() {
     local s=("$@") b w padding terminalWidth
     for l in "${s[@]}"; do
