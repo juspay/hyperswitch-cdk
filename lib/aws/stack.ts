@@ -236,20 +236,20 @@ export class AWSStack extends cdk.Stack {
 
       const sgCfg = { "name": "vpce-sg", "description": "stack vpce sg" };
 
-      const sg = new ec2.SecurityGroup(this, sgCfg.name, {
+      const vpce_sg = new ec2.SecurityGroup(this, sgCfg.name, {
         vpc: vpc.vpc,
         description: sgCfg.description,
         allowAllOutbound: false,
 
       });
 
-      sg.addIngressRule(ec2.Peer.ipv4("10.63.0.0/16"), ec2.Port.tcp(443));
-      external_jump.sg.addEgressRule(sg, ec2.Port.tcp(443));
+      vpce_sg.addIngressRule(ec2.Peer.ipv4("10.63.0.0/16"), ec2.Port.tcp(443));
+      external_jump.sg.addEgressRule(vpce_sg, ec2.Port.tcp(443));
 
       const vpc_endpoint1 = new ec2.InterfaceVpcEndpoint(this, "SSMMessagesEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -257,7 +257,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint2 = new ec2.InterfaceVpcEndpoint(this, "IncomingWebServerSSMEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SSM,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -265,7 +265,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint3 = new ec2.InterfaceVpcEndpoint(this, "EC2MessagesEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -274,7 +274,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint4 = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "locker-database-zone",
         },
@@ -288,7 +288,7 @@ export class AWSStack extends cdk.Stack {
       const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.KMS,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "database-zone",
         }
@@ -301,6 +301,135 @@ export class AWSStack extends cdk.Stack {
           subnetGroupName: "database-zone"
         },
       });
+
+      const ecrDkrEndpoint = new ec2.InterfaceVpcEndpoint(this, "ECRDkrEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+        securityGroups: [vpce_sg],
+        //needs hs-eks cluster sg (control plane sg)
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const logsEndpoint = new ec2.InterfaceVpcEndpoint(this, "LogsEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS, //check once
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const monitoringEndpoint = new ec2.InterfaceVpcEndpoint(this, "MonitoringEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_MONITORING, //check once
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const elasticloadbalancingEndpoint = new ec2.InterfaceVpcEndpoint(this, "ElasticLoadBalancingEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.ELASTIC_LOAD_BALANCING,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const ec2Endpoint = new ec2.InterfaceVpcEndpoint(this, "EC2Endpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.EC2,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const ecrApiEndpoint = new ec2.InterfaceVpcEndpoint(this, "ECRApiEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.ECR,
+        securityGroups: [vpce_sg],
+        //needs hs-eks cluster sg (control plane sg)
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const autoscalingEndpoint = new ec2.InterfaceVpcEndpoint(this, "AutoScalingEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.AUTOSCALING,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const stsEndpoint = new ec2.InterfaceVpcEndpoint(this, "STSEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.STS,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const snsEndpoint = new ec2.InterfaceVpcEndpoint(this, "SNSEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.SNS,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const xrayEndpoint = new ec2.InterfaceVpcEndpoint(this, "XRayEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.XRAY,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const lamdaEndpoint = new ec2.InterfaceVpcEndpoint(this, "LambdaEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.LAMBDA,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const elasticacheEndpoint = new ec2.InterfaceVpcEndpoint(this, "ElasticacheEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.ELASTICACHE,
+        securityGroups: [vpce_sg],
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      const eksEndpoint = new ec2.InterfaceVpcEndpoint(this, "EksEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.EKS,
+        securityGroups: [vpce_sg],
+        //needs hs-eks cluster sg (control plane sg)
+        subnets: {
+          subnetGroupName: "management-zone"
+        },
+      });
+
+      // const executeApiEndpoint = new ec2.InterfaceVpcEndpoint(this, "ExecuteApiEndpoint", {
+      //   vpc: vpc.vpc,
+      //   service: ec2.InterfaceVpcEndpointAwsService.EXECUTE_API,
+      //   securityGroups: [vpce_sg],
+      //   subnets: {
+      //     subnetGroupName: "management-zone"
+      //   },
+      // });
 
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
