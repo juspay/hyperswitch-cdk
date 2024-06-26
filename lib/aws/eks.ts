@@ -1379,12 +1379,12 @@ export class EksStack {
             ingressClassName: "alb",
             annotations: {
               "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
-              "alb.ingress.kubernetes.io/group.name": "hyperswitch-logs-alb-ingress-group",
+              "alb.ingress.kubernetes.io/group.name": "hs-logs-alb-ingress-group",
               "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
               "alb.ingress.kubernetes.io/healthcheck-path": "/api/health",
               "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
               "alb.ingress.kubernetes.io/load-balancer-attributes": "routing.http.drop_invalid_header_fields.enabled=true",
-              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-logs",
+              "alb.ingress.kubernetes.io/load-balancer-name": "hyperswitch-grafana-logs",
               "alb.ingress.kubernetes.io/scheme": "internet-facing",
               "alb.ingress.kubernetes.io/tags": "stack=hyperswitch-lb",
               "alb.ingress.kubernetes.io/security-groups": grafana_ingress_lb_sg.securityGroupId,
@@ -1405,7 +1405,8 @@ export class EksStack {
                 }
               }
 
-            ]
+            ],
+            hosts: []
 
           }
         },
