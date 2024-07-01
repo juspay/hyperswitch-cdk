@@ -6,12 +6,14 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as eks from "aws-cdk-lib/aws-eks";
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import { Domain, EngineVersion, IpAddressType } from 'aws-cdk-lib/aws-opensearchservice';
+import { EksStack } from "./eks";
 
 
 export class LogsStack {
     bucket: s3.Bucket;
     domain: Domain;
-    constructor(scope: Construct, cluster: eks.Cluster, serviceAccountName?: string) {
+    els_sg: ec2.SecurityGroup;
+    constructor(scope: Construct, cluster: eks.Cluster, eks: EksStack, serviceAccountName?: string) {
         this.bucket = new s3.Bucket(scope, "LogsBucket", {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             bucketName: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -67,7 +69,7 @@ export class LogsStack {
                     type: "ClusterIP",
                 },
                 image: {
-                    repository: "fluent/fluentd-kubernetes-daemonset",
+                    repository: `${eks.privateEcrRepository}/fluent/fluentd-kubernetes-daemonset`,
                     pullPolicy: "IfNotPresent",
                     tag: "v1.16-debian-s3-1"
                 },
@@ -134,42 +136,51 @@ export class LogsStack {
         });
 
         fluentdChart.node.addDependency(sa);
+        let open_search_master_user_name = scope.node.tryGetContext('open_search_master_user_name') || "admin";
+        let open_search_master_password = scope.node.tryGetContext('open_search_master_password') || "Password@123";
+
+        const opensearch_sg = new ec2.SecurityGroup(scope, 'opensearch-sg', {
+            vpc: cluster.vpc,
+            allowAllOutbound: true,
+            securityGroupName: "els-sg",
+        });
 
         this.domain = new opensearch.Domain(scope, 'OpenSearch', {
+            domainName: "hyperswitch-logs-oopensearch",
             version: opensearch.EngineVersion.OPENSEARCH_2_11,
             enableVersionUpgrade: false,
             ebs: {
-              volumeSize: 50,
-              volumeType: ec2.EbsDeviceVolumeType.GP3,
-              throughput: 125,
-              iops: 3000,
+                volumeSize: 50,
+                volumeType: ec2.EbsDeviceVolumeType.GP3,
+                throughput: 125,
+                iops: 3000,
             },
             fineGrainedAccessControl: {
-              masterUserName: "admin",
-              masterUserPassword: cdk.SecretValue.unsafePlainText("Pluentd@123"),
+                masterUserName: open_search_master_user_name,
+                masterUserPassword: cdk.SecretValue.unsafePlainText(`${open_search_master_password}`),
             },
             nodeToNodeEncryption: true,
             encryptionAtRest: {
-              enabled: true,
+                enabled: true,
             },
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             enforceHttps: true,
-            zoneAwareness:{
-              enabled: true,
-              availabilityZoneCount: 2
+            zoneAwareness: {
+                enabled: true,
+                availabilityZoneCount: 2
             },
             capacity: {
-              dataNodes: 2,
-              dataNodeInstanceType: "r6g.large.search",
-              multiAzWithStandbyEnabled: false
+                dataNodes: 2,
+                dataNodeInstanceType: "r6g.large.search",
+                multiAzWithStandbyEnabled: false
             }
         });
         // this.domain.grantReadWrite(new iam.AnyPrincipal());
         const policy = new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          principals: [new iam.AnyPrincipal()],
-          actions: ["es:*"],
-          resources: [`${this.domain.domainArn}/*`],
+            effect: iam.Effect.ALLOW,
+            principals: [new iam.AnyPrincipal()],
+            actions: ["es:*"],
+            resources: [`${this.domain.domainArn}/*`],
         });
         this.domain.addAccessPolicies(policy);
 
@@ -182,8 +193,6 @@ export class LogsStack {
         });
 
         kAnalyticsNS.node.addDependency(this.domain);
-        let open_search_master_user_name = scope.node.tryGetContext('open_search_master_user_name') || "admin";
-        let open_search_master_password = scope.node.tryGetContext('open_search_master_password') || "Password@123";
 
         const openSearchFluentdChart = cluster.addHelmChart("fluentd-opensearch", {
             chart: "fluentd",
@@ -221,7 +230,7 @@ export class LogsStack {
                     type: "ClusterIP",
                 },
                 image: {
-                    repository: "fluent/fluentd-kubernetes-daemonset",
+                    repository: `${eks.privateEcrRepository}/fluent/fluentd-kubernetes-daemonset`,
                     pullPolicy: "IfNotPresent",
                     tag: "v1.16-debian-opensearch-2"
                 },
@@ -249,6 +258,10 @@ export class LogsStack {
                     {
                         name: "FLUENT_OPENSEARCH_SCHEME",
                         value: "https",
+                    },
+                    {
+                        name: "HTTP_PROXY",
+                        value: `http://${eks.outbound_proxy}:80`
                     }
 
                 ],
@@ -316,7 +329,7 @@ export class LogsStack {
                                 expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
                             </parse>
                         </source>`,
-                    
+
                     "02_filters.conf": `
                         # Parse JSON Logs
                         <filter hyperswitch.**>
@@ -342,7 +355,7 @@ export class LogsStack {
                         <filter hyperswitch.**>
                             @type kubernetes_metadata
                         </filter>`,
-                    
+
                     "03_dispatch.conf": "",
 
                     "04_outputs.conf": `
@@ -387,7 +400,7 @@ export class LogsStack {
                             </store>
                         </match>`
                 },
-                ingress:{
+                ingress: {
                     enabled: false,
                 }
             }

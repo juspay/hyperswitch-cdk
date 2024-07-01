@@ -33,6 +33,9 @@ export class EksStack {
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
   sdkDistribution: cloudfront.CloudFrontWebDistribution;
+  ext_app_lb_sg: ec2.SecurityGroup;
+  outbound_proxy: string;
+  privateEcrRepository: string;
   constructor(
     scope: Construct,
     config: Config,
@@ -45,6 +48,7 @@ export class EksStack {
 
     const ecrTransfer = new DockerImagesToEcr(scope, vpc);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
+    this.privateEcrRepository = privateEcrRepository;
     let vpn_ips: string[] = (scope.node.tryGetContext("vpn_ips") || "0.0.0.0").split(",");
     vpn_ips = vpn_ips.map((ip: string) => {
       if (ip === "0.0.0.0") {
@@ -68,10 +72,19 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
+
+    const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
+      vpc: cluster.vpc,
+      allowAllOutbound: false,
+      securityGroupName: "hs-loadbalancer-sg",
+    });
+
+    this.sg = cluster.clusterSecurityGroup;
+    this.ext_app_lb_sg = lbSecurityGroup;
     
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y"){
-      const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
+      const logsStack = new LogsStack(scope, cluster, this, "app-logs-s3-service-account");
     }
     
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
@@ -516,13 +529,13 @@ export class EksStack {
     // );
 
     // Create a security group for the load balancer
-    const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
-      vpc: cluster.vpc,
-      allowAllOutbound: false,
-      securityGroupName: "hs-loadbalancer-sg",
-    });
+    // const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
+    //   vpc: cluster.vpc,
+    //   allowAllOutbound: false,
+    //   securityGroupName: "hs-loadbalancer-sg",
+    // });
 
-    this.sg = cluster.clusterSecurityGroup;
+    // this.sg = cluster.clusterSecurityGroup;
 
     // Add inbound rule for all traffic
     lbSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic());
@@ -1154,6 +1167,8 @@ export class EksStack {
         subnetGroupName: "service-layer-zone",
         }
       });
+
+      this.outbound_proxy= squidLoadBalncer.loadBalancerDnsName
 
       const logsBucket = new s3.Bucket(scope, "hyperswitch-outgoing-proxy-logs-bucket", {
         bucketName: `outgoing-proxy-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
