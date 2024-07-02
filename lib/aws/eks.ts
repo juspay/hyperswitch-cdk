@@ -1165,9 +1165,24 @@ export class EksStack {
         autoDeleteObjects: true,
       });
 
-      const uploadConfig = new s3deploy.BucketDeployment(scope, "outgoing-proxy-config-deployment", {
-        sources: [s3deploy.Source.asset("lib/aws/configurations/squid")],
-        destinationBucket: proxyBucket,
+      // const uploadConfig = new s3deploy.BucketDeployment(scope, "outgoing-proxy-config-deployment", {
+      //   sources: [s3deploy.Source.asset("lib/aws/configurations/squid")],
+      //   destinationBucket: proxyBucket,
+      // });
+      const configFiles = [
+        "blacklist.txt",
+        "squid_vector.toml",
+        "squid.conf",
+        "wazuh.conf",
+        "whitelist_old.txt",
+        "whitelist.txt"
+      ];
+      
+      const deployments = configFiles.map((file, index) => {
+        return new s3deploy.BucketDeployment(scope, `outgoing-proxy-config-deployment-${index}`, {
+          sources: [s3deploy.Source.asset(`lib/aws/configurations/squid/${file}`)],
+          destinationBucket: proxyBucket,
+        });
       });
 
       let squid_userdata = readFileSync("lib/aws/userdata/squid_userdata.sh", "utf8")
@@ -1214,7 +1229,8 @@ export class EksStack {
         vpcSubnets: {subnetGroupName: "outgoing-proxy-zone"}
       });
 
-      squidASG.node.addDependency(uploadConfig);
+      // squidASG.node.addDependency(uploadConfig);
+      squidASG.node.addDependency(deployments);
 
       const listener = squidLoadBalncer.addListener('Listener', {
         port: 80,
