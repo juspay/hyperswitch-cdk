@@ -68,7 +68,12 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
-    
+
+    const clusterEndpoint = cluster.clusterEndpoint;
+    const clusterName = cluster.clusterName;
+    const clusterCertificateAuthorityData = cluster.clusterCertificateAuthorityData;
+    const userdata = readFileSync("./dependencues/lt-user-data.txt").toString().replaceAll("{{clusterName}}", clusterName).replaceAll("{{clusterEndpoint}}", clusterEndpoint).replaceAll("{{clusterCA}}", clusterCertificateAuthorityData);
+
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y"){
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
@@ -99,7 +104,7 @@ export class EksStack {
     const nodegroupRole = new iam.Role(scope, "HSNodegroupRole", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
-
+    
     // create a policy with complete access to cloudwatch metrics and logs
     const cloudwatchPolicy = new iam.Policy(scope, "HSCloudWatchPolicy", {
       statements: [
@@ -259,6 +264,31 @@ export class EksStack {
       });
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
+    const lt = new ec2.LaunchTemplate(scope, "blablatemplate", {
+      launchTemplateName: "blabla-template",
+      machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: "ami-0db112980303feed0"}),
+      userData: ec2.UserData.custom(userdata),
+      securityGroup: this.sg,
+    });
+
+    const ng = cluster.addNodegroupCapacity("BlBla", {
+      nodegroupName: "blabla",
+      instanceTypes: [
+        new ec2.InstanceType("t3.medium"), 
+      ],
+      minSize: 1,
+      desiredSize: 1,
+      maxSize: 1,
+      labels: {
+        "node-type": "generic-compute",
+      },
+      launchTemplateSpec: {
+        id: lt.launchTemplateId? lt.launchTemplateId: "",
+        version: lt.latestVersionNumber,
+      },
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone"},
+      nodeRole: nodegroupRole,
+    });
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",

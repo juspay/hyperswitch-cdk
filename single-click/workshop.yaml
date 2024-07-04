@@ -28,7 +28,6 @@ Resources:
           - 1
           - Fn::GetAZs: !Ref AWS::Region
       MapPublicIpOnLaunch: true
-      VpcId: !Ref HyperswitchCDKBootstrapVPC
   SSMVpcEndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -81,13 +80,16 @@ Resources:
       PrivateDnsEnabled: True
   HyperswitchCDKBootstrapEC2:
     Type: AWS::EC2::Instance
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT1H
     Properties:
       ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
       InstanceType: 't3.medium'
       IamInstanceProfile: !Ref InstanceProfile
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref PrivateSubnet
+          GroupSet:
+            - !Ref HyperswitchCDKBootstrapEC2SecurityGroup
+          DeleteOnTermination: true
       Tags:
         - Key: Name
           Value: 'Hyperswitch Launcher'
@@ -118,7 +120,7 @@ Resources:
 
           mv env_vars.sh /etc/profile.d/env_vars.sh
           # sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
-          /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
+          # /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --region ${AWS::Region} --resource HyperswitchCDKBootstrapEC2
           # delete the stack
           # aws cloudformation delete-stack --stack-name ${AWS::StackName} --region ${AWS::Region}
   AwsIamRole:
@@ -219,4 +221,3 @@ Parameters:
     Default: "testadmin"
     AllowedPattern: "^[a-zA-Z0-9 ]{8,}$"
     Description: "(Optional) If you need Card Vault, Please enter the database password to be used for locker: : (Min 8 Character Needed [A-Z][a-z][0-9])"
-
