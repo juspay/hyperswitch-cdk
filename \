@@ -296,14 +296,14 @@ export class EksStack {
         "node-type": "generic-compute",
       },
       launchTemplateSpec: {
-        id: lt.launchTemplateId ? lt.launchTemplateId : "lt-0",
-        version: lt.latestVersionNumber,
+        id: dumlt.ref,
+        version: dumlt.attrLatestVersionNumber,
       },
       subnets: { subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
     });
     
-    ng.node.addDependency(lt);
+    ng.node.addDependency(dumlt);
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
