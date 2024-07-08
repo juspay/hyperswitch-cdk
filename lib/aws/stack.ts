@@ -176,8 +176,8 @@ export class AWSStack extends cdk.Stack {
       internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
       external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
 
-      // addClient(eks.envoy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  envoy-sg to communicate with external_jump-sg");
-      // addClient(eks.outbound_proxy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  outbound-proxy-sg to communicate with external-jumpbox-sg");
+      if(scope.node.tryGetContext("envoy_ami")) addClient(eks.envoy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  envoy-sg to communicate with external_jump-sg");
+      if(scope.node.tryGetContext("squid_ami")) addClient(eks.outbound_proxy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  outbound-proxy-sg to communicate with external-jumpbox-sg");
 
       const kms_key = new kms.Key(this, "hyperswitch-ssm-kms-key", {
         removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -316,12 +316,12 @@ export class AWSStack extends cdk.Stack {
       });
 
       addClient(eks_worker_common_sg, internal_jump.sg, ec2.Port.tcp(22), "Allows  eks-worker-common-sg to communicate with internal-jumpbox-sg");
-      // addClient(eks_worker_common_sg, eks.monitoring_sg, ec2.Port.allTcp(), "for monitoring");
+      addClient(eks_worker_common_sg, eks.monitoring_sg, ec2.Port.allTcp(), "for monitoring");
       addClient(eks_worker_common_sg, eks_worker_common_sg, ec2.Port.allTraffic(), "for monitoring");
 
-      // addClient(eks.outbound_proxy_sg, eks_worker_common_sg, ec2.Port.tcp(9273), "Allows ingress from EKS for metrics"); 
+      if(scope.node.tryGetContext("squid_ami")) addClient(eks.outbound_proxy_sg, eks_worker_common_sg, ec2.Port.tcp(9273), "Allows ingress from EKS for metrics"); 
 
-      // addClient(eks.envoy_sg, eks_worker_common_sg,ec2.Port.tcp(9273),"Allow envoy to communicate with eks-worker-common for scraping metrics");
+      if(scope.node.tryGetContext("envoy_ami")) addClient(eks.envoy_sg, eks_worker_common_sg,ec2.Port.tcp(9273),"Allow envoy to communicate with eks-worker-common for scraping metrics");
 
 
       if (locker)
