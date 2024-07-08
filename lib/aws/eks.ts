@@ -68,6 +68,10 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
+
+    const clusterEndpoint = cluster.clusterEndpoint;
+    const clusterName = cluster.clusterName;
+    const clusterCertificateAuthorityData = cluster.clusterCertificateAuthorityData;
     
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y"){
@@ -260,20 +264,45 @@ export class EksStack {
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
-    const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
-      nodegroupName: "hs-nodegroup",
+    const machine_image = new eks.EksOptimizedImage({
+      kubernetesVersion: "1.21",
+      nodeType: eks.NodeType.STANDARD,
+      cpuArch: eks.CpuArch.X86_64,
+    });
+
+    const generic_compute_lt = new ec2.LaunchTemplate(scope, "generic-compute-launch-template", {
+      launchTemplateName: "generic-compute-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "generic-compute-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
+    });
+
+    const generic_compute_ng = cluster.addNodegroupCapacity("HSNodegroup", {
+      nodegroupName: "generic-compute-od",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
-      maxSize: 3,
       desiredSize: 2,
+      maxSize: 3,
       labels: {
         "node-type": "generic-compute",
       },
-      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
+      launchTemplateSpec: {
+        id: generic_compute_lt.launchTemplateId ? generic_compute_lt.launchTemplateId : "lt-0",
+        version: generic_compute_lt.latestVersionNumber,
+      },
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
+
+    generic_compute_ng.node.addDependency(generic_compute_lt);
+
+    const autopilot_lt = new ec2.LaunchTemplate(scope, "autopilot-launch-template", {
+      launchTemplateName: "autopilot-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "autopilot-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const autopilotnodegroup = cluster.addNodegroupCapacity("HSAutopilotNodegroup", {
@@ -288,35 +317,22 @@ export class EksStack {
         "service": "autopilot",
         "node-type": "autopilot-od",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRole,
-
-    });
-
-    const ckhzookeepernodegroup = cluster.addNodegroupCapacity("HSCkhZookeeperNodegroup", {
-      nodegroupName: "ckh-zookeeper-compute",
-      minSize: 3,
-      maxSize: 8,
-      desiredSize: 3,
-      labels: {
-        "node-type": "ckh-zookeeper-compute",
+      launchTemplateSpec: {
+        id: autopilot_lt.launchTemplateId ? autopilot_lt.launchTemplateId : "lt-0",
+        version: autopilot_lt.latestVersionNumber,
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
 
     });
 
-    const ckhcomputenodegroup = cluster.addNodegroupCapacity("HSCkhcomputeNodegroup", {
-      nodegroupName: "clickhouse-compute-OD",
-      minSize: 2,
-      maxSize: 3,
-      desiredSize: 2,
-      labels: {
-        "node-type": "clickhouse-compute",
-      },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRole,
+    autopilotnodegroup.node.addDependency(autopilot_lt);
 
+    const control_center_lt = new ec2.LaunchTemplate(scope, "control-center-launch-template", {
+      launchTemplateName: "control-center-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "control-center", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const controlcenternodegroup = cluster.addNodegroupCapacity("HSControlcentreNodegroup", {
@@ -330,22 +346,21 @@ export class EksStack {
       labels: {
         "node-type": "control-center",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRole,
-
-    });
-
-    const kafkacomputenodegroup = cluster.addNodegroupCapacity("HSKafkacomputeNodegroup", {
-      nodegroupName: "kafka-compute-OD",
-      minSize: 3,
-      maxSize: 6,
-      desiredSize: 3,
-      labels: {
-        "node-type": "kafka-compute",
+      launchTemplateSpec: {
+        id: control_center_lt.launchTemplateId ? control_center_lt.launchTemplateId : "lt-0",
+        version: control_center_lt.latestVersionNumber,
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
 
+    controlcenternodegroup.node.addDependency(control_center_lt);
+
+    const memory_optimize_lt = new ec2.LaunchTemplate(scope, "memory_optimize-launch-template", {
+      launchTemplateName: "memory-optimize-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "memory-optimized-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
@@ -359,8 +374,20 @@ export class EksStack {
       labels: {
         "node-type": "memory-optimized",
       },
+      launchTemplateSpec: {
+        id: memory_optimize_lt.launchTemplateId ? memory_optimize_lt.launchTemplateId : "lt-0",
+        version: memory_optimize_lt.latestVersionNumber,
+      },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
+    memoryoptimizenodegroup.node.addDependency(memory_optimize_lt);
+
+    const monitoring_lt = new ec2.LaunchTemplate(scope, "monitoring-launch-template", {
+      launchTemplateName: "monitoring-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "monitoring-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
@@ -373,27 +400,20 @@ export class EksStack {
       labels: {
         "node-type": "monitoring",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
-      nodeRole: nodegroupRole,
-
-    });
-
-    const pomeriumnodegroup = cluster.addNodegroupCapacity("HSPomeriumNodegroup", {
-      nodegroupName: "pomerium",
-      instanceTypes:[
-        new ec2.InstanceType("t3.medium"),
-      ],
-      minSize: 2,
-      maxSize: 2,
-      desiredSize: 2,
-      labels: {
-        "service": "pomerium",
-        "node-type": "pomerium",
-        "function": "SSO",
+      launchTemplateSpec: {
+        id: monitoring_lt.launchTemplateId ? monitoring_lt.launchTemplateId : "lt-0",
+        version: monitoring_lt.latestVersionNumber,
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
+    monitoringnodegroup.node.addDependency(monitoring_lt);
 
+    const system_nodes_lt = new ec2.LaunchTemplate(scope, "system_nodes-launch-template", {
+      launchTemplateName: "system-nodes-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "system-nodes-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const systemnodegroup = cluster.addNodegroupCapacity("HSSystemNodegroup", {
@@ -407,9 +427,20 @@ export class EksStack {
       labels: {
         "node-type": "system-nodes",
       },
+      launchTemplateSpec:{
+        id: system_nodes_lt.launchTemplateId ? system_nodes_lt.launchTemplateId : "lt-0",
+        version: system_nodes_lt.latestVersionNumber,
+      },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
+    systemnodegroup.node.addDependency(system_nodes_lt);
 
+    const utils_lt = new ec2.LaunchTemplate(scope, "utils-launch-template", {
+      launchTemplateName: "utils-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "utils-compute-od", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const utilsnodegroup = cluster.addNodegroupCapacity("HSUtilsNodegroup", {
@@ -423,9 +454,20 @@ export class EksStack {
       labels: {
         "node-type": "elasticsearch",
       },
+      launchTemplateSpec: {
+        id: utils_lt.launchTemplateId ? utils_lt.launchTemplateId : "lt-0",
+        version: utils_lt.latestVersionNumber,
+      },
       subnets:{ subnetGroupName: "utils-zone"},
       nodeRole: nodegroupRole,
+    });
+    utilsnodegroup.node.addDependency(utils_lt);
 
+    const zookeeper_node_lt = new ec2.LaunchTemplate(scope, "zookeeper-node-launch-template", {
+      launchTemplateName: "zookeeper-node-lt",
+      machineImage: machine_image,
+      userData: ec2.UserData.custom(get_userdata(clusterName, clusterEndpoint, clusterCertificateAuthorityData, "zookeeper-compute", `${{machine_image}}`)),
+      securityGroup: this.sg,
     });
 
     const zookeepernodegroup = cluster.addNodegroupCapacity("HSZkcomputeNodegroup", {
@@ -436,9 +478,14 @@ export class EksStack {
       labels: {
         "node-type": "zookeeper-compute",
       },
+      launchTemplateSpec: {
+        id: zookeeper_node_lt.launchTemplateId ? zookeeper_node_lt.launchTemplateId : "lt-0",
+        version: zookeeper_node_lt.latestVersionNumber,
+      },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
     });
+    zookeepernodegroup.node.addDependency(zookeeper_node_lt);
 
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
@@ -1704,4 +1751,9 @@ class DockerImagesToEcr {
       serviceToken: triggerCodeBuild.functionArn,
     });
   }
+}
+
+function get_userdata(clusterName: string, clusterEndpoint: string, clusterCertificateAuthorityData: string, nodeGroupName: string, machineImage: string) {
+  return readFileSync("lib/aws/configurations/lt-user-data.txt").toString().replaceAll("{{clusterName}}", clusterName).replaceAll("{{clusterEndpoint}}", clusterEndpoint).replaceAll("{{clusterCA}}", clusterCertificateAuthorityData).replaceAll("{{machineImage}}", machineImage).replaceAll("{{nodegroupname}}", nodeGroupName);
+
 }
