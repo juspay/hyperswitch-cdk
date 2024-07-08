@@ -1145,15 +1145,24 @@ export class EksStack {
     const squidAmi = scope.node.tryGetContext("squid_ami");
     if(squidAmi) {
 
-      const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
+      const squid_lb_sg = new ec2.SecurityGroup(scope, 'squid-lb-sg', {
+        vpc: cluster.vpc,
+        allowAllOutbound: false,
+        securityGroupName: "squid-lb-sg",
+        description:"Squid Load Balancer Security Group",
+      });
+
+      const squidLoadBalncer = new elbv2.NetworkLoadBalancer(scope, "hsOutgoingProxy", {
         vpc: cluster.vpc,
         internetFacing: true,
-        securityGroup: lbSecurityGroup,
         loadBalancerName: "hyperswitch-outgoing-proxy",
         vpcSubnets: {
         subnetGroupName: "service-layer-zone",
         }
       });
+
+      squidLoadBalncer.node.addDependency(squid_lb_sg);
+      squidLoadBalncer.addSecurityGroup(squid_lb_sg);
 
       const logsBucket = new s3.Bucket(scope, "hyperswitch-outgoing-proxy-logs-bucket", {
         bucketName: `outgoing-proxy-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -1234,7 +1243,6 @@ export class EksStack {
 
       const listener = squidLoadBalncer.addListener('Listener', {
         port: 80,
-        open: true,
       });
 
       listener.addTargets('Target', {
