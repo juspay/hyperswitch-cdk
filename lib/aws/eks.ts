@@ -72,7 +72,7 @@ export class EksStack {
     const clusterEndpoint = cluster.clusterEndpoint;
     const clusterName = cluster.clusterName;
     const clusterCertificateAuthorityData = cluster.clusterCertificateAuthorityData;
-    const userdata = readFileSync("lib/aws/configurations/lt-user-data.txt").toString().replaceAll("{{clusterName}}", clusterName).replaceAll("{{clusterEndpoint}}", clusterEndpoint).replaceAll("{{clusterCA}}", clusterCertificateAuthorityData);
+    const userdata = readFileSync("lib/aws/configurations/lt-user-data.txt").toString().replaceAll("{{clusterName}}", clusterName).replaceAll("{{clusterEndpoint}}", clusterEndpoint).replaceAll("{{clusterCA}}", clusterCertificateAuthorityData).replaceAll("{{nodegroupname}}", "blabla");
 
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y"){
