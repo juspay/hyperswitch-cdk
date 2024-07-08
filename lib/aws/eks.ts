@@ -25,14 +25,20 @@ import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
 import { env } from "process";
 import { WAF } from "./waf";
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
-// import { LockerSetup } from "./card-vault/components";
+import { addClient } from "./stack";
 
 export class EksStack {
-  sg: ec2.ISecurityGroup;
+  cluster_sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
   sdkDistribution: cloudfront.CloudFrontWebDistribution;
+  envoy_sg: ec2.ISecurityGroup;
+  outbound_proxy_sg: ec2.ISecurityGroup;
+  monitoring_sg: ec2.ISecurityGroup;
+  istio_lb_sg: ec2.ISecurityGroup;
+  memory_optomized_sg: ec2.ISecurityGroup;
+  generic_compute_sg: ec2.ISecurityGroup;
   constructor(
     scope: Construct,
     config: Config,
@@ -260,6 +266,15 @@ export class EksStack {
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
+    const generic_compute_sg = new ec2.SecurityGroup(scope, "HSGenericComputeSG", {
+      vpc: vpc,
+      allowAllOutbound: false,
+      securityGroupName: "generic-compute-sg",
+    });
+    this.generic_compute_sg = generic_compute_sg;
+
+    addClient(elasticache.sg, generic_compute_sg, ec2.Port.tcp(6379), "Allows  eks-generic-compute-sg to communicate with redis-sg");
+
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
       instanceTypes: [
@@ -348,6 +363,14 @@ export class EksStack {
 
     });
 
+    const memory_optomized_sg = new ec2.SecurityGroup(scope, "HSMemoryOptimizedSG", {
+      vpc: vpc,
+      allowAllOutbound: false,
+      securityGroupName: "memory-optimized-sg",
+    });
+
+    this.memory_optomized_sg = memory_optomized_sg
+
     const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
       nodegroupName: "memory-optimized-od",
       instanceTypes:[
@@ -362,6 +385,8 @@ export class EksStack {
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
     });
+
+
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
       instanceTypes:[
@@ -522,7 +547,7 @@ export class EksStack {
       securityGroupName: "hs-loadbalancer-sg",
     });
 
-    this.sg = cluster.clusterSecurityGroup;
+    this.cluster_sg = cluster.clusterSecurityGroup;
 
     // Add inbound rule for all traffic
     lbSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic());
@@ -977,9 +1002,21 @@ export class EksStack {
     this.sdkBucket = sdkBucket;
     hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
-    const lbSubents = cluster.vpc.selectSubnets({
+    const istioLbSubents = cluster.vpc.selectSubnets({
       subnetGroupName: "service-layer-zone",
     });
+
+    const istio_lb_sg = new ec2.SecurityGroup(scope, "IstioLBSecurityGroup", {
+      vpc: cluster.vpc,
+      allowAllOutbound: false,
+      securityGroupName: "istio-lb-sg",
+      description:"Istio LB",
+
+    });
+
+    this.istio_lb_sg = istio_lb_sg;
+    addClient(memory_optomized_sg, istio_lb_sg, ec2.Port.allTraffic(), "Allows  eks-memory-optimized-sg to communicate with istio-lb-sg");
+    
 
     const trafficControl = cluster.addHelmChart("TrafficControl", {
       chart: "hyperswitch-istio",
@@ -1006,8 +1043,8 @@ export class EksStack {
             "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
             "alb.ingress.kubernetes.io/load-balancer-attributes": "routing.http.drop_invalid_header_fields.enabled=true,routing.http.xff_client_port.enabled=true,routing.http.preserve_host_header.enabled=true",
             "alb.ingress.kubernetes.io/scheme": "internal",
-            "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
-            "alb.ingress.kubernetes.io/subnets": lbSubents.subnetIds.join(","),
+            "alb.ingress.kubernetes.io/security-groups": istio_lb_sg.securityGroupId,
+            "alb.ingress.kubernetes.io/subnets": istioLbSubents.subnetIds.join(","),
             "alb.ingress.kubernetes.io/target-type": "ip",
             "alb.ingress.kubernetes.io/unhealthy-threshold-count": "3",
           },
@@ -1031,7 +1068,7 @@ export class EksStack {
       },
     });
 
-    trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
+    trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart, istio_lb_sg);
 
     const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
       bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -1104,6 +1141,18 @@ export class EksStack {
         keyPairName: "hyperswitch-envoy-keypair",
       });
 
+      const envoy_sg = new ec2.SecurityGroup(scope, 'envoy-sg', {
+        vpc: cluster.vpc,
+        allowAllOutbound: false,
+        securityGroupName: "envoy-sg",
+        description:"Envoy Security Group",
+      });
+
+      this.envoy_sg = envoy_sg;
+
+      addClient(istio_lb_sg, this.envoy_sg, ec2.Port.tcp(443), "Allows istio-lb-sg to communicate with the envoy-sg");
+      addClient(istio_lb_sg, this.envoy_sg, ec2.Port.tcp(80), "Allows istio-lb-sg to communicate with the envoy-sg");
+
       const envoyLaunchTemplate = new ec2.LaunchTemplate(scope, 'envoy-launch-template', {
         machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: envoyAmi}),
         instanceType: new ec2.InstanceType("t3.medium"),
@@ -1145,15 +1194,23 @@ export class EksStack {
     const squidAmi = scope.node.tryGetContext("squid_ami");
     if(squidAmi) {
 
-      const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
+      const squid_lb_sg = new ec2.SecurityGroup(scope, 'squid-lb-sg', {
+        vpc: cluster.vpc,
+        allowAllOutbound: false,
+        securityGroupName: "squid-lb-sg",
+        description:"Squid Load Balancer Security Group",
+      });
+
+      const squidLoadBalncer = new elbv2.NetworkLoadBalancer(scope, "hsOutgoingProxy", {
         vpc: cluster.vpc,
         internetFacing: true,
-        securityGroup: lbSecurityGroup,
         loadBalancerName: "hyperswitch-outgoing-proxy",
         vpcSubnets: {
         subnetGroupName: "service-layer-zone",
         }
       });
+      squidLoadBalncer.node.addDependency(squid_lb_sg);
+      squidLoadBalncer.addSecurityGroup(squid_lb_sg);
 
       const logsBucket = new s3.Bucket(scope, "hyperswitch-outgoing-proxy-logs-bucket", {
         bucketName: `outgoing-proxy-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -1194,6 +1251,17 @@ export class EksStack {
         keyPairName: "hyperswitch-squid-keypair",
       });
 
+      const outbound_proxy_sg = new ec2.SecurityGroup(scope, 'outbound-proxy-sg', {
+        vpc: cluster.vpc,
+        allowAllOutbound: false,
+        securityGroupName: "outbound-proxy-sg",
+        description:"Outbound Proxy Security Group (Squid)",
+      });
+
+      this.outbound_proxy_sg = outbound_proxy_sg;
+      outbound_proxy_sg.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443));
+      outbound_proxy_sg.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80));
+
       const squidLaunchTemplate = new ec2.LaunchTemplate(scope, 'outgoing-proxy-launch-template', {
         machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: squidAmi}),
         instanceType: new ec2.InstanceType("t3.medium"),
@@ -1218,7 +1286,6 @@ export class EksStack {
 
       const listener = squidLoadBalncer.addListener('Listener', {
         port: 80,
-        open: true,
       });
 
       listener.addTargets('Target', {
@@ -1330,6 +1397,15 @@ export class EksStack {
     // lokiSA.node.addDependency(loki_ns);
     loki_s3.grantReadWrite(grafanaServiceAccountRole);
     cluster.node.addDependency(loki_s3);
+
+    const monitoring_sg = new ec2.SecurityGroup(scope, 'monitoring-sg', {
+      vpc: cluster.vpc,
+      allowAllOutbound: false,
+      securityGroupName: "eks-monitoring-sg",
+      description:"EKS Monitoring Security Group",
+    });
+
+    this.monitoring_sg = monitoring_sg;
 
     const lokiChart = cluster.addHelmChart("LokiController", {
       chart: "loki-stack",
@@ -1572,6 +1648,7 @@ class KmsSecrets {
     this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
   }
+
 }
 
 class DockerImagesToEcr {

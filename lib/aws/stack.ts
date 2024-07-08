@@ -150,9 +150,9 @@ export class AWSStack extends cdk.Stack {
         config.hyperswitch_ec2.admin_api_key,
         locker,
       );
-      if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
-      rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
-      elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
+      if (locker) locker.locker_ec2.addClient(eks.cluster_sg, ec2.Port.tcp(8080));
+      // rds.sg.addIngressRule(eks.cluster_sg, ec2.Port.tcp(5432));
+      elasticache.sg.addIngressRule(eks.cluster_sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, eks);
 
       // Create Jumps and add rules to access RDS, Elasticache and Proxies
@@ -168,10 +168,16 @@ export class AWSStack extends cdk.Stack {
         get_external_jump_ec2_config(config, "hyperswitch_external_jump_ec2"),
       );
       internal_jump.addClient(external_jump.sg, ec2.Port.tcp(22));
+      addClient(elasticache.sg, internal_jump.sg, ec2.Port.tcp(6379), "Allows internal jump box to communicate with elasticache");
       // internal_jump.addClient(rds.sg, ec2.Port.tcp(5432));
       rds.addClient(internal_jump.sg, 5432, "internal jump box");
+      addClient(rds.sg, eks.generic_compute_sg, ec2.Port.tcp(5432), "Allows eks-generic-compute-sg to communicate with app-db-sg");
+
       internal_jump.addClient(elasticache.sg, ec2.Port.tcp(6379));
       external_jump.sg.addIngressRule(external_jump.sg, ec2.Port.tcp(37689));
+
+      // addClient(eks.envoy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  envoy-sg to communicate with external_jump-sg");
+      // addClient(eks.outbound_proxy_sg, external_jump.sg, ec2.Port.tcp(22), "Allows  outbound-proxy-sg to communicate with external-jumpbox-sg");
 
       const kms_key = new kms.Key(this, "hyperswitch-ssm-kms-key", {
         removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -236,20 +242,20 @@ export class AWSStack extends cdk.Stack {
 
       const sgCfg = { "name": "vpce-sg", "description": "stack vpce sg" };
 
-      const sg = new ec2.SecurityGroup(this, sgCfg.name, {
+      const vpce_sg = new ec2.SecurityGroup(this, sgCfg.name, {
         vpc: vpc.vpc,
         description: sgCfg.description,
         allowAllOutbound: false,
 
       });
 
-      sg.addIngressRule(ec2.Peer.ipv4("10.63.0.0/16"), ec2.Port.tcp(443));
-      external_jump.sg.addEgressRule(sg, ec2.Port.tcp(443));
+      vpce_sg.addIngressRule(ec2.Peer.ipv4("10.63.0.0/16"), ec2.Port.tcp(443));
+      external_jump.sg.addEgressRule(vpce_sg, ec2.Port.tcp(443));
 
       const vpc_endpoint1 = new ec2.InterfaceVpcEndpoint(this, "SSMMessagesEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -257,7 +263,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint2 = new ec2.InterfaceVpcEndpoint(this, "IncomingWebServerSSMEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SSM,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -265,7 +271,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint3 = new ec2.InterfaceVpcEndpoint(this, "EC2MessagesEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "incoming-web-envoy-zone",
         },
@@ -274,7 +280,7 @@ export class AWSStack extends cdk.Stack {
       const vpc_endpoint4 = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEP", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "locker-database-zone",
         },
@@ -288,7 +294,7 @@ export class AWSStack extends cdk.Stack {
       const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {
         vpc: vpc.vpc,
         service: ec2.InterfaceVpcEndpointAwsService.KMS,
-        securityGroups: [sg],
+        securityGroups: [vpce_sg],
         subnets: {
           subnetGroupName: "database-zone",
         }
@@ -302,12 +308,30 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
+      const eks_worker_common_sg = new ec2.SecurityGroup(this, "eks-worker-common-sg", {
+        securityGroupName: "eks-worker-common-sg",
+        vpc: vpc.vpc,
+        description: "EKS Worker Common",
+        allowAllOutbound: false,
+      });
+
+      addClient(eks_worker_common_sg, internal_jump.sg, ec2.Port.tcp(22), "Allows  eks-worker-common-sg to communicate with internal-jumpbox-sg");
+      // addClient(eks_worker_common_sg, eks.monitoring_sg, ec2.Port.allTcp(), "for monitoring");
+      addClient(eks_worker_common_sg, eks_worker_common_sg, ec2.Port.allTraffic(), "for monitoring");
+
+      // addClient(eks.outbound_proxy_sg, eks_worker_common_sg, ec2.Port.tcp(9273), "Allows ingress from EKS for metrics"); 
+
+      // addClient(eks.envoy_sg, eks_worker_common_sg,ec2.Port.tcp(9273),"Allow envoy to communicate with eks-worker-common for scraping metrics");
+
+
       if (locker)
         locker.locker_ec2.addClient(internal_jump.sg, ec2.Port.tcp(22));
       if (locker)
         locker.db_sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
-      if (locker)
+      if (locker){
         internal_jump.sg.addEgressRule(locker.db_sg, ec2.Port.tcp(5432));
+        addClient(locker.locker_ec2.sg, eks_worker_common_sg, ec2.Port.tcp(8018), "Allows  locker to communicate with eks-worker-common-sg");
+      }
 
       // rds.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(5432));
       // elasticache.sg.addIngressRule(internal_jump.sg, ec2.Port.tcp(6379));
@@ -407,4 +431,15 @@ function get_external_jump_ec2_config(config: Config, id: string) {
     allowOutboundTraffic: false,
   };
   return ec2_config;
+}
+
+export function addClient(
+  sg: ec2.ISecurityGroup,
+  peer: ec2.ISecurityGroup,
+  port: ec2.Port,
+  description?: string,
+  remote_rule?: boolean
+) {
+  sg.addIngressRule(peer, port, description, remote_rule);
+  peer.addEgressRule(sg, port, description, remote_rule);
 }
