@@ -27,8 +27,7 @@ export type KeymanagerConfig = {
 }
 
 export class Keymanager extends cdk.Stack {
-    vpc: IVpc;
-    constructor(scope: Construct, config: KeymanagerConfig, cluster: eks.Cluster) {
+    constructor(scope: Construct, config: KeymanagerConfig, vpc: Vpc, cluster: eks.Cluster) {
         super(scope, config.name, {
             env: {
                 account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -40,7 +39,6 @@ export class Keymanager extends cdk.Stack {
         cdk.Tags.of(this).add("Stack", "Hyperswitch");
         cdk.Tags.of(this).add("StackName", config.name);
 
-        let vpc = new Vpc(this, config.vpc);
         const kms_key = new kms.Key(scope, "keymanager-kms-key", {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             pendingWindow: cdk.Duration.days(7),
@@ -74,6 +72,7 @@ export class Keymanager extends cdk.Stack {
             repository: "https://juspay.github.io/hyperswitch-helm/v0.1.2",
             namespace: "keymanager",
             release: "keymanager",
+            createNamespace: true,
             wait: true,
             values: {
                 server: {
@@ -136,11 +135,6 @@ export class KeymanagerDB extends Construct {
                 instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
                 publiclyAccessible: false
             }),
-            readers: [
-                ClusterInstance.provisioned("Reader Instance", {
-                    instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-                })
-            ],
             vpc,
             vpcSubnets: { subnetGroupName: "database-zone" },
             engine,
