@@ -24,6 +24,7 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing
 import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
 import { env } from "process";
 import { WAF } from "./waf";
+import { Keymanager, KeymanagerConfig } from "./keymanager/stack"
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 // import { LockerSetup } from "./card-vault/components";
 
@@ -160,7 +161,7 @@ export class EksStack {
       keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
       alias: "alias/hyperswitch-kms-key",
       description: "KMS key for encrypting the objects in an S3 bucket",
-      enableKeyRotation: false,
+      enableKeyRotation: true,
     });
 
     const kms_policy_document = new iam.PolicyDocument({
@@ -671,6 +672,8 @@ export class EksStack {
         }
       },
     });
+
+    const km = new Keymanager(scope, config.keymanager, vpc, cluster);
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],

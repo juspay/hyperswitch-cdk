@@ -1,5 +1,6 @@
 // import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { KeymanagerConfig } from "./keymanager/stack"
 
 export enum Environment {
     Integ,
@@ -76,12 +77,13 @@ export type LockerConfig = {
 };
 
 export type Tags = {
-  [key: string]: string;
+    [key: string]: string;
 };
 
 export type Config = {
     stack: StackConfig;
     locker: LockerConfig;
+    keymanager: KeymanagerConfig;
     vpc: VpcConfig;
     subnet: SubnetConfigs;
     extra_subnets: ExtraSubnetConfig[]; // TODO: remove this if not required

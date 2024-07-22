@@ -24,7 +24,7 @@ def worker():
     def enc_pl(x): return kms_fun(credentials[x])
     def pl(x): return credentials[x]
 
-    db_pass = enc_pl("db_password")
+    db_pass = enc_pl("db_pass")
     ca_cert = enc_pl("ca_cert")
     tls_key = enc_pl("tls_key")
     tls_cert = enc_pl("tls_cert")
@@ -81,7 +81,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 
 
 def store_parameter(ssm, key, value):
-    ssm.put_parameter(Name="/hyperswitch/{}".format(key),
+    ssm.put_parameter(Name="/keymanager/{}".format(key),
                       Value=value, Overwrite=True, Type='String', Tier='Advanced')
 
 

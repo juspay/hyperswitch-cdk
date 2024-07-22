@@ -17,34 +17,25 @@ import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 
 import { readFileSync } from "fs";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
-import { SubnetStack } from "../subnet";
 
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as kms from "aws-cdk-lib/aws-kms";
-import { VpcConfig } from "../config";
 import { Construct } from "constructs";
 
 export type KeymanagerConfig = {
-    vpc: VpcConfig,
     name: string;
     db_user: string;
     db_pass: string;
     ca_cert: string;
     tls_key: string;
-    tlk_cert: string;
+    tls_cert: string;
 }
 
-export class Keymanager extends cdk.Stack {
-    constructor(scope: Construct, config: KeymanagerConfig, vpc: Vpc, cluster: eks.Cluster) {
-        super(scope, config.name, {
-            env: {
-                account: process.env.CDK_DEFAULT_ACCOUNT,
-                region: process.env.CDK_DEFAULT_REGION
-            },
-            stackName: config.name,
-        });
+export class Keymanager extends Construct {
+    constructor(scope: Construct, config: KeymanagerConfig, vpc: ec2.Vpc, cluster: eks.Cluster) {
+        super(scope, "Keymanager");
 
-        cdk.Tags.of(this).add("Stack", "Hyperswitch");
+        cdk.Tags.of(this).add("Stack", "Keymanager");
         cdk.Tags.of(this).add("StackName", config.name);
 
         const kms_key = new kms.Key(scope, "keymanager-kms-key", {
@@ -54,9 +45,9 @@ export class Keymanager extends cdk.Stack {
             keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
             alias: "alias/keymanager-kms-key",
             description: "KMS key for encrypting the key for Keymanager",
-            enableKeyRotation: false,
+            enableKeyRotation: true,
         });
-        let db = new KeymanagerDB(scope, vpc.vpc);
+        let db = new KeymanagerDB(scope, vpc, config.db_user, config.db_pass);
         let kms_iam_policy = new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
                 actions: [
@@ -71,7 +62,7 @@ export class Keymanager extends cdk.Stack {
         const kms_role = new iam.Role(this, "keymanager-kms-role", {
             assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
             inlinePolicies: {
-                "kms-role": kms_iam_policy,
+                "kms-role-keymanager": kms_iam_policy,
             }
         });
 
@@ -96,12 +87,59 @@ export class Keymanager extends cdk.Stack {
                 }),
             ],
         });
-        const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
+        const lambda_role = new iam.Role(scope, "hyperswitch-keymanager-lambda-role", {
             assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
             inlinePolicies: {
                 "use-kms-sm": kms_policy_document,
             },
         });
+
+        const provider = cluster.openIdConnectProvider;
+
+        const kmsConditions = new cdk.CfnJson(scope, "AppConditionJson", {
+            value: {
+                [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+                [`${provider.openIdConnectProviderIssuer}:sub`]:
+                    "system:serviceaccount:keymanager:keymanager-role",
+            },
+        });
+
+        const nodegroupRole = new iam.Role(
+            scope,
+            "KeymanagerNodeGroupRole",
+            {
+                assumedBy: new iam.FederatedPrincipal(
+                    provider.openIdConnectProviderArn,
+                    {
+                        StringEquals: kmsConditions,
+                    },
+                    "sts:AssumeRoleWithWebIdentity",
+                ),
+            },
+        );
+
+        nodegroupRole.attachInlinePolicy(
+            new iam.Policy(scope, "use-kms-key", {
+                document: kms_iam_policy,
+            }),
+        );
+
+        const keymanagerNodegroup = cluster.addNodegroupCapacity("KeymanagerNodegroup", {
+            nodegroupName: "keymanager-ng",
+            minSize: 1,
+            maxSize: 6,
+            desiredSize: 1,
+            instanceTypes: [
+                new ec2.InstanceType("t3.medium"),
+                new ec2.InstanceType("t3.medium"),
+            ],
+            labels: {
+                "node-type": "keymanager-ng",
+            },
+            subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
+            nodeRole: nodegroupRole,
+        });
+
         const encryption_code = readFileSync(
             "lib/aws/keymanager/encryption.py",
         ).toString();
@@ -110,14 +148,14 @@ export class Keymanager extends cdk.Stack {
             secretName: "KeymanagerKmsDataSecret",
             description: "KMS encryptable secrets for Keymanager",
             secretObjectValue: {
-                db_password: cdk.SecretValue.unsafePlainText(
+                db_pass: cdk.SecretValue.unsafePlainText(
                     config.db_pass,
                 ),
                 kms_id: cdk.SecretValue.unsafePlainText(kms_key.keyId),
                 region: cdk.SecretValue.unsafePlainText(kms_key.stack.region),
                 ca_cert: cdk.SecretValue.unsafePlainText(config.ca_cert),
                 tls_key: cdk.SecretValue.unsafePlainText(config.tls_key),
-                tls_cert: cdk.SecretValue.unsafePlainText(config.tlk_cert),
+                tls_cert: cdk.SecretValue.unsafePlainText(config.tls_cert),
             },
         });
 
@@ -144,14 +182,16 @@ export class Keymanager extends cdk.Stack {
         const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
         const keymanagerChart = cluster.addHelmChart("KeymanagerService", {
             chart: "hyperswitch-keymanager",
-            repository: "https://juspay.github.io/hyperswitch-helm/v0.1.2",
+            repository: "https://dracarys18.github.io/hyperswitch-helm/charts/incubator/hyperswitch-keymanager",
             namespace: "keymanager",
-            release: "keymanager",
+            release: "hs-keymanager",
             createNamespace: true,
-            wait: true,
+            wait: false,
             values: {
                 server: {
+                    image: "karthihegde010/encryption:v0.1.1",
                     secrets: {
+                        key_id: kms_key.keyId,
                         iam_role: kms_role.roleArn,
                         region: process.env.CDK_DEFAULT_REGION,
                         ca_cert: kmsSecrets.kms_encrypted_ca_cert,
@@ -160,7 +200,7 @@ export class Keymanager extends cdk.Stack {
                     }
                 },
                 postgresql: {
-                    enable: false
+                    enabled: false
                 },
                 external: {
                     postgresql: {
@@ -182,7 +222,7 @@ export class Keymanager extends cdk.Stack {
 export class KeymanagerDB extends Construct {
     sg: SecurityGroup;
     dbCluster: DatabaseCluster;
-    constructor(scope: Construct, vpc: ec2.IVpc) {
+    constructor(scope: Construct, vpc: ec2.IVpc, username: string, password: string) {
         super(scope, "KeymanagerStack");
 
         const db_name = "keymanager_db";
@@ -200,7 +240,10 @@ export class KeymanagerDB extends Construct {
             secretName: secretName,
             description: "Database Secret credentials",
             secretObjectValue: {
-                dbName: cdk.SecretValue.unsafePlainText(db_name),
+                dbname: cdk.SecretValue.unsafePlainText(db_name),
+                username: cdk.SecretValue.unsafePlainText(username),
+                password: cdk.SecretValue.unsafePlainText(password),
+
             },
         });
 

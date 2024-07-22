@@ -58,7 +58,7 @@ export class LockerEc2 extends Construct {
       keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
       alias: "alias/locker-kms-key",
       description: "KMS key for encrypting the objects in an S3 bucket",
-      enableKeyRotation: false,
+      enableKeyRotation: true,
     });
 
     const envBucket = new s3.Bucket(this, "LockerEnvBucket", {
