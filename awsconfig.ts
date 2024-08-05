@@ -27,6 +27,7 @@ export class Configuration {
         }
       },
       keymanager: {
+        enabled: scope.node.tryGetContext('keymanager_enabled') || false,
         name: "keymanager",
         db_user: "keymanager_db_user",
         db_pass: "pass1234",

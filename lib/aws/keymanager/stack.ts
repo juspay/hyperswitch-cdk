@@ -23,6 +23,7 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import { Construct } from "constructs";
 
 export type KeymanagerConfig = {
+    enabled: boolean;
     name: string;
     db_user: string;
     db_pass: string;
@@ -32,7 +33,7 @@ export type KeymanagerConfig = {
 }
 
 export class Keymanager extends Construct {
-    constructor(scope: Construct, config: KeymanagerConfig, vpc: ec2.Vpc, cluster: eks.Cluster) {
+    constructor(scope: Construct, config: KeymanagerConfig, vpc: ec2.Vpc, cluster: eks.Cluster, albControllerChart: eks.HelmChart, nodegroupRole: iam.Role) {
         super(scope, "Keymanager");
 
         cdk.Tags.of(this).add("Stack", "Keymanager");
@@ -47,7 +48,7 @@ export class Keymanager extends Construct {
             description: "KMS key for encrypting the key for Keymanager",
             enableKeyRotation: true,
         });
-        let db = new KeymanagerDB(scope, vpc, config.db_user, config.db_pass);
+        let db = new KeymanagerDB(scope, vpc, config.db_user, config.db_pass, cluster.clusterSecurityGroup);
         let kms_iam_policy = new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
                 actions: [
@@ -59,8 +60,26 @@ export class Keymanager extends Construct {
             })]
         });
 
+        const provider = cluster.openIdConnectProvider;
+
+        const kmsConditions = new cdk.CfnJson(scope, "KeymanagerConditionJson", {
+            value: {
+                [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+                [`${provider.openIdConnectProviderIssuer}:sub`]:
+                    "system:serviceaccount:keymanager:keymanager-role",
+            },
+        });
         const kms_role = new iam.Role(this, "keymanager-kms-role", {
-            assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+            assumedBy: new iam.CompositePrincipal(
+                new iam.FederatedPrincipal(
+                    provider.openIdConnectProviderArn,
+                    {
+                        StringEquals: kmsConditions,
+                    },
+                    "sts:AssumeRoleWithWebIdentity",
+                ),
+                new iam.ServicePrincipal('ec2.amazonaws.com')
+            ),
             inlinePolicies: {
                 "kms-role-keymanager": kms_iam_policy,
             }
@@ -93,36 +112,6 @@ export class Keymanager extends Construct {
                 "use-kms-sm": kms_policy_document,
             },
         });
-
-        const provider = cluster.openIdConnectProvider;
-
-        const kmsConditions = new cdk.CfnJson(scope, "AppConditionJson", {
-            value: {
-                [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
-                [`${provider.openIdConnectProviderIssuer}:sub`]:
-                    "system:serviceaccount:keymanager:keymanager-role",
-            },
-        });
-
-        const nodegroupRole = new iam.Role(
-            scope,
-            "KeymanagerNodeGroupRole",
-            {
-                assumedBy: new iam.FederatedPrincipal(
-                    provider.openIdConnectProviderArn,
-                    {
-                        StringEquals: kmsConditions,
-                    },
-                    "sts:AssumeRoleWithWebIdentity",
-                ),
-            },
-        );
-
-        nodegroupRole.attachInlinePolicy(
-            new iam.Policy(scope, "use-kms-key", {
-                document: kms_iam_policy,
-            }),
-        );
 
         const keymanagerNodegroup = cluster.addNodegroupCapacity("KeymanagerNodegroup", {
             nodegroupName: "keymanager-ng",
@@ -189,7 +178,7 @@ export class Keymanager extends Construct {
             wait: false,
             values: {
                 server: {
-                    image: "karthihegde010/encryption:v0.1.1",
+                    image: "juspaydotin/hyperswitch-encryption-service:v0.1.3",
                     secrets: {
                         key_id: kms_key.keyId,
                         iam_role: kms_role.roleArn,
@@ -216,13 +205,14 @@ export class Keymanager extends Construct {
                 }
             }
         });
+        keymanagerChart.node.addDependency(albControllerChart, triggerKMSEncryption, keymanagerNodegroup);
     }
 }
 
 export class KeymanagerDB extends Construct {
     sg: SecurityGroup;
     dbCluster: DatabaseCluster;
-    constructor(scope: Construct, vpc: ec2.IVpc, username: string, password: string) {
+    constructor(scope: Construct, vpc: ec2.IVpc, username: string, password: string, clusterSg: ec2.ISecurityGroup) {
         super(scope, "KeymanagerStack");
 
         const db_name = "keymanager_db";
@@ -232,6 +222,7 @@ export class KeymanagerDB extends Construct {
             vpc: vpc,
         });
 
+        security_group.addIngressRule(clusterSg, ec2.Port.tcp(5432));
         this.sg = security_group;
 
         const secretName = "keymanager-db-secret";
