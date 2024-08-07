@@ -180,7 +180,7 @@ export class AWSStack extends cdk.Stack {
         keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
         alias: "alias/hyperswitch-ssm-kms-key",
         description: "KMS key for encrypting the objects in an S3 bucket",
-        enableKeyRotation: false,
+        enableKeyRotation: true,
       });
 
       const external_jump_role = external_jump.getInstance().role;

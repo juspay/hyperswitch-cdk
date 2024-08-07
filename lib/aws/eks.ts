@@ -24,6 +24,7 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing
 import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
 import { env } from "process";
 import { WAF } from "./waf";
+import { Keymanager } from "./keymanager/stack"
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 // import { LockerSetup } from "./card-vault/components";
 
@@ -709,6 +710,10 @@ export class EksStack {
     new cdk.CfnOutput(scope, 'SdkDistribution', {
       value: this.sdkDistribution.distributionDomainName,
     });
+
+    if (config.keymanager.enabled) {
+        const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
+    }
 
     const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
