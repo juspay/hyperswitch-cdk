@@ -171,7 +171,7 @@ export class Keymanager extends Construct {
         const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
         const keymanagerChart = cluster.addHelmChart("KeymanagerService", {
             chart: "hyperswitch-keymanager",
-            repository: "https://dracarys18.github.io/hyperswitch-helm/charts/incubator/hyperswitch-keymanager",
+            repository: "https://juspay.github.io/hyperswitch-helm/charts/incubator/hyperswitch-keymanager",
             namespace: "keymanager",
             release: "hs-keymanager",
             createNamespace: true,
