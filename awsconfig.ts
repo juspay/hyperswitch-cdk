@@ -31,9 +31,9 @@ export class Configuration {
         name: "keymanager",
         db_user: "keymanager_db_user",
         db_pass: "pass1234",
-        tls_key: readFileSync("./rsa_sha256_key.pem").toString(),
-        tls_cert: readFileSync("./rsa_sha256_cert.pem").toString(),
-        ca_cert: readFileSync("./ca_cert.pem").toString(),
+        tls_key: readFileSync("./rsa_sha256_key.pem").toString() || "",
+        tls_cert: readFileSync("./rsa_sha256_cert.pem").toString() || "",
+        ca_cert: readFileSync("./ca_cert.pem").toString() || "",
       },
       extra_subnets: [],
       rds: {
