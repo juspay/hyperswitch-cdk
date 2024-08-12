@@ -1,7 +1,7 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Config } from "./lib/aws/config";
 import { Construct } from "constructs";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 
 export class Configuration {
   config: Config;
@@ -9,6 +9,9 @@ export class Configuration {
     let db_pass = scope.node.tryGetContext('db_pass') || "dbpassword";
     let admin_api_key = scope.node.tryGetContext('admin_api_key') || "test_admin"
     let master_key = scope.node.tryGetContext('master_enc_key')
+    let tls_key_exists = existsSync("./rsa_sha256_key.pem");
+    let tls_cert_exists = existsSync("./rsa_sha256_cert.pem");
+    let ca_cert_exists = existsSync("./ca_cert.pem");
     let config: Config = {
       stack: {
         name: "hyperswitch",
@@ -31,9 +34,9 @@ export class Configuration {
         name: "keymanager",
         db_user: "keymanager_db_user",
         db_pass: "pass1234",
-        tls_key: readFileSync("./rsa_sha256_key.pem").toString(),
-        tls_cert: readFileSync("./rsa_sha256_cert.pem").toString(),
-        ca_cert: readFileSync("./ca_cert.pem").toString(),
+        tls_key: tls_key_exists ? readFileSync("./rsa_sha256_key.pem").toString() : "", 
+        tls_cert: tls_cert_exists ? readFileSync("./rsa_sha256_cert.pem").toString() : "", 
+        ca_cert: ca_cert_exists ? readFileSync("./ca_cert.pem").toString() : "",
       },
       extra_subnets: [],
       rds: {
