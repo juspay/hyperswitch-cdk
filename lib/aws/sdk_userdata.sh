@@ -34,24 +34,24 @@ cd /
 # Hyperswitch Demo APP [Frontend application]
 # Create a merchant and get the keys.
 # Required for the frontend application to communicate with the backend application
-export MERCHANT_ID=$(curl --silent --location --request POST 'http://{{router_host}}/user/signup' \
+export MERCHANT_ID=$(curl --silent --location --request POST 'http://{{private_router_host}}/user/signup' \
   --header 'Content-Type: application/json' \
   --data-raw '{
       "email": "itisatest@gmail.com",
       "password": "admin"
   }' | jq -r '.merchant_id')
 
-export HYPERSWITCH_PUBLISHABLE_KEY=$(curl --silent --location --request GET 'http://{{router_host}}/accounts/'$MERCHANT_ID \
+export HYPERSWITCH_PUBLISHABLE_KEY=$(curl --silent --location --request GET 'http://{{private_router_host}}/accounts/'$MERCHANT_ID \
   --header 'Accept: application/json' \
   --header 'api-key: '{{admin_api_key}} | jq -r '.publishable_key')
 
-export HYPERSWITCH_SECRET_KEY=$(curl --silent --location --request POST 'http://{{router_host}}/api_keys/'$MERCHANT_ID \
+export HYPERSWITCH_SECRET_KEY=$(curl --silent --location --request POST 'http://{{private_router_host}}/api_keys/'$MERCHANT_ID \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json' \
   --header 'api-key: '{{admin_api_key}} \
   --data-raw '{"name":"API Key 1","description":null,"expiration":"2038-01-19T03:14:08.000Z"}' | jq -r '.api_key')
 
-export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://{{router_host}}/account/'$MERCHANT_ID'/connectors' \
+export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://{{private_router_host}}/account/'$MERCHANT_ID'/connectors' \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json' \
   --header 'api-key: '{{admin_api_key}} \
