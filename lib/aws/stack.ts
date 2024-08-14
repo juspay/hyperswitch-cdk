@@ -61,7 +61,7 @@ export class AWSStack extends cdk.Stack {
       hyperswitch_ec2.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addIngressRule(
-        // To access the Router
+        // To access the Router for User
         ec2.Peer.ipv4("0.0.0.0/32"),
         ec2.Port.tcp(80),
       );
@@ -69,6 +69,11 @@ export class AWSStack extends cdk.Stack {
         // To access the Control Center
         ec2.Peer.ipv4("0.0.0.0/32"),
         ec2.Port.tcp(9000),
+      );
+      hyperswitch_ec2.sg.addIngressRule(
+        // To access the SDK
+        ec2.Peer.ipv4(vpc.vpc.vpcCidrBlock),
+        ec2.Port.tcp(80),
       );
       hyperswitch_ec2.sg.addIngressRule(
         // To SSH into the instance
@@ -99,6 +104,17 @@ export class AWSStack extends cdk.Stack {
         // To SSH into the instance
         ec2.Peer.ipv4("0.0.0.0/32"),
         ec2.Port.tcp(22),
+      );
+
+      let allowSdkToApplicationSg = new ec2.SecurityGroup(this, "allowSdkToApplicationSg", {
+        vpc: vpc.vpc,
+        securityGroupName: "allowSdkToApplicationSg",
+        description: "Allow SDK to access the application", 
+      });
+ 
+      allowSdkToApplicationSg.addIngressRule(
+        ec2.Peer.ipv4(hyperswitch_sdk_ec2.getInstance().instancePublicIp + "/32"),
+        ec2.Port.tcp(80)
       );
 
       new cdk.CfnOutput(this, "StandaloneURL", {
@@ -358,6 +374,7 @@ function get_standalone_sdk_ec2_config(
       "{{router_host}}",
       hyperswitch_ec2.getInstance().instancePublicIp,
     )
+    .replaceAll("{{private_router_host}}", hyperswitch_ec2.getInstance().instancePrivateIp)
     .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
     .replaceAll("{{version}}", "0.27.2")
     .replaceAll("{{sub_version}}", "v0");
