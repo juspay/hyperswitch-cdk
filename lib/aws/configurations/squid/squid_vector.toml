@@ -129,7 +129,7 @@ inputs = ["modify_logs"]
 mode = "bulk"
 endpoints = ["{{elasticsearch_endpoint}}"]
 auth.strategy = "aws"
-aws.region = "us-east-1"
+aws.region = "ap-south-1"
 bulk.action = "index"
 bulk.index = "squid"
 

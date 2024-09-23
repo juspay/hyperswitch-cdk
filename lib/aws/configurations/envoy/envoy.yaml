@@ -48,7 +48,8 @@ static_resources:
                           envoy_grpc:
                             cluster_name: ratelimit_service
                   - name: envoy.filters.http.router
-                    typed_config: {}
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 local_reply_config:
                   mappers:
                     - filter:
@@ -124,6 +125,7 @@ static_resources:
                     socket_address:
                       address: {{internal_loadbalancer_dns}}
                       port_value: 80
+
     - name: ratelimit_service
       connect_timeout: 0.25s
       type: LOGICAL_DNS

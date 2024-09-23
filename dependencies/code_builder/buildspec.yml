@@ -5,7 +5,7 @@ phases:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
-        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot")
+        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot")
         PULL_FROM_AWS=("eks/aws-load-balancer-controller" "ebs-csi-driver/aws-ebs-csi-driver" "eks-distro/kubernetes-csi/external-provisioner" "eks-distro/kubernetes-csi/external-attacher" "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" "eks-distro/kubernetes-csi/livenessprobe" "eks-distro/kubernetes-csi/external-resizer" "eks-distro/kubernetes-csi/node-driver-registrar" "ebs-csi-driver/volume-modifier-for-k8s")
 
         repository_exists() {
@@ -48,6 +48,10 @@ phases:
               docker pull "$IMAGE:1.21.2" && \
               docker tag "$IMAGE:1.21.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.21.2"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.21.2"
+          elif [[ $IMAGE == "kiwigrid/k8s-sidecar" ]]; then
+              docker pull "$IMAGE:1.19.2" && \
+              docker tag "$IMAGE:1.19.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.19.2"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.19.2"
           else
               docker pull "$IMAGE" && \
               docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest" && \
@@ -94,4 +98,3 @@ phases:
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.2.1
           fi
         done
-
