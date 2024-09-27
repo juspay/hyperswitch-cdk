@@ -61,7 +61,7 @@ export class EksStack {
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
       clusterName: "hs-eks-cluster",
-      clusterLogging:[
+      clusterLogging: [
         eks.ClusterLoggingTypes.API,
         eks.ClusterLoggingTypes.AUDIT,
         eks.ClusterLoggingTypes.AUTHENTICATOR,
@@ -69,12 +69,12 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
-    
+
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
-    if (`${push_logs}` == "y"){
+    if (`${push_logs}` == "y") {
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
     }
-    
+
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -279,7 +279,7 @@ export class EksStack {
 
     const autopilotnodegroup = cluster.addNodegroupCapacity("HSAutopilotNodegroup", {
       nodegroupName: "autopilot-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -289,7 +289,7 @@ export class EksStack {
         "service": "autopilot",
         "node-type": "autopilot-od",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -302,7 +302,7 @@ export class EksStack {
       labels: {
         "node-type": "ckh-zookeeper-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -315,14 +315,14 @@ export class EksStack {
       labels: {
         "node-type": "clickhouse-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const controlcenternodegroup = cluster.addNodegroupCapacity("HSControlcentreNodegroup", {
       nodegroupName: "control-center",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -331,7 +331,7 @@ export class EksStack {
       labels: {
         "node-type": "control-center",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -344,14 +344,14 @@ export class EksStack {
       labels: {
         "node-type": "kafka-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
       nodegroupName: "memory-optimized-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -360,12 +360,12 @@ export class EksStack {
       labels: {
         "node-type": "memory-optimized",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
     });
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 3,
@@ -374,14 +374,14 @@ export class EksStack {
       labels: {
         "node-type": "monitoring",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const pomeriumnodegroup = cluster.addNodegroupCapacity("HSPomeriumNodegroup", {
       nodegroupName: "pomerium",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 2,
@@ -392,14 +392,14 @@ export class EksStack {
         "node-type": "pomerium",
         "function": "SSO",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const systemnodegroup = cluster.addNodegroupCapacity("HSSystemNodegroup", {
       nodegroupName: "system-nodes-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
@@ -408,14 +408,14 @@ export class EksStack {
       labels: {
         "node-type": "system-nodes",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
 
     });
 
     const utilsnodegroup = cluster.addNodegroupCapacity("HSUtilsNodegroup", {
       nodegroupName: "utils-compute-od",
-      instanceTypes:[
+      instanceTypes: [
         new ec2.InstanceType("t3.medium"),
       ],
       minSize: 5,
@@ -424,7 +424,7 @@ export class EksStack {
       labels: {
         "node-type": "elasticsearch",
       },
-      subnets:{ subnetGroupName: "utils-zone"},
+      subnets: { subnetGroupName: "utils-zone" },
       nodeRole: nodegroupRole,
 
     });
@@ -437,7 +437,7 @@ export class EksStack {
       labels: {
         "node-type": "zookeeper-compute",
       },
-      subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
+      subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
       nodeRole: nodegroupRole,
     });
 
@@ -651,7 +651,7 @@ export class EksStack {
               "node-type": "memory-optimized",
             },
           }
-      },
+        },
       }
     });
 
@@ -698,12 +698,12 @@ export class EksStack {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
       originConfigs: [
         {
-        s3OriginSource: {
-          s3BucketSource: sdkBucket,
-          originAccessIdentity: oai,
-        },
-        behaviors: [{isDefaultBehavior: true}, {pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD}]
-      }
+          s3OriginSource: {
+            s3BucketSource: sdkBucket,
+            originAccessIdentity: oai,
+          },
+          behaviors: [{ isDefaultBehavior: true }, { pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD }]
+        }
       ]
     });
     this.sdkDistribution.node.addDependency(sdkBucket);
@@ -712,7 +712,7 @@ export class EksStack {
     });
 
     if (config.keymanager.enabled) {
-        const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
+      const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
     const sdk_version = "0.27.2";
@@ -727,7 +727,7 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        "hyperswitch-app":{
+        "hyperswitch-app": {
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
@@ -827,7 +827,7 @@ export class EksStack {
               requiredDuringSchedulingIgnoredDuringExecution: {
                 nodeSelectorTerms: [
                   {
-                    matchExpressions:[
+                    matchExpressions: [
                       {
                         key: "node-type",
                         operator: "In",
@@ -844,7 +844,7 @@ export class EksStack {
               requiredDuringSchedulingIgnoredDuringExecution: {
                 nodeSelectorTerms: [
                   {
-                    matchExpressions:[
+                    matchExpressions: [
                       {
                         key: "node-type",
                         operator: "In",
@@ -861,7 +861,7 @@ export class EksStack {
               requiredDuringSchedulingIgnoredDuringExecution: {
                 nodeSelectorTerms: [
                   {
-                    matchExpressions:[
+                    matchExpressions: [
                       {
                         key: "node-type",
                         operator: "In",
@@ -899,12 +899,12 @@ export class EksStack {
           },
 
           redis: {
-          enabled: false
+            enabled: false
           },
           externalRedis: {
-          enabled: true,
-          host: elasticache.cluster.attrRedisEndpointAddress || "redis",
-          port: 6379
+            enabled: true,
+            host: elasticache.cluster.attrRedisEndpointAddress || "redis",
+            port: 6379
           },
           autoscaling: {
             enabled: true,
@@ -994,11 +994,11 @@ export class EksStack {
         image: {
           version: "v1o107o0"
         },
-        ingress : {
+        ingress: {
           enabled: true,
           className: "alb",
           annotations: {
-            "alb.ingress.kubernetes.io/backend-protocol" : "HTTP",
+            "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
             "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
             "alb.ingress.kubernetes.io/group.name": "hyperswitch-istio-app-alb-ingress-group",
             "alb.ingress.kubernetes.io/healthcheck-interval-seconds": "5",
@@ -1018,19 +1018,19 @@ export class EksStack {
           },
           hosts: {
             paths: [
-            {
-              path: "/",
-              pathType: "Prefix",
-              port: 80,
-              name: "istio-ingressgateway",
-            },
-            {
-              path: "/healthz/ready",
-              pathType: "Prefix",
-              port: 15021,
-              name: "istio-ingressgateway",
-            }
-          ]
+              {
+                path: "/",
+                pathType: "Prefix",
+                port: 80,
+                name: "istio-ingressgateway",
+              },
+              {
+                path: "/healthz/ready",
+                pathType: "Prefix",
+                port: 15021,
+                name: "istio-ingressgateway",
+              }
+            ]
           }
         }
       },
@@ -1065,7 +1065,7 @@ export class EksStack {
       securityGroup: lbSecurityGroup,
       loadBalancerName: "external-app-lb",
       vpcSubnets: {
-      subnetGroupName: "external-incoming-zone",
+        subnetGroupName: "external-incoming-zone",
       }
     });
 
@@ -1078,7 +1078,7 @@ export class EksStack {
     externalAppLoadBalncer.node.addDependency(waf);
 
     const envoyAmi = scope.node.tryGetContext("envoy_ami");
-    if(envoyAmi) {
+    if (envoyAmi) {
       const internalLoadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
         loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-istio-app-alb-ingress-group' },
       });
@@ -1086,8 +1086,8 @@ export class EksStack {
       internalLoadBalancer.node.addDependency(trafficControl);
 
       let envoyConfig = readFileSync("lib/aws/configurations/envoy/envoy.yaml", "utf8")
-      .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
-      .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
+        .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
+        .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
 
       const uploadConfig = new s3deploy.BucketDeployment(scope, "proxy-config-deployment", {
         sources: [s3deploy.Source.yamlData("envoy/envoy.yaml", envoyConfig)],
@@ -1097,7 +1097,7 @@ export class EksStack {
       uploadConfig.node.addDependency(internalLoadBalancer, externalAppLoadBalncer);
 
       let envoy_userdata = readFileSync("lib/aws/userdata/envoy_userdata.sh", "utf8")
-      .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
+        .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
 
       const envoyRole = new iam.Role(scope, 'envoy-role', {
         assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
@@ -1110,7 +1110,7 @@ export class EksStack {
       });
 
       const envoyLaunchTemplate = new ec2.LaunchTemplate(scope, 'envoy-launch-template', {
-        machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: envoyAmi}),
+        machineImage: ec2.MachineImage.genericLinux({ [`${process.env.CDK_DEFAULT_REGION}`]: envoyAmi }),
         instanceType: new ec2.InstanceType("t3.medium"),
         securityGroup: lbSecurityGroup,
         keyName: "hyperswitch-envoy-keypair",
@@ -1126,7 +1126,7 @@ export class EksStack {
         maxCapacity: 1,
         desiredCapacity: 1,
         launchTemplate: envoyLaunchTemplate,
-        vpcSubnets: {subnetGroupName: "external-incoming-zone"}
+        vpcSubnets: { subnetGroupName: "external-incoming-zone" }
       });
 
       envoyASG.node.addDependency(uploadConfig);
@@ -1148,7 +1148,7 @@ export class EksStack {
     }
 
     const squidAmi = scope.node.tryGetContext("squid_ami");
-    if(squidAmi) {
+    if (squidAmi) {
 
       const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
         vpc: cluster.vpc,
@@ -1156,7 +1156,7 @@ export class EksStack {
         securityGroup: lbSecurityGroup,
         loadBalancerName: "hyperswitch-outgoing-proxy",
         vpcSubnets: {
-        subnetGroupName: "service-layer-zone",
+          subnetGroupName: "service-layer-zone",
         }
       });
 
@@ -1176,7 +1176,7 @@ export class EksStack {
       });
 
       let squid_userdata = readFileSync("lib/aws/userdata/squid_userdata.sh", "utf8")
-      .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
+        .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
 
       const squidPolicy = new iam.Policy(scope, 'squid-policy', {
         statements: [
@@ -1200,7 +1200,7 @@ export class EksStack {
       });
 
       const squidLaunchTemplate = new ec2.LaunchTemplate(scope, 'outgoing-proxy-launch-template', {
-        machineImage: ec2.MachineImage.genericLinux({[`${process.env.CDK_DEFAULT_REGION}`]: squidAmi}),
+        machineImage: ec2.MachineImage.genericLinux({ [`${process.env.CDK_DEFAULT_REGION}`]: squidAmi }),
         instanceType: new ec2.InstanceType("t3.medium"),
         securityGroup: lbSecurityGroup,
         keyName: "hyperswitch-squid-keypair",
@@ -1216,7 +1216,7 @@ export class EksStack {
         maxCapacity: 10,
         desiredCapacity: 2,
         launchTemplate: squidLaunchTemplate,
-        vpcSubnets: {subnetGroupName: "outgoing-proxy-zone"}
+        vpcSubnets: { subnetGroupName: "outgoing-proxy-zone" }
       });
 
       squidASG.node.addDependency(uploadConfig);
@@ -1242,7 +1242,7 @@ export class EksStack {
         [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
         [`${provider.openIdConnectProviderIssuer}:sub`]:
           ["system:serviceaccount:loki:loki-grafana",
-          "system:serviceaccount:loki:loki"
+            "system:serviceaccount:loki:loki"
           ]
       },
     });
@@ -1342,6 +1342,17 @@ export class EksStack {
       securityGroupName: "grafana-ingress-lb",
     });
 
+    cluster.clusterSecurityGroup.addIngressRule(grafana_ingress_lb_sg, ec2.Port.tcp(3000));
+    cluster.clusterSecurityGroup.addIngressRule(grafana_ingress_lb_sg, ec2.Port.tcp(80));
+
+    // Add VPN-specific ingress rules if any VPN IPs are provided
+    vpn_ips.forEach(ip => {
+      const vpnPorts = [443, 80];
+      vpnPorts.forEach(port =>
+        grafana_ingress_lb_sg.addIngressRule(ec2.Peer.ipv4(ip), ec2.Port.tcp(port))
+      );
+    });
+
     const ext_incoming_zone_subnet = cluster.vpc.selectSubnets({
       subnetGroupName: "external-incoming-zone",
     });
@@ -1360,8 +1371,8 @@ export class EksStack {
             repository: `${privateEcrRepository}/grafana/grafana`,
             tag: "latest",
           },
-          sidecar:{
-            image:{
+          sidecar: {
+            image: {
               repository: `${privateEcrRepository}/kiwigrid/k8s-sidecar`,
               tag: "1.19.2",
               sha: ""
@@ -1498,7 +1509,7 @@ export class EksStack {
           global: {
             imageRegisrty: `${privateEcrRepository}`,
           },
-          image:{
+          image: {
             registry: `${privateEcrRepository}`,
             repository: "grafana/promtail",
             tag: "latest"
@@ -1513,9 +1524,6 @@ export class EksStack {
                 },
               ],
             }
-          },
-          nodeSelector: {
-            "node-type": "monitoring",
           },
         }
       },
@@ -1686,7 +1694,7 @@ class DockerImagesToEcr {
       environment: {
         buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
       },
-    role: ecrRole,
+      role: ecrRole,
       buildSpec: codebuild.BuildSpec.fromAsset("./dependencies/code_builder/buildspec.yml"),
     });
 
