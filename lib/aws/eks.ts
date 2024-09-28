@@ -1347,10 +1347,12 @@ export class EksStack {
 
     // Add VPN-specific ingress rules if any VPN IPs are provided
     vpn_ips.forEach(ip => {
+      if (ip != "0.0.0.0/0") {
       const vpnPorts = [443, 80];
       vpnPorts.forEach(port =>
         grafana_ingress_lb_sg.addIngressRule(ec2.Peer.ipv4(ip), ec2.Port.tcp(port))
       );
+      }
     });
 
     const ext_incoming_zone_subnet = cluster.vpc.selectSubnets({
