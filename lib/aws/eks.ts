@@ -46,7 +46,14 @@ export class EksStack {
 
     const ecrTransfer = new DockerImagesToEcr(scope, vpc);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
-    let vpn_ips: string[] = (scope.node.tryGetContext("vpn_ips") || "0.0.0.0").split(",");
+
+    let vpn_ips: string | string[] = scope.node.tryGetContext("vpn_ips") || [];
+
+    if (typeof vpn_ips === "string") {
+      vpn_ips = vpn_ips.split(",");
+    }
+
+
     vpn_ips = vpn_ips.map((ip: string) => {
       if (ip === "0.0.0.0") {
         return ip + "/0";
@@ -718,7 +725,7 @@ export class EksStack {
     const sdk_version = "0.27.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
-      repository: "https://juspay.github.io/hyperswitch-helm/v0.1.2",
+      repository: "https://juspay.github.io/hyperswitch-helm/v0.1.3",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -734,16 +741,16 @@ export class EksStack {
 
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.107.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.111.0-standalone`
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.107.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.111.0-standalone`
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.107.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.111.0-standalone`
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.29.9`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.33.0`
             },
             sdk: {
               host: "http://localhost:9090",
@@ -810,16 +817,19 @@ export class EksStack {
                 apple_pay_merchant_conf_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
                 apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
                 pm_auth_key: kmsSecrets.pm_auth_key,
-                api_hash_key: kmsSecrets.api_hash_key
+                api_hash_key: kmsSecrets.api_hash_key,
+                user_auth_encryption_key: kmsSecrets.user_auth_encryption_key,
               },
               master_enc_key: kmsSecrets.kms_encrypted_master_key,
               locker: {
-                locker_readonly_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+                locker_enabled: false,
+                locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
                 hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
               },
               basilisk: {
                 host: "basilisk-host",
               },
+              run_env: "sandbox",
             }
           },
           consumer: {
@@ -1348,10 +1358,10 @@ export class EksStack {
     // Add VPN-specific ingress rules if any VPN IPs are provided
     vpn_ips.forEach(ip => {
       if (ip != "0.0.0.0/0") {
-      const vpnPorts = [443, 80];
-      vpnPorts.forEach(port =>
-        grafana_ingress_lb_sg.addIngressRule(ec2.Peer.ipv4(ip), ec2.Port.tcp(port))
-      );
+        const vpnPorts = [443, 80];
+        vpnPorts.forEach(port =>
+          grafana_ingress_lb_sg.addIngressRule(ec2.Peer.ipv4(ip), ec2.Port.tcp(port))
+        );
       }
     });
 
@@ -1615,6 +1625,7 @@ class KmsSecrets {
   readonly pm_auth_key: string;
   readonly api_hash_key: string;
   readonly kms_encrypted_api_hash_key: string;
+  readonly user_auth_encryption_key: string;
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -1647,6 +1658,7 @@ class KmsSecrets {
     this.pm_auth_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
+    this.user_auth_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
   }
 }
 
