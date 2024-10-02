@@ -424,29 +424,30 @@ generate_keymanager_certificates() {
     echo "${bold}${green}Generating certificate done${reset}"
 }
 
-echo "Do you want to push logs to S3 and Open Search? [y/n]: "
-while true; do
-    read -r OPEN_SEARCH_SERVICE
+# Commented out the Open Search Service feature, will be added in future releases
+# echo "Do you want to push logs to S3 and Open Search? [y/n]: "
+# while true; do
+#     read -r OPEN_SEARCH_SERVICE
     
-    if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
-        read -p "Please enter the Master UserName for Open Search Service: " OPEN_SEARCH_MASTER_USER_NAME
-        while true; do
-            echo "Please enter the Master Password for Open Search Service: "
-            read -r -s OPEN_SEARCH_MASTER_PASSWORD
-            if validate_opensearch_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
-                break
-            fi
-        done
-        break
+#     if [[ "$OPEN_SEARCH_SERVICE" == "y" ]]; then
+#         read -p "Please enter the Master UserName for Open Search Service: " OPEN_SEARCH_MASTER_USER_NAME
+#         while true; do
+#             echo "Please enter the Master Password for Open Search Service: "
+#             read -r -s OPEN_SEARCH_MASTER_PASSWORD
+#             if validate_opensearch_password "$OPEN_SEARCH_MASTER_PASSWORD"; then
+#                 break
+#             fi
+#         done
+#         break
     
-    elif [[ "$OPEN_SEARCH_SERVICE" == "n" ]]; then
-        echo "Logs will not be pushed to S3 and Open Search."
-        break
+#     elif [[ "$OPEN_SEARCH_SERVICE" == "n" ]]; then
+#         echo "Logs will not be pushed to S3 and Open Search."
+#         break
     
-    else
-        echo "Invalid input. Please enter 'y' or 'n'."
-    fi
-done
+#     else
+#         echo "Invalid input. Please enter 'y' or 'n'."
+#     fi
+# done 
 
 
 if [[ "$INSTALLATION_MODE" == 2 ]]; then
@@ -464,7 +465,8 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         fi
     done
 
-    echo "Please enter the IP addresses that you want to whitelist for the EKS cluster. If you have multiple IP addresses, separate them with commas. If you want to use the default value, simply press enter."
+    echo "Please enter the IP addresses that you want to whitelist for the EKS cluster. If you have multiple IP addresses, separate them with commas."
+    echo "If you do not have static ip you can enter${bold}${red} 0.0.0.0, but this will make the cluster open to internet ${reset}."
     read -r VPN_IPS
 
     echo "Do you want to deploy the Card Vault? [y/n]: "

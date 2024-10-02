@@ -29,13 +29,13 @@ phases:
 
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
           if [[ $IMAGE == "juspaydotin/hyperswitch-router" || $IMAGE == "juspaydotin/hyperswitch-producer" || $IMAGE == "juspaydotin/hyperswitch-consumer" ]]; then
-              docker pull "$IMAGE:v1.107.0-standalone" && \
-              docker tag "$IMAGE:v1.107.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.107.0-standalone" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.107.0-standalone"
+              docker pull "$IMAGE:v1.111.0-standalone" && \
+              docker tag "$IMAGE:v1.111.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.111.0-standalone" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.111.0-standalone"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-control-center" ]]; then
-              docker pull "$IMAGE:v1.29.9" && \
-              docker tag "$IMAGE:v1.29.9" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.29.9" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.29.9"
+              docker pull "$IMAGE:v1.33.0" && \
+              docker tag "$IMAGE:v1.33.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.33.0" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.33.0"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
               docker pull "$IMAGE:v1.0.10" && \
               docker tag "$IMAGE:v1.0.10" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.10" && \
