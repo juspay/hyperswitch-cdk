@@ -220,6 +220,7 @@ else
     fi
 fi
 
+export AWS_DEFAULT_REGION;
 # Prompt for region and check if it's enabled
 while true; do
 
@@ -248,8 +249,6 @@ while true; do
     read -p "Please enter the AWS region to deploy the services: " AWS_DEFAULT_REGION
 
 done
-
-export AWS_DEFAULT_REGION;
 
 echo
 printf "${bold}Checking neccessary permissions${reset}\n"
