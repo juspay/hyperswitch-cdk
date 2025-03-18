@@ -3412,5 +3412,401 @@ ADD COLUMN organization_name TEXT;
 -- Your SQL goes here
 ALTER TABLE roles ADD COLUMN entity_type VARCHAR(64);
 
+-- Your SQL goes here
 
+CREATE TYPE "ApiVersion" AS ENUM ('v1', 'v2');
 
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS version "ApiVersion" NOT NULL DEFAULT 'v1';
+-- Your SQL goes here
+
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS always_collect_billing_details_from_wallet_connector BOOLEAN DEFAULT FALSE;
+-- Your SQL goes here
+
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS always_collect_shipping_details_from_wallet_connector BOOLEAN DEFAULT FALSE;
+ALTER TABLE payouts
+ALTER COLUMN customer_id
+DROP NOT NULL,
+ALTER COLUMN address_id
+DROP NOT NULL;
+
+ALTER TABLE payout_attempt
+ALTER COLUMN customer_id
+DROP NOT NULL,
+ALTER COLUMN address_id
+DROP NOT NULL;
+-- Your SQL goes here
+ALTER TABLE payment_intent
+ADD COLUMN IF NOT EXISTS is_payment_processor_token_flow BOOLEAN;
+-- Your SQL goes here
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS shipping_cost BIGINT;
+-- Your SQL goes here
+ALTER TABLE user_roles DROP CONSTRAINT user_merchant_unique;
+-- Your SQL goes here
+ALTER TABLE merchant_account
+ADD COLUMN IF NOT EXISTS version "ApiVersion" NOT NULL DEFAULT 'v1';
+-- Your SQL goes here
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS tax_connector_id VARCHAR(64);
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS is_tax_connector_enabled BOOLEAN;
+-- Your SQL goes here
+ALTER TABLE merchant_connector_account
+ADD COLUMN IF NOT EXISTS version "ApiVersion" NOT NULL DEFAULT 'v1';
+CREATE TABLE IF NOT EXISTS unified_translations (
+    unified_code VARCHAR(255) NOT NULL,
+    unified_message VARCHAR(1024) NOT NULL,
+    locale VARCHAR(255) NOT NULL ,
+    translation VARCHAR(1024) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    last_modified_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    PRIMARY KEY (unified_code,unified_message,locale)
+);
+-- Your SQL goes here
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS profile_id VARCHAR(64) NOT NULL DEFAULT 'default_profile';
+
+-- Add organization_id to payment_attempt table
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_org';
+
+-- Add organization_id to payment_intent table
+ALTER TABLE payment_intent
+ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_org';
+
+-- Add organization_id to refund table
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_org';
+
+-- Add organization_id to dispute table
+ALTER TABLE dispute
+ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_org';
+
+-- This doesn't work on V2
+-- The below backfill step has to be run after the code deployment
+-- UPDATE payment_attempt pa
+SET organization_id = ma.organization_id
+FROM merchant_account ma
+WHERE pa.merchant_id = ma.merchant_id;
+
+-- UPDATE payment_intent pi
+SET organization_id = ma.organization_id
+-- FROM merchant_account ma
+WHERE pi.merchant_id = ma.merchant_id;
+
+-- UPDATE refund r
+SET organization_id = ma.organization_id
+-- FROM merchant_account ma
+WHERE r.merchant_id = ma.merchant_id;
+
+-- UPDATE payment_attempt pa
+SET profile_id = pi.profile_id
+-- FROM payment_intent pi
+WHERE pa.payment_id = pi.payment_id
+AND pa.merchant_id = pi.merchant_id
+AND pi.profile_id IS NOT NULL;
+-- Your SQL goes here
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS tax_details JSONB;
+-- Your SQL goes here
+
+ALTER TABLE payment_attempt ADD COLUMN card_network VARCHAR(32);
+UPDATE payment_attempt
+SET card_network = (payment_method_data -> 'card' -> 'card_network')::VARCHAR(32);
+-- Your SQL goes here
+ALTER TYPE "ConnectorType"
+ADD VALUE IF NOT EXISTS 'tax_processor';
+-- Your SQL goes here
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS skip_external_tax_calculation BOOLEAN;
+-- Your SQL goes here
+ALTER TABLE business_profile
+ADD COLUMN version "ApiVersion" DEFAULT 'v1' NOT NULL;
+-- Your SQL goes here
+ALTER TABLE users DROP COLUMN preferred_merchant_id;
+-- Your SQL goes here
+ALTER TABLE payment_methods
+ADD COLUMN IF NOT EXISTS version "ApiVersion" NOT NULL DEFAULT 'v1';
+ALTER TABLE payout_attempt
+ADD COLUMN IF NOT EXISTS unified_code VARCHAR(255) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS unified_message VARCHAR(1024) DEFAULT NULL;
+-- Your SQL goes here
+ALTER TYPE "RoutingAlgorithmKind" ADD VALUE 'dynamic';
+-- Your SQL goes here
+ALTER TABLE
+    business_profile
+ADD
+    COLUMN dynamic_routing_algorithm JSON DEFAULT NULL;
+-- Your SQL goes here
+ALTER TABLE payment_attempt ADD COLUMN IF NOT EXISTS shipping_cost BIGINT;
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS order_tax_amount BIGINT;
+-- Your SQL goes here
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS is_network_tokenization_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+-- Your SQL goes here
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS network_token_requestor_reference_id VARCHAR(128) DEFAULT NULL;
+
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS network_token_locker_id VARCHAR(64) DEFAULT NULL;
+
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS network_token_payment_method_data BYTEA DEFAULT NULL;
+-- Your SQL goes here
+ALTER TABLE payout_attempt 
+ADD COLUMN IF NOT EXISTS additional_payout_method_data JSONB DEFAULT NULL;
+-- Your SQL goes here
+UPDATE user_roles SET entity_type = 'merchant' WHERE entity_type = 'internal';
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS connector_transaction_data VARCHAR(512);
+
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS connector_refund_data VARCHAR(512);
+
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS connector_transaction_data VARCHAR(512);
+
+ALTER TABLE captures
+ADD COLUMN IF NOT EXISTS connector_capture_data VARCHAR(512);
+-- Your SQL goes here
+-- Add is_auto_retries_enabled column in business_profile table
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS is_auto_retries_enabled BOOLEAN;
+
+-- Add max_auto_retries_enabled column in business_profile table
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS max_auto_retries_enabled SMALLINT;
+-- Your SQL goes here
+ALTER TABLE payment_attempt
+ADD COLUMN connector_mandate_detail JSONB DEFAULT NULL;
+-- Your SQL goes here
+UPDATE roles SET entity_type = 'merchant' WHERE entity_type IS NULL;
+
+ALTER TABLE roles ALTER COLUMN entity_type SET DEFAULT 'merchant';
+
+ALTER TABLE roles ALTER COLUMN entity_type SET NOT NULL;
+
+-- Database migrations between v1.112.0 and v1.113.0
+-- Your SQL goes here
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS profile_id VARCHAR(64);
+-- Your SQL goes here
+ALTER TYPE "RoleScope"
+ADD VALUE IF NOT EXISTS 'profile';
+-- Your SQL goes here
+ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(64) NOT NULL DEFAULT 'public';
+-- Your SQL goes here
+ALTER TABLE dispute ADD COLUMN IF NOT EXISTS dispute_currency "Currency";
+-- Your SQL goes here
+CREATE TABLE IF NOT EXISTS themes (
+    theme_id VARCHAR(64) PRIMARY KEY,
+    tenant_id VARCHAR(64) NOT NULL,
+    org_id VARCHAR(64),
+    merchant_id VARCHAR(64),
+    profile_id VARCHAR(64),
+    created_at TIMESTAMP NOT NULL,
+    last_modified_at TIMESTAMP NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS themes_index ON themes (
+    tenant_id,
+    COALESCE(org_id, '0'),
+    COALESCE(merchant_id, '0'),
+    COALESCE(profile_id, '0')
+);
+-- Your SQL goes here
+CREATE TABLE IF NOT EXISTS callback_mapper (
+    id VARCHAR(128) NOT NULL,
+    type VARCHAR(64) NOT NULL,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    last_modified_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (id, type)
+);
+CREATE TYPE "ScaExemptionType" AS ENUM (
+    'low_value',
+    'transaction_risk_analysis'
+);
+
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS psd2_sca_exemption_type "ScaExemptionType";
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_enum
+        WHERE enumlabel = 'sequential_automatic'
+          AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'CaptureMethod')
+    ) THEN
+        ALTER TYPE "CaptureMethod" ADD VALUE 'sequential_automatic' AFTER 'manual';
+    END IF;
+END $$;
+-- Your SQL goes here
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS entity_type VARCHAR(64) NOT NULL;
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS theme_name VARCHAR(64) NOT NULL;
+-- Your SQL goes here
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS split_payments jsonb;
+-- Your SQL goes here
+ALTER TABLE gateway_status_map ADD COLUMN error_category VARCHAR(64);
+-- Your SQL goes here
+ALTER TABLE refund ADD COLUMN IF NOT EXISTS split_refunds jsonb;
+--- Your SQL goes here
+CREATE TYPE "SuccessBasedRoutingConclusiveState" AS ENUM(
+  'true_positive',
+  'false_positive',
+  'true_negative',
+  'false_negative'
+);
+
+CREATE TABLE IF NOT EXISTS dynamic_routing_stats (
+    payment_id VARCHAR(64) NOT NULL,
+    attempt_id VARCHAR(64) NOT NULL,
+    merchant_id VARCHAR(64) NOT NULL,
+    profile_id VARCHAR(64) NOT NULL,
+    amount BIGINT NOT NULL,
+    success_based_routing_connector VARCHAR(64) NOT NULL,
+    payment_connector VARCHAR(64) NOT NULL,
+    currency "Currency",
+    payment_method VARCHAR(64),
+    capture_method "CaptureMethod",
+    authentication_type "AuthenticationType",
+    payment_status "AttemptStatus" NOT NULL,
+    conclusive_classification "SuccessBasedRoutingConclusiveState" NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY(attempt_id, merchant_id)
+);
+CREATE INDEX profile_id_index ON dynamic_routing_stats (profile_id);
+-- Your SQL goes here
+-- Incomplete migration, also run migrations/2024-12-13-080558_entity-id-backfill-for-user-roles
+UPDATE user_roles
+SET
+    entity_type = CASE
+        WHEN role_id = 'org_admin' THEN 'organization'
+        ELSE 'merchant'
+    END
+WHERE
+    version = 'v1'
+    AND entity_type IS NULL;
+-- Your SQL goes here
+ALTER TABLE merchant_account ADD COLUMN IF NOT EXISTS is_platform_account BOOL NOT NULL DEFAULT FALSE;
+
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS platform_merchant_id VARCHAR(64);
+-- Your SQL goes here
+ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS is_click_to_pay_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN IF NOT EXISTS service_details JSONB
+DEFAULT NULL;
+-- Your SQL goes here
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS email_primary_color VARCHAR(64) NOT NULL DEFAULT '#006DF9';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS email_foreground_color VARCHAR(64) NOT NULL DEFAULT '#000000';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS email_background_color VARCHAR(64) NOT NULL DEFAULT '#FFFFFF';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS email_entity_name VARCHAR(64) NOT NULL DEFAULT 'Hyperswitch';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS email_entity_logo_url TEXT NOT NULL DEFAULT 'https://app.hyperswitch.io/email-assets/HyperswitchLogo.png';
+-- Your SQL goes here
+ALTER TABLE user_authentication_methods ADD COLUMN email_domain VARCHAR(64);
+UPDATE user_authentication_methods SET email_domain = auth_id WHERE email_domain IS NULL;
+ALTER TABLE user_authentication_methods ALTER COLUMN email_domain SET NOT NULL;
+
+CREATE INDEX email_domain_index ON user_authentication_methods (email_domain);
+-- Your SQL goes here
+ALTER TABLE business_profile
+ADD COLUMN IF NOT EXISTS authentication_product_ids JSONB NULL;
+-- Your SQL goes here
+UPDATE user_roles
+SET
+    entity_id = CASE
+        WHEN role_id = 'org_admin' THEN org_id
+        ELSE merchant_id
+    END
+WHERE
+    version = 'v1'
+    AND entity_id IS NULL;
+-- Your SQL goes here
+ALTER TABLE dynamic_routing_stats
+ADD COLUMN IF NOT EXISTS payment_method_type VARCHAR(64);
+-- Your SQL goes here
+CREATE TYPE "RelayStatus" AS ENUM ('created', 'pending', 'failure', 'success');
+
+CREATE TYPE "RelayType" AS ENUM ('refund');
+
+CREATE TABLE relay (
+    id VARCHAR(64) PRIMARY KEY,
+    connector_resource_id VARCHAR(128) NOT NULL,
+    connector_id VARCHAR(64) NOT NULL,
+    profile_id VARCHAR(64) NOT NULL,
+    merchant_id VARCHAR(64) NOT NULL,
+    relay_type "RelayType" NOT NULL,
+    request_data JSONB DEFAULT NULL,
+    status "RelayStatus" NOT NULL,
+    connector_reference_id VARCHAR(128),
+    error_code VARCHAR(64),
+    error_message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    response_data JSONB DEFAULT NULL
+);
+
+-- Your SQL goes here
+
+DROP INDEX IF EXISTS role_name_org_id_org_scope_index;
+
+DROP INDEX IF EXISTS role_name_merchant_id_merchant_scope_index;
+
+DROP INDEX IF EXISTS roles_merchant_org_index;
+
+CREATE INDEX roles_merchant_org_index ON roles (
+    org_id,
+    merchant_id,
+    profile_id
+);
+-- Your SQL goes here
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_enum
+        WHERE enumlabel = 'non_deterministic'
+          AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'SuccessBasedRoutingConclusiveState')
+    ) THEN
+        ALTER TYPE "SuccessBasedRoutingConclusiveState" ADD VALUE 'non_deterministic';
+    END IF;
+END $$;
+-- Your SQL goes here
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS unified_code VARCHAR(255) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS unified_message VARCHAR(1024) DEFAULT NULL;
+-- Your SQL goes here
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(64) NOT NULL DEFAULT 'public';
+DO $$
+  DECLARE currency TEXT;
+  BEGIN
+    FOR currency IN
+      SELECT
+        unnest(
+          ARRAY ['AFN', 'BTN', 'CDF', 'ERN', 'IRR', 'ISK', 'KPW', 'SDG', 'SYP', 'TJS', 'TMT', 'ZWL']
+        ) AS currency
+      LOOP
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_enum
+            WHERE enumlabel = currency
+              AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'Currency')
+          ) THEN EXECUTE format('ALTER TYPE "Currency" ADD VALUE %L', currency);
+        END IF;
+      END LOOP;
+END $$;
+UPDATE roles
+SET groups = array_replace(groups, 'recon_ops', 'recon_ops_manage')
+WHERE 'recon_ops' = ANY(groups);
+-- Your SQL goes here
+ALTER TABLE dynamic_routing_stats
+ADD COLUMN IF NOT EXISTS global_success_based_connector VARCHAR(64);
+-- Your SQL goes here
+CREATE UNIQUE INDEX relay_profile_id_connector_reference_id_index ON relay (profile_id, connector_reference_id);
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS processor_transaction_data TEXT;
+
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS processor_refund_data TEXT;
+
+ALTER TABLE refund
+ADD COLUMN IF NOT EXISTS processor_transaction_data TEXT;
+
+ALTER TABLE captures
+ADD COLUMN IF NOT EXISTS processor_capture_data TEXT;
+-- Your SQL goes here
+CREATE TYPE "CardDiscovery" AS ENUM ('manual', 'saved_card', 'click_to_pay');
+
+ALTER TABLE payment_attempt ADD COLUMN IF NOT EXISTS card_discovery "CardDiscovery";
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_org';
