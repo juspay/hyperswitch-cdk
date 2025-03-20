@@ -246,7 +246,7 @@ def lambda_handler(event, context):
     else {
 
       const engine = DatabaseClusterEngine.auroraPostgres({
-        version: AuroraPostgresEngineVersion.VER_13_7,
+        version: AuroraPostgresEngineVersion.VER_14_11,
       });
 
       const dbCluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {

@@ -582,7 +582,6 @@ export class EksStack {
       repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
       namespace: 'kube-system',
       values: {
-        clusterName: cluster.clusterName,
         image: {
           repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
           tag: 'v1.28.0'
