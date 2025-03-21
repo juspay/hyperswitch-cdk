@@ -582,7 +582,7 @@ export class EksStack {
       repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
       namespace: 'kube-system',
       values: {
-        clusterName: cluster.clusterName,
+        
         image: {
           repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
           tag: 'v1.28.0'
@@ -722,10 +722,10 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "0.27.2";
+    const sdk_version = "v0.109.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
-      repository: "https://juspay.github.io/hyperswitch-helm/v0.1.3",
+      repository: "https://juspay.github.io/hyperswitch-helm/",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -741,16 +741,16 @@ export class EksStack {
 
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.113.0-standalone`
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.113.0-standalone`
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.113.0-standalone`
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.33.0`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.36.1`
             },
             sdk: {
               host: "http://localhost:9090",

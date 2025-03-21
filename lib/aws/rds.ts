@@ -150,7 +150,7 @@ def lambda_handler(event, context):
         # Call the upload_file_from_url function to upload two files to S3
         if event['RequestType'] == 'Create':
           upload_file_from_url("https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/lib/aws/migrations/migration_runner.zip", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "migration_runner.zip")
-          upload_file_from_url("https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/lib/aws/migrations/v1.111.0/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
+          upload_file_from_url("https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/lib/aws/migrations/v1.113.0/schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "schema.sql")
           upload_file_from_url("https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/lib/aws/migrations/locker-schema.sql", "hyperswitch-schema-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}", "locker-schema.sql")
           send(event, context, SUCCESS, { "message" : "Files uploaded successfully"})
         else:
@@ -246,7 +246,7 @@ def lambda_handler(event, context):
     else {
 
       const engine = DatabaseClusterEngine.auroraPostgres({
-        version: AuroraPostgresEngineVersion.VER_13_7,
+        version: AuroraPostgresEngineVersion.VER_14_11,
       });
 
       const dbCluster = new DatabaseCluster(scope, "hyperswitch-db-cluster", {
