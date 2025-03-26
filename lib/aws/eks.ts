@@ -639,7 +639,23 @@ export class EksStack {
       namespace: "istio-system",
       release: "istio-base",
       version: "1.25.0",
+      values: { 
+        defaultRevision: "default",
+        global: {
+          hub: `${privateEcrRepository}/istio`,
+        }
+      },
+      createNamespace: true
     });
+
+    const istioBaseCheck = cluster.addManifest("IstioBaseCheck", {
+      apiVersion: "apiextensions.k8s.io/v1",
+      kind: "CustomResourceDefinition",
+      metadata: {
+        name: "virtualservices.networking.istio.io"
+      }
+    });
+    istioBaseCheck.node.addDependency(istioBase);
 
     const istiod = cluster.addHelmChart("Istiod", {
       chart: "istiod",
@@ -655,9 +671,12 @@ export class EksStack {
           nodeSelector: {
             "node-type": "memory-optimized",
           },
-        }
-      }
+        },
+        revision: "default"
+      },
+      wait: true
     });
+    istiod.node.addDependency(istioBaseCheck);
 
     const gateway = cluster.addHelmChart("Gateway", {
       chart: "gateway",
@@ -673,7 +692,9 @@ export class EksStack {
             "node-type": "memory-optimized",
           },
       },
+      wait: true
     });
+    gateway.node.addDependency(istiod);
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
@@ -717,10 +738,10 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "v1.109.2";
+    const sdk_version = "v0.109.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
-      repository: "https://juspay.github.io/hyperswitch-helm/v0.2.2",
+      repository: "https://juspay.github.io/hyperswitch-helm/",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
