@@ -582,7 +582,7 @@ export class EksStack {
       repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
       namespace: 'kube-system',
       values: {
-        
+
         image: {
           repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
           tag: 'v1.28.0'
@@ -639,46 +639,42 @@ export class EksStack {
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
       release: "istio-base",
-      version: "1.21.2",
+      version: "1.25.0",
     });
 
     const istiod = cluster.addHelmChart("Istiod", {
       chart: "istiod",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
-      release: "istio-discovery",
-      version: "1.21.2",
+      release: "istiod",
+      version: "1.25.0",
       values: {
-        defaults: {
-          global: {
-            hub: `${privateEcrRepository}/istio`,
-          },
-          pilot: {
-            nodeSelector: {
-              "node-type": "memory-optimized",
-            },
-          }
+        global: {
+          hub: `${privateEcrRepository}/istio`,
         },
-      }
-    });
+        pilot: {
+          nodeSelector: {
+            "node-type": "memory-optimized",
+          },
+        },
+      },
+    });    
 
     const gateway = cluster.addHelmChart("Gateway", {
       chart: "gateway",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
-      release: "istio-ingressgateway",
-      version: "1.21.2",
+      release: "istio-ingress",
+      version: "1.25.0",
       values: {
-        defaults: {
-          service: {
-            type: "ClusterIP"
-          },
-          nodeSelector: {
-            "node-type": "memory-optimized",
-          },
-        }
+        service: {
+          type: "ClusterIP",
+        },
+        nodeSelector: {
+          "node-type": "memory-optimized",
+        },
       },
-    });
+    });    
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
@@ -734,10 +730,25 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
+        "prometheus" : {
+          prometheus: {
+            enabled: false
+          }
+        },
         "hyperswitch-app": {
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
+          "kafka":{
+            kafka:{
+              enabled: false
+          }
+        },
+        "clickhouse":{
+            clickhouse:{
+              enabled: false
+          }
+        },
 
           services: {
             router: {
@@ -1032,13 +1043,13 @@ export class EksStack {
                 path: "/",
                 pathType: "Prefix",
                 port: 80,
-                name: "istio-ingressgateway",
+                name: "istio-ingress",
               },
               {
                 path: "/healthz/ready",
                 pathType: "Prefix",
                 port: 15021,
-                name: "istio-ingressgateway",
+                name: "istio-ingress",
               }
             ]
           }
