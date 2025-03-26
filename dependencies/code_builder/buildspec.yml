@@ -37,9 +37,9 @@ phases:
               docker tag "$IMAGE:v1.36.1" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.36.1" && \
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.36.1"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
-              docker pull "$IMAGE:v1.0.10" && \
-              docker tag "$IMAGE:v1.0.10" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.10" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.0.10"
+              docker pull "$IMAGE:v0.109.2" && \
+              docker tag "$IMAGE:v0.109.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.109.2" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.109.2"
           elif [[ $IMAGE == "bitnami/metrics-server" ]]; then
               docker pull "$IMAGE:0.7.0" && \
               docker tag "$IMAGE:0.7.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.0"

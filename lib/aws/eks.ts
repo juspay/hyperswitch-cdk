@@ -582,7 +582,6 @@ export class EksStack {
       repository: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver',
       namespace: 'kube-system',
       values: {
-
         image: {
           repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
           tag: 'v1.28.0'
@@ -656,9 +655,9 @@ export class EksStack {
           nodeSelector: {
             "node-type": "memory-optimized",
           },
-        },
-      },
-    });    
+        }
+      }
+    });
 
     const gateway = cluster.addHelmChart("Gateway", {
       chart: "gateway",
@@ -667,14 +666,14 @@ export class EksStack {
       release: "istio-ingress",
       version: "1.25.0",
       values: {
-        service: {
-          type: "ClusterIP",
-        },
-        nodeSelector: {
-          "node-type": "memory-optimized",
-        },
+          service: {
+            type: "ClusterIP"
+          },
+          nodeSelector: {
+            "node-type": "memory-optimized",
+          },
       },
-    });    
+    });
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
@@ -718,37 +717,25 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "v0.109.2";
+    const sdk_version = "v1.109.2";
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
-      repository: "https://juspay.github.io/hyperswitch-helm/",
+      repository: "https://juspay.github.io/hyperswitch-helm/v0.2.2",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
       values: {
+        prometheus: {
+          enabled: false
+        },
         clusterName: cluster.clusterName,
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
-        },
-        "prometheus" : {
-          prometheus: {
-            enabled: false
-          }
         },
         "hyperswitch-app": {
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
-          "kafka":{
-            kafka:{
-              enabled: false
-          }
-        },
-        "clickhouse":{
-            clickhouse:{
-              enabled: false
-          }
-        },
 
           services: {
             router: {
@@ -918,7 +905,12 @@ export class EksStack {
               },
             }
           },
-
+          kafka: {
+            enabled: false
+          },
+          clickhouse: {
+            enabled: false
+          },
           redis: {
             enabled: false
           },
@@ -945,7 +937,7 @@ export class EksStack {
             //     master_key: locker ? config.locker.master_key : ""
             //   }
             // }
-          }
+          },
         },
         "hyperswitchsdk": {
           enabled: true,
