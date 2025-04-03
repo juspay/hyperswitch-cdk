@@ -91,7 +91,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/sh
-          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/single-click.sh
+          curl -o run-cdk.sh https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refs/heads/main/single-click/single-click.sh
           chmod a+x run-cdk.sh
 
           # export env variables
@@ -104,9 +104,9 @@ Resources:
           export MODE="${HyperswitchInstallMode}"
 
           if [[ $MODE == "Free Tier" ]]; then
-            INSTALLATION_MODE=1
+            export INSTALLATION_MODE=1
           else
-            INSTALLATION_MODE=2
+            export INSTALLATION_MODE=2
           fi
 
           sh run-cdk.sh > /var/log/hyperswitch-script.log 2>&1
