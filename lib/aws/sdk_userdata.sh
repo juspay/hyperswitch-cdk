@@ -14,7 +14,7 @@ hyperswitch_client_url=$(curl ifconfig.me)
 
 cd /
 # pull the compiled Hyperswitch SDK from the S3 bucket
-sudo curl https://hyperswitch-bucket.s3.amazonaws.com/data.zip --output data.zip
+sudo curl https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refs/heads/main/single-click/data.zip --output data.zip
 sudo unzip -o data.zip
 
 # Replace the backend_url and hyperswitch_client_url in the SDK

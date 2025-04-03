@@ -62,12 +62,12 @@ export class AWSStack extends cdk.Stack {
       hyperswitch_ec2.sg.addEgressRule(elasticache.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addIngressRule(
         // To access the Router for User
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(80),
       );
       hyperswitch_ec2.sg.addIngressRule(
         // To access the Control Center
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(9000),
       );
       hyperswitch_ec2.sg.addIngressRule(
@@ -77,7 +77,7 @@ export class AWSStack extends cdk.Stack {
       );
       hyperswitch_ec2.sg.addIngressRule(
         // To SSH into the instance
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
 
@@ -92,17 +92,17 @@ export class AWSStack extends cdk.Stack {
       // create an security group for the SDK and add rules to access the router and demo app with port 1234 after the hyperswitch_sdk_ec2 is created
       hyperswitch_sdk_ec2.sg.addIngressRule(
         // To access the SDK
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(9090),
       );
       hyperswitch_sdk_ec2.sg.addIngressRule(
         // To Access Demo APP
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(5252),
       );
       hyperswitch_sdk_ec2.sg.addIngressRule(
         // To SSH into the instance
-        ec2.Peer.ipv4("0.0.0.0/32"),
+        ec2.Peer.ipv4("0.0.0.0/0"),
         ec2.Port.tcp(22),
       );
 
@@ -113,7 +113,7 @@ export class AWSStack extends cdk.Stack {
       });
  
       allowSdkToApplicationSg.addIngressRule(
-        ec2.Peer.ipv4(hyperswitch_sdk_ec2.getInstance().instancePublicIp + "/32"),
+        ec2.Peer.ipv4(hyperswitch_sdk_ec2.getInstance().instancePublicIp + "/0"),
         ec2.Port.tcp(80)
       );
 
