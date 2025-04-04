@@ -12,4 +12,4 @@ chmod ug+rw /etc/envoy/envoy.yaml
 chown envoy:envoy /etc/envoy/envoy.yaml
 chmod ug+rw /etc/envoy/envoy-config-template.yaml
 chown envoy:envoy /etc/envoy/envoy-config-template.yaml
-systemctl reload envoy.service
+systemctl restart envoy.service
