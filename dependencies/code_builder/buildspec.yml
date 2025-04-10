@@ -41,17 +41,17 @@ phases:
               docker tag "$IMAGE:v0.109.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.109.2" && \
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.109.2"
           elif [[ $IMAGE == "bitnami/metrics-server" ]]; then
-              docker pull "$IMAGE:0.7.0" && \
-              docker tag "$IMAGE:0.7.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.0"
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.0"
+              docker pull "$IMAGE:0.7.2" && \
+              docker tag "$IMAGE:0.7.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
           elif [[ $IMAGE == "istio/proxyv2" || $IMAGE == "istio/pilot" ]]; then
               docker pull "$IMAGE:1.25.0" && \
               docker tag "$IMAGE:1.25.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
           elif [[ $IMAGE == "kiwigrid/k8s-sidecar" ]]; then
-              docker pull "$IMAGE:1.19.2" && \
-              docker tag "$IMAGE:1.19.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.19.2"
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.19.2"
+              docker pull "$IMAGE:1.30.3" && \
+              docker tag "$IMAGE:1.30.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"
           else
               docker pull "$IMAGE" && \
               docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest" && \
@@ -61,41 +61,41 @@ phases:
 
         for IMAGE in "${PULL_FROM_AWS[@]}"; do
           if [[ $IMAGE == "eks/aws-load-balancer-controller" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v2.7.1
-            docker tag public.ecr.aws/$IMAGE:v2.7.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.7.1
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.7.1
+            docker pull public.ecr.aws/$IMAGE:v2.12.0
+            docker tag public.ecr.aws/$IMAGE:v2.12.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.12.0
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.12.0
           elif [[ $IMAGE == "ebs-csi-driver/aws-ebs-csi-driver" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v1.28.0
-            docker tag public.ecr.aws/$IMAGE:v1.28.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.28.0
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.28.0
+            docker pull public.ecr.aws/$IMAGE:v1.41.0
+            docker tag public.ecr.aws/$IMAGE:v1.41.0 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.41.0
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.41.0
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/external-provisioner" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v4.0.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v4.0.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.0.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.0.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v5.2.0-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v5.2.0-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v5.2.0-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v5.2.0-eks-1-32-10
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/external-attacher" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v4.5.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v4.5.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.5.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.5.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v4.8.1-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v4.8.1-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.8.1-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v4.8.1-eks-1-32-10
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v7.0.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v7.0.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v7.0.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v7.0.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v8.2.1-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v8.2.1-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v8.2.1-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v8.2.1-eks-1-32-10
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/livenessprobe" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v2.12.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v2.12.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.12.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.12.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v2.15.0-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v2.15.0-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.15.0-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.15.0-eks-1-32-10
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/external-resizer" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v1.10.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v1.10.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.10.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.10.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v1.13.2-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v1.13.2-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.13.2-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.13.2-eks-1-32-10
           elif [[ $IMAGE == "eks-distro/kubernetes-csi/node-driver-registrar" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v2.10.0-eks-1-29-5
-            docker tag public.ecr.aws/$IMAGE:v2.10.0-eks-1-29-5 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.10.0-eks-1-29-5
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.10.0-eks-1-29-5
+            docker pull public.ecr.aws/$IMAGE:v2.13.0-eks-1-32-10
+            docker tag public.ecr.aws/$IMAGE:v2.13.0-eks-1-32-10 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.13.0-eks-1-32-10
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v2.13.0-eks-1-32-10
           elif [[ $IMAGE == "ebs-csi-driver/volume-modifier-for-k8s" ]]; then
-            docker pull public.ecr.aws/$IMAGE:v0.2.1
-            docker tag public.ecr.aws/$IMAGE:v0.2.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.2.1
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.2.1
+            docker pull public.ecr.aws/$IMAGE:v0.5.1
+            docker tag public.ecr.aws/$IMAGE:v0.5.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.5.1
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.5.1
           fi
         done
 
