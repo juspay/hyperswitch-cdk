@@ -940,10 +940,18 @@ export class EksStack {
               apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
               pm_auth_key: kmsSecrets.pm_auth_key,
               api_hash_key: kmsSecrets.api_hash_key,
-              user_auth_encryption_key: kmsSecrets.user_auth_encryption_key,
               master_enc_key: kmsSecrets.kms_encrypted_master_key,
             },
-            
+            google_pay_decrypt_keys: {
+              google_pay_root_signing_keys: kmsSecrets.api_hash_key
+            },
+            paze_decrypt_keys: {
+              paze_private_key: kmsSecrets.paze_private_key,
+              paze_private_key_passphrase: kmsSecrets.paze_private_key_passphase,
+            },
+            user_auth_methods: {
+              encryption_key: kmsSecrets.encryption_key,
+            },
             locker: {
               locker_enabled: false,
               locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
@@ -1743,7 +1751,10 @@ class KmsSecrets {
   readonly pm_auth_key: string;
   readonly api_hash_key: string;
   readonly kms_encrypted_api_hash_key: string;
-  readonly user_auth_encryption_key: string;
+  readonly encryption_key: string;
+  readonly google_pay_root_signing_keys: string;
+  readonly paze_private_key: string;
+  readonly paze_private_key_passphase: string;
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -1776,7 +1787,10 @@ class KmsSecrets {
     this.pm_auth_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
-    this.user_auth_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.google_pay_root_signing_keys = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/google-pay-root-signing-keys", 1);
+    this.paze_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key", 1);
+    this.paze_private_key_passphase = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key-passphase", 1);
   }
 }
 

@@ -38,6 +38,11 @@ def worker():
 
     tenant_private_key = enc_pl("tenant_private_key")
 
+    paze_private_key = enc_pl("PAZE_PRIVATE_KEY")
+    paze_private_key_passphase = enc_pl("PAZE_PRIVATE_KEY_PASSPHASE")
+
+    google_pay_root_signing_keys = enc_pl("GOOGLE_PAY_ROOT_SIGNING_KEYS")
+
     dummy_val = kms_fun(dummy_val)
     kms_encrypted_api_hash_key = kms_fun(api_hash_key)
 
@@ -50,6 +55,9 @@ def worker():
         "kms-encrypted-api-hash-key": kms_encrypted_api_hash_key,
         "locker-public-key": locker_public_key,
         "tenant-private-key": tenant_private_key,
+        "paze-private-key": paze_private_key,
+        "paze-private-key-passphase" : paze_private_key_passphase,
+        "google-pay-root-signing-keys" : google_pay_root_signing_keys,
     }
 
     for key in secretval:
