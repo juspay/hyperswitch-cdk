@@ -178,7 +178,7 @@ export class Keymanager extends Construct {
             wait: false,
             values: {
                 server: {
-                    image: "juspaydotin/hyperswitch-encryption-service:v0.1.3",
+                    image: "juspaydotin/hyperswitch-encryption-service:v0.1.7",
                     secrets: {
                         key_id: kms_key.keyId,
                         iam_role: kms_role.roleArn,

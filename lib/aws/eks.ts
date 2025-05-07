@@ -1,12 +1,8 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import * as eks from "aws-cdk-lib/aws-eks";
-//import { KubectlV22Layer } from "@aws-cdk/lambda-layer-kubectl-v22/lib/lambda-layer-kubectl-v22";
-import { KubectlV22Layer } from '@aws-cdk/lambda-layer-kubectl-v22';
-
-
-//import { KubectlV22Layer } from "aws-cdk/lambda-layer-kubectl-v22";
-//import { KubectlLayer } from "aws-cdk-lib/aws-eks";
+import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32';
+import * as cp from 'child_process'; 
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
@@ -25,7 +21,7 @@ import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing package
 import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
@@ -38,6 +34,7 @@ import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
+  trafficControl: eks.HelmChart;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
   sdkDistribution: cloudfront.CloudFrontWebDistribution;
@@ -70,7 +67,7 @@ export class EksStack {
 
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.32"),
-      kubectlLayer: new KubectlV22Layer(scope, "kubectl"),
+      kubectlLayer: new KubectlV32Layer(scope, "kubectlLayer"),
       defaultCapacity: 0,
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
@@ -572,46 +569,10 @@ export class EksStack {
         enableServiceMutatorWebhook: false,
         extraArgs: {
           "aws-region": `${process.env.CDK_DEFAULT_REGION}`,
-          "aws-use-imdsv2": "true",
+          "aws-vpc-id": `${cluster.vpc.vpcId}`,
         },
-        // serviceAccount: {
-        //   create: true, 
-        //   annotations: {
-        //     "eks.amazonaws.com/role-arn": nodegroupRole.roleArn, 
-        //   }
-        // }
       },
-      //timeout: cdk.Duration.minutes(10)
     });
-
-
-    // // Add a wait condition for ALB controller to be ready
-    // const albControllerWait = cluster.addManifest("ALBControllerWait", {
-    //   apiVersion: "batch/v1",
-    //   kind: "Job",
-    //   metadata: {
-    //     name: "alb-controller-wait",
-    //     namespace: "kube-system"
-    //   },
-    //   spec: {
-    //     backoffLimit:30,
-    //     template: {
-    //       spec: {
-    //         serviceAccountName: "aws-load-balancer-controller",
-    //         containers: [{
-    //           name: "wait",
-    //           image: "bitnami/kubectl:latest",
-    //           command: ["/bin/sh", "-c"],
-    //           args: [
-    //             "until kubectl get deployment aws-load-balancer-controller -n kube-system -o jsonpath='{.status.readyReplicas}' | grep -q '1' && kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller -o jsonpath='{.items[0].status.phase}' | grep -q 'Running'; do echo 'Waiting for ALB controller...'; sleep 10; done"
-    //           ],
-    //         }],
-    //         restartPolicy: "Never"
-    //       }
-    //     }
-    //   }
-    // });
-    // albControllerWait.node.addDependency(albControllerChart);
 
     cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 
@@ -686,23 +647,12 @@ export class EksStack {
       namespace: "istio-system",
       release: "istio-base",
       version: "1.25.0",
-      values: { 
-        defaultRevision: "default",
-        global: {
-          hub: `${privateEcrRepository}/istio`,
-        }
+      values: {
+        defaultRevision: "default"
       },
-      createNamespace: true
+      createNamespace: true,
+      wait: true
     });
-
-    const istioBaseCheck = cluster.addManifest("IstioBaseCheck", {
-      apiVersion: "apiextensions.k8s.io/v1",
-      kind: "CustomResourceDefinition",
-      metadata: {
-        name: "virtualservices.networking.istio.io"
-      }
-    });
-    istioBaseCheck.node.addDependency(istioBase);
 
     const istiod = cluster.addHelmChart("Istiod", {
       chart: "istiod",
@@ -720,11 +670,9 @@ export class EksStack {
             "node-type": "memory-optimized",
           },
         },
-        revision: "default"
       },
       wait: true
     });
-    istiod.node.addDependency(istioBaseCheck);
 
     istiod.node.addDependency(istioBase);
 
@@ -747,10 +695,7 @@ export class EksStack {
         },
       },
       wait: true,
-      timeout: cdk.Duration.minutes(10),
-
     });
-    gateway.node.addDependency(istiod);
 
     gateway.node.addDependency(istiod);
 
@@ -787,24 +732,6 @@ export class EksStack {
         }
       ]
     });
-
-    // this.sdkDistribution = new cloudfront.Distribution(scope, 'sdkDistribution', {
-    //   defaultBehavior: {
-    //     origin: new cloudfront.S3BucketOrigin(sdkBucket, {
-    //       originAccessIdentity: oai,  
-    //     }),
-    //     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
-    //     allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-    //   },
-    //   additionalBehaviors: {
-    //     '/*': {
-    //       origin: new cloudfront.S3BucketOrigin(sdkBucket, {
-    //         originAccessIdentity: oai,
-    //       }),
-    //       allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-    //     },
-    //   },
-    // });
     
     this.sdkDistribution.node.addDependency(sdkBucket);
     new cdk.CfnOutput(scope, 'SdkDistribution', {
@@ -815,7 +742,8 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "v0.109.2";
+    const sdk_version = "0.109.2";
+
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
       repository: "https://juspay.github.io/hyperswitch-helm/",
@@ -824,44 +752,26 @@ export class EksStack {
       release: "hypers-v1",
       wait: false,
       values: {
-        prometheus: {
-          enabled: false
-        },
         clusterName: cluster.clusterName,
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
+        prometheus: {
+          enabled: false
+        },
+        alertmanager: {
+          enabled: false,
+        },
         "hyperswitch-app": {
-          analytics: {
-            clickhouse: {
-              enabled: false,
-              password: "dummypassword"
-            },
-          },
-          clickhouse: {
-            enabled: false,
-          },
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
-          },
-          kafka: {
-            enabled: false
           },
           redis: {
             enabled: false
           },
-          // loki:{
-          //   enabled: false
-          // },
-          zookeeper: {
-            enabled: false
-          },
-          promtail: {
-            enabled: false
-          },
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.113.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.113.0-standalone`,
             },
             producer: {
               image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.113.0-standalone`
@@ -873,9 +783,9 @@ export class EksStack {
               image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.36.1`
             },
             sdk: {
-              host: "http://localhost:9090",
+              host: "https://${this.sdkDistribution.distributionDomainName}",
               version: sdk_version,
-              subversion: "v0"
+              subversion: "v1"
             }
           },
 
@@ -898,6 +808,7 @@ export class EksStack {
             secrets_management: {
               secrets_manager: "aws_kms"
             },
+            region: `${process.env.CDK_DEFAULT_REGION}`,
             bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`, //check
             serviceAccountAnnotations: {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
@@ -925,7 +836,7 @@ export class EksStack {
               kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
               kms_key_id: kms_key.keyId,
               kms_key_region: kms_key.stack.region,
-              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key, //check
+              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
               admin_api_key: kmsSecrets.kms_admin_api_key,
               jwt_secret: kmsSecrets.kms_jwt_secret,
               recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
@@ -943,11 +854,12 @@ export class EksStack {
               master_enc_key: kmsSecrets.kms_encrypted_master_key,
             },
             google_pay_decrypt_keys: {
-              google_pay_root_signing_keys: kmsSecrets.api_hash_key
+              google_pay_root_signing_keys:
+                kmsSecrets.google_pay_root_signing_keys,
             },
             paze_decrypt_keys: {
               paze_private_key: kmsSecrets.paze_private_key,
-              paze_private_key_passphrase: kmsSecrets.paze_private_key_passphase,
+              paze_private_key_passphrase: kmsSecrets.paze_private_key_passphrase,
             },
             user_auth_methods: {
               encryption_key: kmsSecrets.encryption_key,
@@ -957,7 +869,7 @@ export class EksStack {
               locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
               hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
             },
-            basilisk: { //check
+            basilisk: { 
               host: "basilisk-host",
             },
             run_env: "sandbox",
@@ -1012,6 +924,9 @@ export class EksStack {
                 ]
               }
             },
+            env: {
+              default__features__email: false,
+            }
           },
           postgresql: {
             enabled: false
@@ -1048,6 +963,18 @@ export class EksStack {
             maxReplicas: 5,
             targetCPUUtilizationPercentage: 80,
           },
+          analytics: {
+            clickhouse: {
+              enabled: false,
+              password: "dummypassword"
+            },
+          },
+          kafka: {
+            enabled: false
+          },
+          clickhouse: {
+            enabled: false,
+          },
           "hyperswitch-card-vault": {
             enabled: false,
             postgresql: {
@@ -1069,7 +996,7 @@ export class EksStack {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.0.12", //check
+              image: "juspaydotin/hyperswitch-web:v0.109.2",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
@@ -1107,9 +1034,9 @@ export class EksStack {
               gitVersion: sdk_version
             },
             buildParam: {
-              envSdkUrl: `http://${this.sdkDistribution.distributionDomainName}`
+              envSdkUrl: `https://${this.sdkDistribution.distributionDomainName}`
             },
-            nginxConfig: { extraPath: "v0" }
+            nginxConfig: { extraPath: "v1" }
           }
         },
       },
@@ -1173,6 +1100,7 @@ export class EksStack {
     });
 
     trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
+    this.trafficControl = trafficControl;
 
     const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
       bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -1754,7 +1682,7 @@ class KmsSecrets {
   readonly encryption_key: string;
   readonly google_pay_root_signing_keys: string;
   readonly paze_private_key: string;
-  readonly paze_private_key_passphase: string;
+  readonly paze_private_key_passphrase: string;
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -1790,7 +1718,7 @@ class KmsSecrets {
     this.encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.google_pay_root_signing_keys = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/google-pay-root-signing-keys", 1);
     this.paze_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key", 1);
-    this.paze_private_key_passphase = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key-passphase", 1);
+    this.paze_private_key_passphrase = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key-passphrase", 1);
   }
 }
 
