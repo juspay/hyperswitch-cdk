@@ -1,0 +1,183 @@
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttps://hyperswitch-web-1848392926.us-east-1.elb.amazonaws.com/0.16.7/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-584444745.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-397699258.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1802238184.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1699837745.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m Standalone Hosted at             [34mhttp://54.147.107.247/health(B[m
+[32m Control center server running on  [34mhttp://54.147.107.247:9000
+[32m SDK Hosted at                    [34mhttp://3.237.203.185:9090(B[m
+[32m Hyperswitch Demo Store running on [34mhttp://3.237.203.185:5252(B[m
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp:///0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://(B[m
+[32m Logs server running on            [34mhttp://(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d1kkxyfgswgr4g.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-2119482680.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-683025949.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1549095974.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-132225212.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d2aa83ts2e57zd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-823754562.us-west-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-486193673.us-west-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-57549440.us-west-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-995727775.us-west-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d3g6rfvg7uroo3.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-302507436.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-2127548961.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1116272664.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-936841282.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d39fhjgi6k3jw0.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1437506254.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-876447085.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1116186466.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1974832810.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d1eqwms1pljjct.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1060889248.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-439381148.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-442668031.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-218877891.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://dtdt40bq29rht.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-448662112.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-263016694.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-871608286.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1779029727.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d34v3ak26mmq5d.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1367230855.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-1778513677.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1224948808.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1910077062.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://dd6rsg7svetsd.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-972843497.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-231964028.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-1393543371.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1314515281.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m
+--------------------------------------------------------------------------------
+[1m Service                           Host(B[m
+--------------------------------------------------------------------------------
+[32m HyperloaderJS Hosted at           [34mhttp://d388hjddo51byc.cloudfront.net/0.27.2/v0/HyperLoader.js(B[m
+[32m App server running on             [34mhttp://hyperswitch-1890735435.us-east-1.elb.amazonaws.com(B[m
+[32m Logs server running on            [34mhttp://hyperswitch-logs-522019525.us-east-1.elb.amazonaws.com(B[m, Login with  username: admin, password: admin(B[m , Please change on startup
+[32m Control center server running on  [34mhttp://hyperswitch-control-center-977618747.us-east-1.elb.amazonaws.com(B[m, Login with  Email: test@gmail.com, password: admin(B[m , Please change on startup
+[32m Hyperswitch Demo Store running on [34mhttp://hyperswitch-sdk-demo-1230850870.us-east-1.elb.amazonaws.com(B[m
+--------------------------------------------------------------------------------
+##########################################
+[34m Please run 'cat cdk.services.log' to view the services details again(B[m

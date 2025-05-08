@@ -62,3 +62,7 @@ echoLog "$blue Please run 'cat cdk.services.log' to view the services details ag
 if [[ "$2" == "y" ]]; then
     sh ./unlock_locker.sh
 fi
+
+# echo "install otel"
+# helm repo add mono https://open-telemetry.github.io/opentelemetry-helm-charts
+# helm install -f otel.yaml opentelemetry-collector mono/opentelemetry-collector

@@ -16,6 +16,11 @@ export class Vpc {
       maxAzs: config.maxAzs,
       subnetConfiguration: [
         {
+          name: "locust-workspace",
+          subnetType : ec2.SubnetType.PUBLIC,
+          cidrMask : 20,
+        },
+        {
           name: SubnetNames.PublicSubnet,
           subnetType: ec2.SubnetType.PUBLIC,
           cidrMask: 24,
@@ -33,7 +38,7 @@ export class Vpc {
         {
           name: "eks-worker-nodes-one-zone",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 22,
+          cidrMask: 20,
         },
         {
           name: "utils-zone",
@@ -88,22 +93,22 @@ export class Vpc {
         {
           name: "elasticache-zone",
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          cidrMask: 24,
+          cidrMask: 24, // 2
         },
         {
           name: "incoming-npci-zone",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
+          cidrMask: 24, //256
         },
         {
           name: "eks-control-plane-zone",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
+          cidrMask: 24, //256
         },
         {
           name: "incoming-web-envoy-zone",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
+          cidrMask: 24, // 256
         },
       ],
       cidr: "10.63.0.0/16",

@@ -19,6 +19,7 @@ display_error() {
 
 # Checking for AWS credentials
 if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" || -z "$AWS_SESSION_TOKEN" ]]; then
+    echo "$AWS_ACCESS_KEY_ID"
     display_error "Missing AWS credentials. Please configure the AWS CLI with your credentials."
     exit 1
 fi
@@ -219,7 +220,7 @@ fi
 # Prompt for region and check if it's enabled
 while true; do
 
-    AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
+    AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --region 'us-east-1' --output text 2>&1)
 
     if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
         display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
@@ -230,6 +231,7 @@ while true; do
     else
         # Convert the region list into an array
         AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
+        echo "$AVAILABLE_REGIONS"
 
         # Check if AWS_DEFAULT_REGION is in the list of available regions
         if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then

@@ -261,8 +261,8 @@ def lambda_handler(event, context):
           [
             ClusterInstance.provisioned("Reader Instance", {
               instanceType: InstanceType.of(
-                InstanceClass.T3,   //stack size can be configurable as per the requirement
-                InstanceSize.MEDIUM
+                InstanceClass.R6I,   //stack size can be configurable as per the requirement
+                InstanceSize.XLARGE2
               ),
             }),
           ],

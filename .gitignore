@@ -186,3 +186,5 @@ cdk.context.json
 
 values.yaml
 cdk.services.log
+
+output

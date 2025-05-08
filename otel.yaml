@@ -1,0 +1,79 @@
+#namespaceOverride: "loki"
+mode: "deployment"
+config:
+  extensions:
+    health_check: {}
+  processors:
+    transform:
+      metric_statements:
+      - context: datapoint
+        statements:
+        - set(attributes["source_namespace"], resource.attributes["k8s.namespace.name"])
+        - set(attributes["source_pod"], resource.attributes["k8s.pod.name"])
+        - set(attributes["source_app"], resource.attributes["app"])
+        - set(attributes["source_version"], resource.attributes["version"])
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+  exporters:
+    prometheus:
+      endpoint: ${env:MY_POD_IP}:8889
+      #namespace: router
+      const_labels:
+        app_name: router-api
+
+  service:
+    telemetry:
+      logs:
+        level : "debug"
+    extensions:
+      - health_check
+    pipelines:
+      metrics:
+        receivers:
+          - otlp
+        exporters:
+          - prometheus
+        processors:
+          - transform
+# image:
+#   repository: "otel/opentelemetry-collector-contrib"
+image:
+  repository: "otel/opentelemetry-collector-contrib"
+
+
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    hostPort: 4317
+    protocol: TCP
+    # nodePort: 30317
+    appProtocol: grpc
+  metrics:
+    # The metrics port is disabled by default. However you need to enable the port
+    # in order to use the ServiceMonitor (serviceMonitor.enabled) or PodMonitor (podMonitor.enabled).
+    enabled: true
+    containerPort: 8888
+    servicePort: 8888
+    protocol: TCP
+  prometheus:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+  otlp-http:
+    enabled: false
+
+presets:
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodAnnotations: false
+    extractAllPodLabels: true
+
+serviceAccount:
+  create: true
+  name: otel-collector-role

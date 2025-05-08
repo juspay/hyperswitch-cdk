@@ -261,12 +261,13 @@ export class EksStack {
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
-        new ec2.InstanceType("t3.medium"),
+        // new ec2.InstanceType("t3.medium"),
+        // new ec2.InstanceType("t3.medium")
+        new ec2.InstanceType("c5.xlarge"),
       ],
-      minSize: 1,
-      maxSize: 3,
-      desiredSize: 2,
+      minSize: 80,
+      maxSize: 100,
+      desiredSize:80,
       labels: {
         "node-type": "generic-compute",
       },
@@ -332,6 +333,7 @@ export class EksStack {
       nodeRole: nodegroupRole,
 
     });
+
 
     const kafkacomputenodegroup = cluster.addNodegroupCapacity("HSKafkacomputeNodegroup", {
       nodegroupName: "kafka-compute-OD",
@@ -436,6 +438,22 @@ export class EksStack {
       },
       subnets:{ subnetGroupName: "eks-worker-nodes-one-zone"},
       nodeRole: nodegroupRole,
+    });
+
+    const locustnodegroup = cluster.addNodegroupCapacity("HSLocustNodeGroup", {
+      nodegroupName: "locust",
+      instanceTypes:[
+        new ec2.InstanceType("t3.medium"),
+      ],
+      minSize: 3,
+      maxSize: 5,
+      desiredSize: 3,
+      labels: {
+        "node-type": "locust",
+      },
+      subnets:{ subnetGroupName: "locust-workspace"},
+      nodeRole: nodegroupRole,
+
     });
 
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
@@ -634,7 +652,7 @@ export class EksStack {
       chart: "istiod",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
-      release: "istio-discorvery",
+      release: "istio-discovery",
       version: "1.21.2",
       values: {
         defaults: {
@@ -966,6 +984,13 @@ export class EksStack {
             },
             nginxConfig: { extraPath: "v0" }
           }
+
+        },
+        autoscaling: {
+          enabled: true,
+          minReplicas: 5,
+          maxReplicas: 15,
+          targetCPUUtilizationPercentage: 65,
         },
       },
     });
@@ -1438,7 +1463,7 @@ export class EksStack {
           nodeSelector: {
             "node-type": "monitoring",
           },
-        }
+        }, 
       },
     });
 
@@ -1458,6 +1483,8 @@ export class EksStack {
         },
       }
     });
+
+
 
     // Import an existing load balancer by its ARN
     // const hypersLB = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
