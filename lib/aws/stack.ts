@@ -15,6 +15,7 @@ import { LockerSetup } from "./card-vault/components";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
 import { HyperswitchSDKStack } from "./hs-sdk";
+import { DistributionConstruct } from './distribution';
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -166,13 +167,24 @@ export class AWSStack extends cdk.Stack {
         config.hyperswitch_ec2.admin_api_key,
         locker,
       );
+
+    const controlCenterHost = this.node.tryGetContext("control_center_host");
+    const appHost = this.node.tryGetContext("app_host");
+
+    if (controlCenterHost && appHost) {
+      const distribution = new DistributionConstruct(this, "CloudFrontDistributions", {
+        controlCenterHost,
+        appHost,
+      });
+      let hsSdk = new HyperswitchSDKStack(this, eks, distribution);
+    } else {
+      console.warn("Skipping DistributionConstruct creation as context values are missing in stack.ts");
+    }
+    
       if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
-      let hsSdk = new HyperswitchSDKStack(this, eks);
 
-      // Create Jumps and add rules to access RDS, Elasticache and Proxies
-      // Internal Jump can be accessed only from external jump. External jump can be accessed only from Session Manager
       let internal_jump = new EC2Instance(
         this,
         vpc.vpc,
@@ -376,7 +388,7 @@ function get_standalone_sdk_ec2_config(
     )
     .replaceAll("{{private_router_host}}", hyperswitch_ec2.getInstance().instancePrivateIp)
     .replaceAll("{{admin_api_key}}", config.hyperswitch_ec2.admin_api_key)
-    .replaceAll("{{version}}", "0.27.2")
+    .replaceAll("{{version}}", "0.109.2")
     .replaceAll("{{sub_version}}", "v0");
   let ec2_config: EC2Config = {
     id: "hyperswitch_standalone_sdk_demo_ec2",

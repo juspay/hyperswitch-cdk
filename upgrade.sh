@@ -15,29 +15,31 @@ sh ./bash/deps.sh
 # Deploy Load balancer and Ingress
 echo "##########################################"
 ADMIN_API_KEY=$1
-APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
+SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
 SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkDistribution'].OutputValue" --output text)
+INGRESS_APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}');
+APP_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_APP_HOST}']].DomainName" --output text);
 
 # Deploy the hyperswitch application with the load balancer host name
-helm repo add hs https://juspay.github.io/hyperswitch-helm/v0.1.3 --force-update
-export MERCHANT_ID=$(curl --connect-timeout 5 --retry 5 --retry-delay 30 --silent --location --request POST 'http://'$APP_HOST'/user/signup' \
+helm repo add hs https://juspay.github.io/hyperswitch-helm/ --force-update
+export MERCHANT_ID=$(curl --connect-timeout 5 --retry 5 --retry-delay 30 --silent --location --request POST 'https://'$APP_HOST'/user/signup' \
     --header 'Content-Type: application/json' \
     --data-raw '{
 "email": "test@gmail.com",
 "password": "admin"
 }' | jq -r '.merchant_id')
-export PUB_KEY=$(curl --silent --location --request GET 'http://'$APP_HOST'/accounts/'$MERCHANT_ID \
+export PUB_KEY=$(curl --silent --location --request GET 'https://'$APP_HOST'/accounts/'$MERCHANT_ID \
     --header 'Accept: application/json' \
     --header 'api-key: '$ADMIN_API_KEY | jq -r '.publishable_key')
-export API_KEY=$(curl --silent --location --request POST 'http://'$APP_HOST'/api_keys/'$MERCHANT_ID \
+export API_KEY=$(curl --silent --location --request POST 'https://'$APP_HOST'/api_keys/'$MERCHANT_ID \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
     --header 'api-key: '$ADMIN_API_KEY \
     --data-raw '{"name":"API Key 1","description":null,"expiration":"2038-01-19T03:14:08.000Z"}' | jq -r '.api_key')
-export CONNECTOR_KEY=$(curl --silent --location --request POST 'http://'$APP_HOST'/account/'$MERCHANT_ID'/connectors' \
+export CONNECTOR_KEY=$(curl --silent --location --request POST 'https://'$APP_HOST'/account/'$MERCHANT_ID'/connectors' \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
     --header 'api-key: '$ADMIN_API_KEY \
@@ -46,8 +48,10 @@ printf "##########################################\nPlease wait for the applicat
 APP_ENV="hyperswitch-app"
 SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
-HYPERLOADER="http://$SDK_URL/0.27.2/v0/HyperLoader.js"
-helm upgrade --install hypers-v1 hs/hyperswitch-stack --set "$SDK_ENV.router.host=http://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=http://$SDK_URL,$APP_ENV.services.router.host=http://$APP_HOST,$SDK_BUILD.envSdkUrl=http://$SDK_URL,$SDK_BUILD.envBackendUrl=http://$APP_HOST" -n hyperswitch -f values.yaml
+HYPERLOADER="http://$SDK_URL/web/0.109.2/v1/HyperLoader.js"
+VERSION="0.2.2"
+helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" --set "$SDK_ENV.router.host=https://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=https://$SDK_URL,$APP_ENV.services.router.host=https://$APP_HOST,$SDK_BUILD.envSdkUrl=https://$SDK_URL,$SDK_BUILD.envBackendUrl=https://$APP_HOST" -n hyperswitch -f values.yaml
+
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$bold Service                           Host$reset"
 echoLog "--------------------------------------------------------------------------------"

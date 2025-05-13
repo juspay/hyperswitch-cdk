@@ -1,7 +1,9 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import * as eks from "aws-cdk-lib/aws-eks";
-import { KubectlLayer } from "aws-cdk-lib/lambda-layer-kubectl";
+import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32';
+import * as cp from 'child_process'; 
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { Config } from "./config";
@@ -19,6 +21,7 @@ import { LockerSetup } from "./card-vault/components";
 import { Trigger } from "aws-cdk-lib/triggers";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'; // Import the missing package
 import { AutoScalingGroup } from "aws-cdk-lib/aws-autoscaling";
@@ -31,6 +34,7 @@ import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
+  trafficControl: eks.HelmChart;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
   sdkDistribution: cloudfront.CloudFrontWebDistribution;
@@ -62,8 +66,8 @@ export class EksStack {
     });
 
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
-      version: eks.KubernetesVersion.of("1.28"),
-      kubectlLayer: new KubectlLayer(scope, "KubectlLayer"),
+      version: eks.KubernetesVersion.of("1.32"),
+      kubectlLayer: new KubectlV32Layer(scope, "kubectlLayer"),
       defaultCapacity: 0,
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
@@ -228,7 +232,7 @@ export class EksStack {
     };
 
     const lbControllerPolicyUrl =
-      "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json";
+      "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.12.0/docs/install/iam_policy.json";
 
     fetchAndCreatePolicy(lbControllerPolicyUrl)
       .then((policy) => {
@@ -560,11 +564,15 @@ export class EksStack {
         clusterName: cluster.clusterName,
         image: {
           repository: `${privateEcrRepository}/eks/aws-load-balancer-controller`,
-          tag: "v2.7.1"
-        }
+          tag: "v2.12.0"
+        },
+        enableServiceMutatorWebhook: false,
+        extraArgs: {
+          "aws-region": `${process.env.CDK_DEFAULT_REGION}`,
+          "aws-vpc-id": `${cluster.vpc.vpcId}`,
+        },
       },
     });
-
 
     cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 
@@ -584,49 +592,49 @@ export class EksStack {
       values: {
         image: {
           repository: `${privateEcrRepository}/ebs-csi-driver/aws-ebs-csi-driver`,
-          tag: 'v1.28.0'
+          tag: 'v1.41.0'
         },
         sidecars: {
           provisioner: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-provisioner`,
-              tag: 'v4.0.0-eks-1-29-5'
+              tag: 'v5.2.0-eks-1-32-10'
             }
           },
           attacher: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-attacher`,
-              tag: 'v4.5.0-eks-1-29-5'
+              tag: 'v4.8.1-eks-1-32-10'
             }
           },
           snapshotter: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter`,
-              tag: 'v7.0.0-eks-1-29-5'
+              tag: 'v8.2.1-eks-1-32-10'
             }
           },
           livenessProbe: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/livenessprobe`,
-              tag: 'v2.12.0-eks-1-29-5'
+              tag: 'v2.15.0-eks-1-32-10'
             }
           },
           resizer: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/external-resizer`,
-              tag: 'v1.10.0-eks-1-29-5'
+              tag: 'v1.13.2-eks-1-32-10'
             }
           },
           nodeDriverRegistrar: {
             image: {
               repository: `${privateEcrRepository}/eks-distro/kubernetes-csi/node-driver-registrar`,
-              tag: 'v2.10.0-eks-1-29-5'
+              tag: 'v2.13.0-eks-1-32-10'
             }
           },
           volumemodifier: {
             image: {
               repository: `${privateEcrRepository}/ebs-csi-driver/volume-modifier-for-k8s`,
-              tag: 'v0.2.1'
+              tag: 'v0.5.1'
             }
           }
         }
@@ -638,46 +646,58 @@ export class EksStack {
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
       release: "istio-base",
-      version: "1.21.2",
+      version: "1.25.0",
+      values: {
+        defaultRevision: "default"
+      },
+      createNamespace: true,
+      wait: true
     });
 
     const istiod = cluster.addHelmChart("Istiod", {
       chart: "istiod",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
-      release: "istio-discovery",
-      version: "1.21.2",
+      release: "istiod",
+      version: "1.25.0",
       values: {
-        defaults: {
-          global: {
-            hub: `${privateEcrRepository}/istio`,
-          },
-          pilot: {
-            nodeSelector: {
-              "node-type": "memory-optimized",
-            },
-          }
+        global: {
+          hub: `${privateEcrRepository}/istio`,
+          tag: "1.25.0",
         },
-      }
+        pilot: {
+          nodeSelector: {
+            "node-type": "memory-optimized",
+          },
+        },
+      },
+      wait: true
     });
+
+    istiod.node.addDependency(istioBase);
 
     const gateway = cluster.addHelmChart("Gateway", {
       chart: "gateway",
       repository: "https://istio-release.storage.googleapis.com/charts",
       namespace: "istio-system",
       release: "istio-ingressgateway",
-      version: "1.21.2",
+      version: "1.25.0",
       values: {
-        defaults: {
-          service: {
-            type: "ClusterIP"
-          },
-          nodeSelector: {
-            "node-type": "memory-optimized",
-          },
-        }
+        global: {
+          hub: `${privateEcrRepository}/istio`,
+          tag: "1.25.0",
+        },
+        service: {
+          type: "ClusterIP"
+        },
+        nodeSelector: {
+          "node-type": "memory-optimized",
+        },
       },
+      wait: true,
     });
+
+    gateway.node.addDependency(istiod);
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
@@ -699,7 +719,7 @@ export class EksStack {
 
     const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
     sdkBucket.grantRead(oai);
-
+ 
     this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
       originConfigs: [
@@ -712,6 +732,7 @@ export class EksStack {
         }
       ]
     });
+    
     this.sdkDistribution.node.addDependency(sdkBucket);
     new cdk.CfnOutput(scope, 'SdkDistribution', {
       value: this.sdkDistribution.distributionDomainName,
@@ -721,10 +742,12 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "0.27.2";
+    const sdk_version = "0.109.2";
+
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
-      repository: "https://juspay.github.io/hyperswitch-helm/v0.1.3",
+      repository: "https://juspay.github.io/hyperswitch-helm/",
+      version: "0.2.2",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -733,103 +756,123 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
+        prometheus: {
+          enabled: false
+        },
+        alertmanager: {
+          enabled: false,
+        },
         "hyperswitch-app": {
           loadBalancer: {
             targetSecurityGroup: lbSecurityGroup.securityGroupId
           },
-
+          redis: {
+            enabled: false
+          },
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.113.0-standalone`,
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.113.0-standalone`
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.111.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.113.0-standalone`
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.33.0`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.36.1`
             },
             sdk: {
-              host: "http://localhost:9090",
+              host: "https://${this.sdkDistribution.distributionDomainName}",
               version: sdk_version,
-              subversion: "v0"
+              subversion: "v1"
             }
           },
-          application: {
-            server: {
-              nodeAffinity: {
-                requiredDuringSchedulingIgnoredDuringExecution: {
-                  nodeSelectorTerms: [
-                    {
-                      matchExpressions: [
-                        {
-                          key: "node-type",
-                          operator: "In",
-                          values: ["generic-compute"]
-                        }
-                      ]
-                    }
-                  ]
-                }
+
+          server: {
+            nodeAffinity: {
+              requiredDuringSchedulingIgnoredDuringExecution: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions: [
+                      {
+                        key: "node-type",
+                        operator: "In",
+                        values: ["generic-compute"]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            secrets_management: {
+              secrets_manager: "aws_kms"
+            },
+            region: `${process.env.CDK_DEFAULT_REGION}`,
+            bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
+            serviceAccountAnnotations: {
+              "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
+            },
+            server_base_url: "https://sandbox.hyperswitch.io",
+            secrets: {
+              podAnnotations: {
+                traffic_sidecar_istio_io_excludeOutboundIPRanges:
+                  "10.23.6.12/32",
               },
-              secrets_manager: "aws_kms",
-              bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
-              serviceAccountAnnotations: {
-                "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
-              },
-              server_base_url: "https://sandbox.hyperswitch.io",
-              secrets: {
-                podAnnotations: {
-                  traffic_sidecar_istio_io_excludeOutboundIPRanges:
-                    "10.23.6.12/32",
-                },
-                kms_admin_api_key: kmsSecrets.kms_admin_api_key,
-                kms_jwt_secret: kmsSecrets.kms_jwt_secret,
-                kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
-                kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
-                kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
-                kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
-                kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
-                kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
-                kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
-                kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
-                kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
-                kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
-                kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
-                kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
-                kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
-                kms_key_id: kms_key.keyId,
-                kms_key_region: kms_key.stack.region,
-                kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
-                admin_api_key: kmsSecrets.kms_admin_api_key,
-                jwt_secret: kmsSecrets.kms_jwt_secret,
-                recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
-                forex_api_key: kmsSecrets.kms_forex_api_key,
-                forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
-                apple_pay_ppc: kmsSecrets.apple_pay_ppc,
-                apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
-                apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
-                apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
-                apple_pay_merchant_conf_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
-                apple_pay_merchant_conf_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
-                apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
-                pm_auth_key: kmsSecrets.pm_auth_key,
-                api_hash_key: kmsSecrets.api_hash_key,
-                user_auth_encryption_key: kmsSecrets.user_auth_encryption_key,
-              },
+              kms_admin_api_key: kmsSecrets.kms_admin_api_key,
+              kms_jwt_secret: kmsSecrets.kms_jwt_secret,
+              kms_jwekey_locker_identifier1: kmsSecrets.kms_jwekey_locker_identifier1,
+              kms_jwekey_locker_identifier2: kmsSecrets.kms_jwekey_locker_identifier2,
+              kms_jwekey_locker_encryption_key1: kmsSecrets.kms_jwekey_locker_encryption_key1,
+              kms_jwekey_locker_encryption_key2: kmsSecrets.kms_jwekey_locker_encryption_key2,
+              kms_jwekey_locker_decryption_key1: kmsSecrets.kms_jwekey_locker_decryption_key1,
+              kms_jwekey_locker_decryption_key2: kmsSecrets.kms_jwekey_locker_decryption_key2,
+              kms_jwekey_vault_encryption_key: kmsSecrets.kms_jwekey_vault_encryption_key,
+              kms_jwekey_vault_private_key: kmsSecrets.kms_jwekey_vault_private_key,
+              kms_jwekey_tunnel_private_key: kmsSecrets.kms_jwekey_tunnel_private_key,
+              kms_jwekey_rust_locker_encryption_key: kmsSecrets.kms_jwekey_rust_locker_encryption_key,
+              kms_connector_onboarding_paypal_client_id: kmsSecrets.kms_connector_onboarding_paypal_client_id,
+              kms_connector_onboarding_paypal_client_secret: kmsSecrets.kms_connector_onboarding_paypal_client_secret,
+              kms_connector_onboarding_paypal_partner_id: kmsSecrets.kms_connector_onboarding_paypal_partner_id,
+              kms_key_id: kms_key.keyId,
+              kms_key_region: kms_key.stack.region,
+              kms_encrypted_api_hash_key: kmsSecrets.kms_encrypted_api_hash_key,
+              admin_api_key: kmsSecrets.kms_admin_api_key,
+              jwt_secret: kmsSecrets.kms_jwt_secret,
+              recon_admin_api_key: kmsSecrets.kms_recon_admin_api_key,
+              forex_api_key: kmsSecrets.kms_forex_api_key,
+              forex_fallback_api_key: kmsSecrets.kms_forex_fallback_api_key,
+              apple_pay_ppc: kmsSecrets.apple_pay_ppc,
+              apple_pay_ppc_key: kmsSecrets.apple_pay_ppc_key,
+              apple_pay_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
+              apple_pay_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
+              apple_pay_merchant_conf_merchant_cert: kmsSecrets.apple_pay_merchant_conf_merchant_cert,
+              apple_pay_merchant_conf_merchant_cert_key: kmsSecrets.apple_pay_merchant_conf_merchant_cert_key,
+              apple_pay_merchant_conf_merchant_id: kmsSecrets.apple_pay_merchant_conf_merchant_id,
+              pm_auth_key: kmsSecrets.pm_auth_key,
+              api_hash_key: kmsSecrets.api_hash_key,
               master_enc_key: kmsSecrets.kms_encrypted_master_key,
-              locker: {
-                locker_enabled: false,
-                locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
-                hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
-              },
-              basilisk: {
-                host: "basilisk-host",
-              },
-              run_env: "sandbox",
-            }
+            },
+            google_pay_decrypt_keys: {
+              google_pay_root_signing_keys:
+                kmsSecrets.google_pay_root_signing_keys,
+            },
+            paze_decrypt_keys: {
+              paze_private_key: kmsSecrets.paze_private_key,
+              paze_private_key_passphrase: kmsSecrets.paze_private_key_passphrase,
+            },
+            user_auth_methods: {
+              encryption_key: kmsSecrets.encryption_key,
+            },
+            locker: {
+              locker_enabled: false,
+              locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
+              hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
+            },
+            basilisk: { 
+              host: "basilisk-host",
+            },
+            run_env: "sandbox",
           },
           consumer: {
             nodeAffinity: {
@@ -881,6 +924,9 @@ export class EksStack {
                 ]
               }
             },
+            env: {
+              default__features__email: false,
+            }
           },
           postgresql: {
             enabled: false
@@ -906,10 +952,6 @@ export class EksStack {
               },
             }
           },
-
-          redis: {
-            enabled: false
-          },
           externalRedis: {
             enabled: true,
             host: elasticache.cluster.attrRedisEndpointAddress || "redis",
@@ -920,6 +962,18 @@ export class EksStack {
             minReplicas: 3,
             maxReplicas: 5,
             targetCPUUtilizationPercentage: 80,
+          },
+          analytics: {
+            clickhouse: {
+              enabled: false,
+              password: "dummypassword"
+            },
+          },
+          kafka: {
+            enabled: false
+          },
+          clickhouse: {
+            enabled: false,
           },
           "hyperswitch-card-vault": {
             enabled: false,
@@ -933,16 +987,16 @@ export class EksStack {
             //     master_key: locker ? config.locker.master_key : ""
             //   }
             // }
-          }
+          },
         },
-        "hyperswitchsdk": {
+        "hyperswitch-web": {
           enabled: true,
           services: {
             router: {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v1.0.12",
+              image: "juspaydotin/hyperswitch-web:v0.109.2",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
@@ -980,9 +1034,9 @@ export class EksStack {
               gitVersion: sdk_version
             },
             buildParam: {
-              envSdkUrl: `http://${this.sdkDistribution.distributionDomainName}`
+              envSdkUrl: `https://${this.sdkDistribution.distributionDomainName}`
             },
-            nginxConfig: { extraPath: "v0" }
+            nginxConfig: { extraPath: "v1" }
           }
         },
       },
@@ -1031,13 +1085,13 @@ export class EksStack {
                 path: "/",
                 pathType: "Prefix",
                 port: 80,
-                name: "istio-ingressgateway",
+                name: "istio-ingress",
               },
               {
                 path: "/healthz/ready",
                 pathType: "Prefix",
                 port: 15021,
-                name: "istio-ingressgateway",
+                name: "istio-ingress",
               }
             ]
           }
@@ -1046,6 +1100,7 @@ export class EksStack {
     });
 
     trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
+    this.trafficControl = trafficControl;
 
     const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
       bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -1385,7 +1440,7 @@ export class EksStack {
           sidecar: {
             image: {
               repository: `${privateEcrRepository}/kiwigrid/k8s-sidecar`,
-              tag: "1.19.2",
+              tag: "1.30.3",
               sha: ""
             },
             imagePullPolicy: "IfNotPresent",
@@ -1552,7 +1607,7 @@ export class EksStack {
       values: {
         image: {
           repository: `${privateEcrRepository}/bitnami/metrics-server`,
-          tag: "0.7.0",
+          tag: "0.7.2",
         },
       }
     });
@@ -1624,7 +1679,10 @@ class KmsSecrets {
   readonly pm_auth_key: string;
   readonly api_hash_key: string;
   readonly kms_encrypted_api_hash_key: string;
-  readonly user_auth_encryption_key: string;
+  readonly encryption_key: string;
+  readonly google_pay_root_signing_keys: string;
+  readonly paze_private_key: string;
+  readonly paze_private_key_passphrase: string;
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -1657,7 +1715,10 @@ class KmsSecrets {
     this.pm_auth_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
     this.api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
     this.kms_encrypted_api_hash_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/kms-encrypted-api-hash-key", 1);
-    this.user_auth_encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.encryption_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1);
+    this.google_pay_root_signing_keys = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/google-pay-root-signing-keys", 1);
+    this.paze_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key", 1);
+    this.paze_private_key_passphrase = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key-passphrase", 1);
   }
 }
 
