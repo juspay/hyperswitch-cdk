@@ -308,7 +308,7 @@ export class LockerSetup extends Construct {
 
     // Creating Database for LockerData
     const engine = DatabaseClusterEngine.auroraPostgres({
-      version: AuroraPostgresEngineVersion.VER_13_7,
+      version: AuroraPostgresEngineVersion.VER_14_11,
     });
 
     const db_name = "locker";
