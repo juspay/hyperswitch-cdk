@@ -232,7 +232,7 @@ export class EksStack {
     };
 
     const lbControllerPolicyUrl =
-      "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/main/docs/install/iam_policy.json";
+      "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.12.0/docs/install/iam_policy.json";
 
     fetchAndCreatePolicy(lbControllerPolicyUrl)
       .then((policy) => {
@@ -564,7 +564,7 @@ export class EksStack {
         clusterName: cluster.clusterName,
         image: {
           repository: `${privateEcrRepository}/eks/aws-load-balancer-controller`,
-          tag: "v2.12.0" //2.7.0
+          tag: "v2.12.0"
         },
         enableServiceMutatorWebhook: false,
         extraArgs: {
@@ -809,7 +809,7 @@ export class EksStack {
               secrets_manager: "aws_kms"
             },
             region: `${process.env.CDK_DEFAULT_REGION}`,
-            bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`, //check
+            bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
             serviceAccountAnnotations: {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
             },
