@@ -26,9 +26,11 @@ import { env } from "process";
 import { WAF } from "./waf";
 import { Keymanager } from "./keymanager/stack"
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
+import { LocustEks } from "./locust";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
+  public readonly cluster: eks.Cluster; // Added public cluster property
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
@@ -76,12 +78,26 @@ export class EksStack {
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
     });
+    //this.cluster = cluster; // Assign the created cluster to the public property
+
+    // Define the Locust Kubernetes namespace
+    this.cluster.addManifest("locust-namespace", {
+      apiVersion: "v1",
+      kind: "Namespace",
+      metadata: {
+        name: "locust",
+      },
+    });
 
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
     if (`${push_logs}` == "y") {
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
     }
 
+    // let locust_create = scope.node.tryGetContext('locust_loadtest_service') || 'n';
+    // if (locust_create == "y"){
+    //   const _locustEks = new LocustEks(scope, cluster, "")
+    // }
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -445,6 +461,22 @@ export class EksStack {
         "node-type": "zookeeper-compute",
       },
       subnets: { subnetGroupName: "eks-worker-nodes-one-zone" },
+      nodeRole: nodegroupRole,
+    });
+
+    // Define the Locust nodegroup
+    const locustNodegroup = cluster.addNodegroupCapacity("HSLocustNodegroup", {
+      nodegroupName: "locust-ng",
+      instanceTypes: [
+        new ec2.InstanceType("c5.large"),
+      ],
+      minSize: 1,
+      maxSize: 5, // Assuming desired capacity is 1
+      desiredSize: 1, // Assuming desired capacity is 1
+      labels: {
+        "node-type": "locust",
+      },
+      subnets: { subnetGroupName: "locust-zone" },
       nodeRole: nodegroupRole,
     });
 

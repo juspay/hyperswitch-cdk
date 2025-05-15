@@ -90,7 +90,19 @@ export type Config = {
     hyperswitch_ec2: EC2;
     rds: RDSConfig;
     tags: Tags;
+    locust?: LocustConfig; // Added optional LocustConfig
 };
+
+export interface LocustConfig {
+    filePath?: string;
+    environmentVariables?: { [key: string]: string };
+    // You can add other Locust-specific Helm values here if needed, e.g.:
+    // releaseName?: string;
+    // namespace?: string;
+    // masterNodeSelector?: { [key: string]: string };
+    // workerNodeSelector?: { [key: string]: string };
+    // workerReplicas?: number;
+}
 
 export type ImageBuilderConfig = {
     name: string;

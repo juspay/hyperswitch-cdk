@@ -105,6 +105,11 @@ export class Vpc {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: 24,
         },
+        {
+          name: "locust-zone",
+          subnetType: ec2.SubnetType.PUBLIC,
+          cidrMask: 20,
+        },
       ],
       cidr: "10.63.0.0/16",
     });
@@ -112,4 +117,3 @@ export class Vpc {
     this.vpc = vpc;
   }
 }
-

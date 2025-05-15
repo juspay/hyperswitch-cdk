@@ -15,6 +15,7 @@ import { LockerSetup } from "./card-vault/components";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { DatabaseInstance } from "aws-cdk-lib/aws-rds";
 import { HyperswitchSDKStack } from "./hs-sdk";
+//import { LocustStack } from "./locust"; // Added LocustStack import
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -170,6 +171,24 @@ export class AWSStack extends cdk.Stack {
       rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
       let hsSdk = new HyperswitchSDKStack(this, eks);
+
+      // // Instantiate LocustStack if EKS is enabled
+      // // TODO: Update Config interface and usage to provide these values dynamically
+      // new LocustStack(this, `${config.stack.name}-Locust`, {
+      //   vpc: vpc.vpc,
+      //   cluster: eks.cluster, 
+      //   locustFilePath: config.locust?.filePath,
+      //   customLocustEnvVars: config.locust?.environmentVariables,
+      //   // releaseName: config.locust?.releaseName || 'hyperswitch-locust', // Example of using other config values
+      //   // namespace: config.locust?.namespace || 'locust-testing', // Example
+      //   // baseHelmValues: { // Example for other helm values from config
+      //   //   master: { nodeSelector: config.locust?.masterNodeSelector },
+      //   //   worker: { 
+      //   //     nodeSelector: config.locust?.workerNodeSelector,
+      //   //     replicas: config.locust?.workerReplicas 
+      //   //   }
+      //   // }
+      // });
 
       // Create Jumps and add rules to access RDS, Elasticache and Proxies
       // Internal Jump can be accessed only from external jump. External jump can be accessed only from Session Manager
