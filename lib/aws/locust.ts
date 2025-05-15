@@ -2,8 +2,9 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as fs from 'fs';
-import * as path from 'path';
+// fs and path might not be needed if locustFileContent is hardcoded or passed directly
+// import * as fs from 'fs';
+// import * as path from 'path';
 
 export class LocustEks {
   namespace? : string;
@@ -16,16 +17,56 @@ export class LocustEks {
     this.cluster = cluster;
     this.scope = scope;
     this.subnet = subnet;
+    
     // create locust namespace
     this.create_namepace(namespace);
 
-    // create configmap
+    // Create ConfigMap
+    const locustFileContent = ''; //add locust file
+    const configMapData = {
+      'API_KEY': ''
+    };
+    const locustConfigMapBaseName = `locust-scripts-cm`;
+    const locustFileName = 'locustfile.py';
+    const configMapConstruct = this.create_locust_configmap(locustConfigMapBaseName, locustFileName, locustFileContent, configMapData);
 
     //create nodegroup
     this.create_node_group(nodeTypeLabel, nodeGroupRole);
 
     // add helmchart
+    const helmChartConstruct = this.add_helm_chart(
+      'locust-hyperswitch', // releaseName
+      'locust',             // chartName (standard locust chart)
+      'https://locustio.github.io/helm-charts', // chartRepository
+      '0.30.0', // chartVersion (use a specific, tested version)
+      locustConfigMapBaseName,  // Use the base name, Helm chart will look for this name
+      locustFileName,       // The key for the locustfile in the ConfigMap (e.g., 'locustfile.py')
+      'API_KEY'             // The key for the API_KEY in the ConfigMap
+    );
 
+    // Ensure Helm chart depends on the ConfigMap
+    if (helmChartConstruct && configMapConstruct) {
+      helmChartConstruct.node.addDependency(configMapConstruct);
+    }
+  }
+
+  create_locust_configmap(configMapName: string, locustFileName : string, locustFileContent : string, configMapData : {[key:string] : string}): eks.KubernetesManifest {
+    const manifestData: { [key: string]: string } = {
+      [locustFileName]: locustFileContent,
+      ...configMapData,
+    };
+
+    const configMapManifestJson = {
+      apiVersion: 'v1',
+      kind: 'ConfigMap',
+      metadata: {
+        name: configMapName, // This name must be used by Helm chart values
+        namespace: this.namespace,
+      },
+      data: manifestData,
+    };
+
+    return this.cluster.addManifest(`${configMapName}-manifest`, configMapManifestJson);
   }
   
   create_namepace(namespace : string){
@@ -55,110 +96,60 @@ export class LocustEks {
       subnets: { subnetGroupName: this.subnet || "locust-zone" },
       nodeRole: nodeGroupRole,
     });
-  } 
+  }
 
+  add_helm_chart(
+    releaseName: string,
+    chartName: string,
+    chartRepository: string,
+    chartVersion: string,
+    locustFileCmName: string,      // Name of the ConfigMap holding the locustfile and API_KEY
+    locustFileNameInCm: string,  // Key for the locustfile in the ConfigMap data
+    apiKeyCmKey: string          // Key for the API_KEY in the ConfigMap data
+  ): eks.HelmChart | undefined { // Return type changed
+    const envVarFromConfigMap = [
+      {
+        name: apiKeyCmKey, 
+        valueFrom: {
+          configMapKeyRef: {
+            name: locustFileCmName, 
+            key: apiKeyCmKey,       
+          },
+        },
+      },
+    ];
+
+    const helmValues: { [key: string]: any } = {
+      loadtest: {
+        name: releaseName,
+        locust_locustfile_configmap: locustFileCmName,
+        locust_locustfile: locustFileNameInCm,
+        locust_locustfile_path: "/mnt/locust",
+      },
+      master: {
+        nodeSelector: { 'node-type': this.nodeGroup || 'locust' },
+        environment: envVarFromConfigMap,
+      },
+      worker: {
+        nodeSelector: { 'node-type': this.nodeGroup || 'locust' },
+        environment: envVarFromConfigMap,
+        hpa: { 
+          enabled: true,
+          minReplicas: 1,
+          maxReplicas: 100,
+          targetCPUUtilizationPercentage: 60
+        }
+      },
+    };
+
+    return this.cluster.addHelmChart(`${releaseName}-helm-chart`, {
+      chart: chartName,
+      repository: chartRepository,
+      release: releaseName,
+      namespace: this.namespace,
+      version: chartVersion,
+      values: helmValues,
+        createNamespace: false,
+    });
+  }
 }
-
-// export interface LocustStackProps extends cdk.StackProps {
-//   readonly vpc: ec2.IVpc;
-//   readonly cluster: eks.ICluster;
-//   readonly locustFilePath?: string; // Path to your local locustfile (e.g., './my-tests/locustfile.py')
-//   readonly locustTestFileName?: string; // The name of the file inside the ConfigMap (e.g., 'main.py')
-//   readonly customLocustEnvVars?: { [key: string]: string }; //  e.g., { TARGET_URL: 'http://example.com' }
-//   readonly helmChartRepository?: string; // Helm chart repository URL
-//   readonly helmChartName?: string; // Name of the chart in the repository
-//   readonly helmChartVersion?: string; // Version of the Locust Helm chart
-//   readonly releaseName?: string; // Helm release name
-//   readonly namespace?: string; // Kubernetes namespace for deployment
-//   readonly baseHelmValues?: { [key: string]: any }; // Base values to merge with
-// }
-
-// export class LocustStack extends cdk.Stack {
-//   constructor(scope: Construct, id: string, props: LocustStackProps) {
-//     super(scope, id, props);
-
-//     const {
-//       cluster,
-//       locustFilePath,
-//       locustTestFileName = 'main.py', // Default test file name
-//       customLocustEnvVars = {},
-//       helmChartRepository = 'https://locustio.github.io/helm-charts',
-//       helmChartName = 'locust',
-//       helmChartVersion = '0.30.0', // Using a recent stable version
-//       releaseName = 'locust-loadtest',
-//       namespace = 'locust', // Default namespace for Locust
-//       baseHelmValues = {},
-//     } = props;
-
-//     let locustfileConfigMapName: string | undefined;
-//     let finalLocustTestFileName = locustTestFileName;
-
-//     if (locustFilePath) {
-//       if (!fs.existsSync(locustFilePath)) {
-//         throw new Error(`Locustfile not found at path: ${locustFilePath}`);
-//       }
-//       const locustfileContent = fs.readFileSync(locustFilePath, 'utf-8');
-//       locustfileConfigMapName = `${releaseName}-locustfile-cm`;
-//       finalLocustTestFileName = path.basename(locustFilePath); // Use the actual filename from the path
-
-//       const configMapManifest = {
-//         apiVersion: 'v1',
-//         kind: 'ConfigMap',
-//         metadata: {
-//           name: locustfileConfigMapName,
-//           namespace: namespace, // Ensure ConfigMap is in the same namespace as Helm release
-//         },
-//         data: {
-//           [finalLocustTestFileName]: locustfileContent,
-//         },
-//       };
-
-//       // Add the ConfigMap manifest to the cluster
-//       // Note: The EKS cluster needs to have a default namespace or the namespace must be created
-//       // if it doesn't exist prior to adding namespaced resources.
-//       // For simplicity, we assume the namespace will be created by the Helm chart or exists.
-//       new eks.KubernetesManifest(this, `${id}-LocustfileConfigMap`, {
-//         cluster: cluster,
-//         manifest: [configMapManifest],
-//         overwrite: true, // Allows updates to the ConfigMap if the locustfile changes
-//       });
-//     }
-
-//     const helmValues: { [key: string]: any } = {
-//       ...baseHelmValues,
-//       loadtest: {
-//         ...(baseHelmValues.loadtest || {}),
-//         environment: {
-//           ...(baseHelmValues.loadtest?.environment || {}),
-//           ...customLocustEnvVars,
-//         },
-//       },
-//       // Ensure master and worker sections exist if not in baseHelmValues
-//       master: {
-//         ...(baseHelmValues.master || {}),
-//       },
-//       worker: {
-//         ...(baseHelmValues.worker || {}),
-//       },
-//     };
-
-//     if (locustfileConfigMapName) {
-//       helmValues.loadtest.locust_locustfile_configmap = locustfileConfigMapName;
-//       helmValues.loadtest.locust_locustfile = finalLocustTestFileName;
-//       // As per helm/locust.yaml, path is usually /mnt/locust
-//       helmValues.loadtest.locust_locustfile_path = baseHelmValues.loadtest?.locust_locustfile_path || "/mnt/locust";
-//     }
-
-
-//     // Deploy Locust using the Helm chart
-//     cluster.addHelmChart(`${id}-LocustHelmChart`, {
-//       chart: helmChartName,
-//       repository: helmChartRepository,
-//       release: releaseName,
-//       namespace: namespace,
-//       version: helmChartVersion,
-//       values: helmValues,
-//       createNamespace: true, // Create the namespace if it doesn't exist
-//     });
-//   }
-// }

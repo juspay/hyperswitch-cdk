@@ -94,10 +94,6 @@ export class EksStack {
       const logsStack = new LogsStack(scope, cluster, "app-logs-s3-service-account");
     }
 
-    // let locust_create = scope.node.tryGetContext('locust_loadtest_service') || 'n';
-    // if (locust_create == "y"){
-    //   const _locustEks = new LocustEks(scope, cluster, "")
-    // }
     cluster.node.addDependency(ecrTransfer.codebuildTrigger);
 
     cdk.Tags.of(cluster).add("SubStack", "HyperswitchEKS");
@@ -283,6 +279,12 @@ export class EksStack {
       });
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
+
+    // add locust if load test config is needed
+    let locust_create = scope.node.tryGetContext('locust_loadtest_service') || 'n';
+    if (locust_create == "y"){
+      const _locustEks = new LocustEks(cluster,scope, 'locust-zone', 'locust', 'locust-ng', nodegroupRole);
+    }
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
       nodegroupName: "hs-nodegroup",
