@@ -26,7 +26,7 @@ export class AWSStack extends cdk.Stack {
       },
       stackName: config.stack.name,
     });
-
+    console.log("aws stack hs");
     cdk.Tags.of(this).add("Stack", "Hyperswitch");
     cdk.Tags.of(this).add("StackName", config.stack.name);
 
@@ -158,6 +158,7 @@ export class AWSStack extends cdk.Stack {
           elasticache.cluster.attrRedisEndpointAddress,
         );
       }
+      console.log("reached eks pre deploy");
       let eks = new EksStack(
         this,
         config,

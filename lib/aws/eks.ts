@@ -45,7 +45,7 @@ export class EksStack {
     admin_api_key: string,
     locker: LockerSetup | undefined,
   ) {
-
+    console.log("starting eks stack deployment");
     const ecrTransfer = new DockerImagesToEcr(scope, vpc);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
 
@@ -77,16 +77,6 @@ export class EksStack {
         eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
         eks.ClusterLoggingTypes.SCHEDULER,
       ]
-    });
-    //this.cluster = cluster; // Assign the created cluster to the public property
-
-    // Define the Locust Kubernetes namespace
-    this.cluster.addManifest("locust-namespace", {
-      apiVersion: "v1",
-      kind: "Namespace",
-      metadata: {
-        name: "locust",
-      },
     });
 
     let push_logs = scope.node.tryGetContext('open_search_service') || 'n';
@@ -283,7 +273,8 @@ export class EksStack {
     // add locust if load test config is needed
     let locust_create = scope.node.tryGetContext('locust_loadtest_service') || 'n';
     if (locust_create == "y"){
-      const _locustEks = new LocustEks(cluster,scope, 'locust-zone', 'locust', 'locust-ng', nodegroupRole);
+      console.log("reached locust install ")
+      let _locustEks = new LocustEks(cluster,scope, 'locust-zone', 'locust', 'locust-ng', nodegroupRole);
     }
 
     const nodegroup = cluster.addNodegroupCapacity("HSNodegroup", {
@@ -467,20 +458,20 @@ export class EksStack {
     });
 
     // Define the Locust nodegroup
-    const locustNodegroup = cluster.addNodegroupCapacity("HSLocustNodegroup", {
-      nodegroupName: "locust-ng",
-      instanceTypes: [
-        new ec2.InstanceType("c5.large"),
-      ],
-      minSize: 1,
-      maxSize: 5, // Assuming desired capacity is 1
-      desiredSize: 1, // Assuming desired capacity is 1
-      labels: {
-        "node-type": "locust",
-      },
-      subnets: { subnetGroupName: "locust-zone" },
-      nodeRole: nodegroupRole,
-    });
+    // const locustNodegroup = cluster.addNodegroupCapacity("HSLocustNodegroup", {
+    //   nodegroupName: "locust-ng",
+    //   instanceTypes: [
+    //     new ec2.InstanceType("c5.large"),
+    //   ],
+    //   minSize: 1,
+    //   maxSize: 5, // Assuming desired capacity is 1
+    //   desiredSize: 1, // Assuming desired capacity is 1
+    //   labels: {
+    //     "node-type": "locust",
+    //   },
+    //   subnets: { subnetGroupName: "locust-zone" },
+    //   nodeRole: nodegroupRole,
+    // });
 
     const lambda_role = new iam.Role(scope, "hyperswitch-lambda-role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
