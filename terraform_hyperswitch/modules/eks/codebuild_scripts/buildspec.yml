@@ -1,0 +1,96 @@
+version: 0.2
+
+env:
+  variables:
+    # Define ECR repository names and corresponding Docker Hub image names
+    # These are examples based on common images used in the CDK.
+    # Add all required images here.
+    # Format: ECR_REPO_NAME:DOCKER_HUB_IMAGE_WITH_TAG
+    IMAGE_MAP: >
+      eks/aws-load-balancer-controller:public.ecr.aws/eks/aws-load-balancer-controller:v2.12.0
+      ebs-csi-driver/aws-ebs-csi-driver:public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.41.0
+      eks-distro/kubernetes-csi/external-provisioner:public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:v5.2.0-eks-1-32-10
+      eks-distro/kubernetes-csi/external-attacher:public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:v4.8.1-eks-1-32-10
+      eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:public.ecr.aws/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v8.2.1-eks-1-32-10
+      eks-distro/kubernetes-csi/livenessprobe:public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.15.0-eks-1-32-10
+      eks-distro/kubernetes-csi/external-resizer:public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:v1.13.2-eks-1-32-10
+      eks-distro/kubernetes-csi/node-driver-registrar:public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar:v2.13.0-eks-1-32-10
+      ebs-csi-driver/volume-modifier-for-k8s:public.ecr.aws/ebs-csi-driver/volume-modifier-for-k8s:v0.5.1
+      istio/pilot:docker.io/istio/pilot:1.25.0
+      istio/proxyv2:docker.io/istio/proxyv2:1.25.0
+      juspaydotin/hyperswitch-router:docker.io/juspaydotin/hyperswitch-router:v1.113.0-standalone
+      juspaydotin/hyperswitch-producer:docker.io/juspaydotin/hyperswitch-producer:v1.113.0-standalone
+      juspaydotin/hyperswitch-consumer:docker.io/juspaydotin/hyperswitch-consumer:v1.113.0-standalone
+      juspaydotin/hyperswitch-control-center:docker.io/juspaydotin/hyperswitch-control-center:v1.36.1
+      juspaydotin/hyperswitch-web:docker.io/juspaydotin/hyperswitch-web:v0.109.2 # Used by hyperswitch-web helm chart
+      grafana/grafana:docker.io/grafana/grafana:latest # For Loki stack
+      kiwigrid/k8s-sidecar:docker.io/kiwigrid/k8s-sidecar:1.30.3 # For Loki stack Grafana sidecar
+      grafana/loki:docker.io/grafana/loki:latest # For Loki stack
+      grafana/promtail:docker.io/grafana/promtail:latest # For Loki stack
+      bitnami/metrics-server:public.ecr.aws/bitnami/metrics-server:0.7.2 # For Metrics Server
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo "Login to Docker Hub (if needed for private images, otherwise public images are fine)"
+      # - docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD # Uncomment and set env vars if needed
+  build:
+    commands:
+      - echo "Starting Docker image transfer..."
+      - |
+        echo "$IMAGE_MAP" | while IFS= read -r line; do
+          ECR_REPO_NAME=$(echo "$line" | cut -d':' -f1)
+          DOCKER_HUB_IMAGE_WITH_TAG_PART1=$(echo "$line" | cut -d':' -f2)
+          DOCKER_HUB_IMAGE_WITH_TAG_PART2=$(echo "$line" | cut -d':' -f3)
+          DOCKER_HUB_IMAGE_WITH_TAG="$DOCKER_HUB_IMAGE_WITH_TAG_PART1:$DOCKER_HUB_IMAGE_WITH_TAG_PART2"
+
+          ECR_IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME"
+          # Use the tag from the Docker Hub image for the ECR image
+          IMAGE_TAG=$(echo "$DOCKER_HUB_IMAGE_WITH_TAG" | rev | cut -d':' -f1 | rev)
+          ECR_IMAGE_URI_WITH_TAG="$ECR_IMAGE_URI:$IMAGE_TAG"
+
+          echo "Processing image: $DOCKER_HUB_IMAGE_WITH_TAG -> $ECR_IMAGE_URI_WITH_TAG"
+
+          echo "Pulling $DOCKER_HUB_IMAGE_WITH_TAG..."
+          docker pull "$DOCKER_HUB_IMAGE_WITH_TAG"
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to pull $DOCKER_HUB_IMAGE_WITH_TAG"
+            continue # Skip to next image
+          fi
+
+          echo "Tagging $DOCKER_HUB_IMAGE_WITH_TAG as $ECR_IMAGE_URI_WITH_TAG..."
+          docker tag "$DOCKER_HUB_IMAGE_WITH_TAG" "$ECR_IMAGE_URI_WITH_TAG"
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to tag $DOCKER_HUB_IMAGE_WITH_TAG"
+            continue
+          fi
+          
+          echo "Checking if ECR repository $ECR_REPO_NAME exists..."
+          aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region $AWS_DEFAULT_REGION > /dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            echo "ECR repository $ECR_REPO_NAME does not exist. Creating..."
+            aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region $AWS_DEFAULT_REGION
+            if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to create ECR repository $ECR_REPO_NAME"
+              continue
+            fi
+          else
+            echo "ECR repository $ECR_REPO_NAME already exists."
+          fi
+
+          echo "Pushing $ECR_IMAGE_URI_WITH_TAG to ECR..."
+          docker push "$ECR_IMAGE_URI_WITH_TAG"
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to push $ECR_IMAGE_URI_WITH_TAG"
+            continue
+          fi
+          echo "Successfully transferred $DOCKER_HUB_IMAGE_WITH_TAG to $ECR_IMAGE_URI_WITH_TAG"
+        done
+  post_build:
+    commands:
+      - echo "Image transfer process completed."
+
+artifacts:
+  files: []

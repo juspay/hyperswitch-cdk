@@ -1,0 +1,48 @@
+#!/bin/bash
+
+sudo yum update -y
+sudo yum install docker -y
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+newgrp docker
+
+# Installing Hyperswitch Router application [Backend application]
+
+docker pull juspaydotin/hyperswitch-router:v1.107.0-standalone # Consider parameterizing this version
+
+curl https://raw.githubusercontent.com/juspay/hyperswitch/v1.107.0/config/development.toml > production.toml # Consider parameterizing this version
+cat << EOF >> .env
+ROUTER__REDIS__HOST=${redis_host}
+ROUTER__MASTER_DATABASE__HOST=${db_host}
+ROUTER__MASTER_DATABASE__USERNAME=${db_username}
+ROUTER__MASTER_DATABASE__PASSWORD=${db_password}
+ROUTER__MASTER_DATABASE__DBNAME=${db_name}
+ROUTER__REPLICA_DATABASE__HOST=${db_host}
+ROUTER__REPLICA_DATABASE__USERNAME=${db_username}
+ROUTER__REPLICA_DATABASE__PASSWORD=${db_password}
+ROUTER__REPLICA_DATABASE__DBNAME=${db_name}
+ROUTER__ANALYTICS__SQLX__HOST=${db_host}
+ROUTER__ANALYTICS__SQLX__USERNAME=${db_username}
+ROUTER__ANALYTICS__SQLX__PASSWORD=${db_password}
+ROUTER__ANALYTICS__SQLX__DBNAME=${db_name}
+ROUTER__LOCKER__MOCK_LOCKER=true
+ROUTER__SERVER__HOST=0.0.0.0
+ROUTER__SERVER__BASE_URL=$(curl -s ifconfig.me)
+ROUTER__SECRETS__ADMIN_API_KEY=${admin_api_key}
+EOF
+
+sudo sed -i '/^origins/d; s/^wildcard_origin = false/wildcard_origin = true/' production.toml
+
+docker run -d --env-file .env -p 80:8080 -v `pwd`/:/local/config juspaydotin/hyperswitch-router:v1.107.0-standalone ./router -f /local/config/production.toml
+
+
+# Installing Hyperswitch control center
+
+docker pull juspaydotin/hyperswitch-control-center:v1.29.9 # Consider parameterizing this version
+
+cat << EOF >> .env
+apiBaseUrl=http://$(curl -s ifconfig.me):80
+sdkBaseUrl=http://$(curl -s ifconfig.me):80
+EOF
+
+docker run -d --env-file .env -p 9000:9000 juspaydotin/hyperswitch-control-center:v1.29.9
