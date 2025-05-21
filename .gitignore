@@ -151,4 +151,3 @@ values.yaml
 cdk.services.log
 
 terraform_hyperswitch/.terraform/
-terraform_hyperswitch/.terraform.*

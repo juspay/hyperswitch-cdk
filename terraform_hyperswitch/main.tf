@@ -153,7 +153,7 @@ module "s3" {
   create_keymanager_env_bucket                 = var.keymanager_enabled
   keymanager_kms_key_arn_for_bucket_encryption = var.keymanager_enabled ? module.kms_keymanager[0].key_arn : null
 
-  depends_on = [module.kms_locker, module.kms_keymanager] 
+  depends_on = [module.kms_locker, module.kms_keymanager]
 }
 
 #------------------------------------------------------------------------------
@@ -293,7 +293,7 @@ module "elasticache" {
   # otherwise falling back to a general public subnet list from the VPC module.
   # This needs careful review against actual network requirements.
   subnet_ids = length(module.vpc[0].elasticache_zone_subnet_ids) > 0 ? module.vpc[0].elasticache_zone_subnet_ids : module.vpc[0].public_subnet_ids # Or a specific private subnet group
-  
+
   cluster_name        = "${var.stack_prefix}-hs-elasticache" # Matches CDK default pattern
   node_type           = "cache.t3.micro" # From CDK
   security_group_name = "${var.stack_prefix}-elasticache-SG" # Matches CDK
@@ -312,7 +312,7 @@ module "rds_hyperswitch" {
   stack_prefix           = var.stack_prefix
   vpc_id                 = module.vpc[0].vpc_id
   database_zone_subnet_ids = module.vpc[0].database_zone_subnet_ids # Ensure these are private subnets from VPC module
-  
+
   is_standalone_deployment = var.free_tier_deployment
   db_name                    = var.rds_db_name
   db_port                    = var.rds_port
@@ -326,7 +326,7 @@ module "rds_hyperswitch" {
   aurora_reader_instance_type    = var.rds_reader_instance_type
   aurora_reader_count            = var.free_tier_deployment ? 0 : 1 # No reader for free tier (standalone-like Aurora)
   # aurora_postgres_engine_version = "14.11" # Default in module
-  
+
   security_group_name = "${var.stack_prefix}-db-SG" # Matches CDK
   tags                = local.common_tags
 
@@ -447,16 +447,15 @@ module "eks" {
   utils_zone_subnet_ids    = module.vpc[0].utils_zone_subnet_ids
   service_layer_zone_subnet_ids = module.vpc[0].service_layer_zone_subnet_ids
   external_incoming_zone_subnet_ids = module.vpc[0].external_incoming_zone_subnet_ids
-  
+
   public_access_cidrs    = var.eks_vpn_ips # From root var
 
   eks_cluster_role_arn   = module.iam[0].eks_cluster_role_arn
   eks_nodegroup_role_arn = module.iam[0].eks_nodegroup_role_arn
   eks_admin_arns         = compact(concat(var.eks_admin_aws_arn != null ? [var.eks_admin_aws_arn] : [], var.eks_additional_admin_aws_arn != null ? [var.eks_additional_admin_aws_arn] : []))
 
-
-  hyperswitch_app_sa_role_arn = module.iam[0].eks_hyperswitch_service_account_role_arn
-  grafana_loki_sa_role_arn    = module.iam[0].eks_grafana_loki_service_account_role_arn
+  hyperswitch_app_sa_role_arn = null # Temporarily set to null to break cycle
+  grafana_loki_sa_role_arn    = null # Temporarily set to null to break cycle
 
   hyperswitch_app_kms_key_arn           = module.kms_hyperswitch_app[0].key_arn
   hyperswitch_app_secrets_manager_arn = module.secrets[0].hyperswitch_kms_data_secret_arn
@@ -494,7 +493,7 @@ module "eks" {
   # Assuming AMIs are sourced from SSM parameters populated by Image Builder module
   envoy_ami_id = var.envoy_ami_ssm_parameter_name != "" ? data.aws_ssm_parameter.envoy_ami.value : null
   squid_ami_id = var.squid_ami_ssm_parameter_name != "" ? data.aws_ssm_parameter.squid_ami.value : null
-  
+
   proxy_config_s3_bucket_name = module.s3[0].proxy_config_bucket_id
   squid_logs_s3_bucket_name   = module.s3[0].squid_logs_bucket_id
   # waf_arn_for_envoy_alb     = module.waf[0].web_acl_arn # Assuming a WAF module
@@ -507,11 +506,12 @@ module "eks" {
 
 
   depends_on = [
-    module.vpc, module.iam, module.s3, module.kms_hyperswitch_app, module.secrets,
-    module.rds_hyperswitch, module.elasticache, 
+    module.vpc, /*module.iam,*/ module.s3, module.kms_hyperswitch_app, module.secrets, # Temporarily commenting out iam to break cycle
+    module.elasticache
+    # module.rds_hyperswitch, # If EKS needs RDS outputs
     # module.image_builder_stack, # If AMIs are built in the same apply
     # module.card_vault_stack # If locker keys are needed and it's deployed
-    module.keymanager_stack # If keymanager is deployed and its outputs are needed by EKS
+    # module.keymanager_stack # If keymanager is deployed and its outputs are needed by EKS
   ]
 }
 
@@ -549,7 +549,7 @@ module "keymanager_stack" {
   lambda_role_arn_for_kms_encryption  = module.iam[0].lambda_general_role_arn # Can reuse general lambda role
 
   depends_on = [
-    module.vpc, module.iam, 
+    module.vpc, module.iam,
     # module.kms_keymanager, module.s3_keymanager_env, module.secrets_keymanager
   ]
 }
@@ -568,7 +568,7 @@ module "ec2_internal_jump" {
   create_new_security_group   = true
   security_group_name_prefix  = "${var.stack_prefix}-internal-jump-sg"
   # Ingress for SSH typically from VPN or specific bastion/management network
-  security_group_ingress_rules = [ 
+  security_group_ingress_rules = [
     { from_port = 22, to_port = 22, protocol = "tcp", cidr_blocks = var.eks_vpn_ips, description = "Allow SSH from VPN" }
   ]
   tags = local.common_tags
@@ -623,7 +623,7 @@ module "card_vault_stack" {
   tags           = local.common_tags
 
   vpc_id = var.locker_standalone_vpc_id == null ? module.vpc[0].vpc_id : var.locker_standalone_vpc_id
-  
+
   # Ensure these subnet IDs are correctly populated from the VPC module or existing VPC.
   # These are specific to the Card Vault's needs.
   locker_database_zone_subnet_ids   = var.locker_standalone_vpc_id == null ? module.vpc[0].locker_database_zone_subnet_ids : [] # Provide if using existing VPC
@@ -645,9 +645,9 @@ module "card_vault_stack" {
 
   depends_on = [
     module.vpc, # If creating new VPC for locker
-    module.iam, 
-    module.kms_locker, 
-    module.s3, 
+    module.iam,
+    module.kms_locker,
+    module.s3,
     module.secrets
   ]
 }
@@ -678,7 +678,7 @@ module "image_builder_stack" {
   squid_ami_ssm_parameter_name = var.squid_ami_ssm_parameter_name # Pass from root
   envoy_ami_ssm_parameter_name = var.envoy_ami_ssm_parameter_name # Pass from root
   base_ami_ssm_parameter_name  = var.base_ami_ssm_parameter_name  # Pass from root
-  
+
   depends_on = [module.vpc, module.iam, module.ec2_image_builder_sg]
 }
 
@@ -689,7 +689,7 @@ module "ec2_image_builder_sg" {
 
   instance_name_prefix = "${var.stack_prefix}-ib-infra" # Just for SG naming
   vpc_id                 = module.vpc[0].vpc_id
-  
+
   create_new_security_group = true
   security_group_name_prefix = "${var.stack_prefix}-ib-infra-sg"
   security_group_allow_all_outbound = true
@@ -697,7 +697,7 @@ module "ec2_image_builder_sg" {
   # If components need to download from specific internal sources, add egress here or ensure NAT/endpoints.
 
   # Set instance_type to a dummy value as we only need the SG from this module call
-  instance_type = "t3.micro" 
+  instance_type = "t3.micro"
   subnet_ids    = [module.vpc[0].public_subnet_ids[0]] # Dummy subnet_id
   # We are not creating an instance, just leveraging the SG creation part of the ec2 module.
   # This is a bit of a workaround. A dedicated SG module would be cleaner.
@@ -741,8 +741,8 @@ resource "aws_vpc_endpoint" "s3_gateway" {
 
 locals {
   interface_endpoints_services = [
-    "ec2", "ecr.api", "ecr.dkr", "sts", "secretsmanager", 
-    "ssm", "ssmmessages", "ec2messages", "kms", "rds" 
+    "ec2", "ecr.api", "ecr.dkr", "sts", "secretsmanager",
+    "ssm", "ssmmessages", "ec2messages", "kms", "rds"
     # "logs" # CDK adds this, but it's usually for CloudWatch Logs agent, not a direct VPC endpoint for EKS itself.
   ]
 }

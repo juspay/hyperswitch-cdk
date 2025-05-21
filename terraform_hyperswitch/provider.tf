@@ -37,30 +37,30 @@ provider "aws" {
 }
 
 # Helm provider configuration - will be configured to point to EKS cluster
-provider "helm" {
-  kubernetes {
-    host                   = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? module.eks[0].cluster_endpoint : null
-    cluster_ca_certificate = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? base64decode(module.eks[0].cluster_certificate_authority_data) : null
-    token                  = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(data.aws_eks_cluster_auth.this) > 0 ? data.aws_eks_cluster_auth.this[0].token : null
-    # exec { # Alternative for EKS authentication
-    #   api_version = "client.authentication.k8s.io/v1beta1"
-    #   args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_id]
-    #   command     = "aws"
-    # }
-  }
-}
+# provider "helm" {
+#   kubernetes {
+#     host                   = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? module.eks[0].cluster_endpoint : null
+#     cluster_ca_certificate = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? base64decode(module.eks[0].cluster_certificate_authority_data) : null
+#     token                  = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(data.aws_eks_cluster_auth.this) > 0 ? data.aws_eks_cluster_auth.this[0].token : null
+#     # exec { # Alternative for EKS authentication
+#     #   api_version = "client.authentication.k8s.io/v1beta1"
+#     #   args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_id]
+#     #   command     = "aws"
+#     # }
+#   }
+# }
 
 # Kubernetes provider configuration - similar to Helm
-provider "kubernetes" {
-  host                   = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? module.eks[0].cluster_endpoint : null
-  cluster_ca_certificate = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? base64decode(module.eks[0].cluster_certificate_authority_data) : null
-  token                  = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(data.aws_eks_cluster_auth.this) > 0 ? data.aws_eks_cluster_auth.this[0].token : null
-  # exec {
-  #   api_version = "client.authentication.k8s.io/v1beta1"
-  #   args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_id]
-  #   command     = "aws"
-  # }
-}
+# provider "kubernetes" {
+#   host                   = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? module.eks[0].cluster_endpoint : null
+#   cluster_ca_certificate = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(module.eks) > 0 ? base64decode(module.eks[0].cluster_certificate_authority_data) : null
+#   token                  = local.is_hyperswitch_deployment && !var.free_tier_deployment && length(data.aws_eks_cluster_auth.this) > 0 ? data.aws_eks_cluster_auth.this[0].token : null
+#   # exec {
+#   #   api_version = "client.authentication.k8s.io/v1beta1"
+#   #   args        = ["eks", "get-token", "--cluster-name", module.eks[0].cluster_id]
+#   #   command     = "aws"
+#   # }
+# }
 
 # Note: The Helm and Kubernetes providers are conditionally configured.
 # If EKS is not deployed (e.g., free_tier_deployment is true), these providers
