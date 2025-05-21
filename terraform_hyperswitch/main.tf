@@ -30,23 +30,12 @@ module "vpc" {
   tags             = local.common_tags
 
   # Subnet configurations are based on lib/aws/networking.ts
-  # Public Subnets
-  public_subnets_cidr = [
-    for k, v in cidrsubnets(var.vpc_cidr_block, 8, 8, 8, 8, 8, 8) : v if k < var.vpc_max_azs * 2 
-    # Example: Two public subnets per AZ for management and external-incoming, adjust as needed
-    # This is a simplified example; the CDK has many named subnets.
-    # We'll need to refine this to match the CDK's subnet structure more closely.
-  ]
-  # Private Subnets (with NAT Gateway)
-  private_subnets_cidr = [
-    for k, v in cidrsubnets(var.vpc_cidr_block, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4) : v if k >= var.vpc_max_azs * 2 && k < var.vpc_max_azs * 2 + var.vpc_max_azs * 10 
-    # Example: Ten private subnets per AZ, adjust as needed
-  ]
-  # Isolated Subnets (no NAT Gateway)
-  isolated_subnets_cidr = [
-    for k, v in cidrsubnets(var.vpc_cidr_block, 8, 8, 8, 8) : v if k >= var.vpc_max_azs * 12 && k < var.vpc_max_azs * 12 + var.vpc_max_azs * 4
-    # Example: Four isolated subnets per AZ, adjust as needed
-  ]
+  # VPC Configuration
+  enable_nat_gateway = true
+  single_nat_gateway = var.free_tier_deployment
+  one_nat_gateway_per_az = !var.free_tier_deployment
+  enable_dns_hostnames = true
+  enable_dns_support = true
 
   # Specific named subnets from CDK (this needs more detailed mapping)
   # For now, these are illustrative placeholders.

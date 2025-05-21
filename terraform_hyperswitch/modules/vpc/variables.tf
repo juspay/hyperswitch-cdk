@@ -142,3 +142,21 @@ variable "single_nat_gateway" {
   type        = bool
   default     = false
 }
+
+variable "one_nat_gateway_per_az" {
+  description = "Should be true if you want only one NAT Gateway per availability zone."
+  type        = bool
+  default     = true
+}
+
+variable "enable_dns_hostnames" {
+  description = "Should be true to enable DNS hostnames in the VPC."
+  type        = bool
+  default     = true
+}
+
+variable "enable_dns_support" {
+  description = "Should be true to enable DNS support in the VPC."
+  type        = bool
+  default     = true
+}

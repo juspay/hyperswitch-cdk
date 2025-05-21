@@ -99,12 +99,27 @@ resource "null_resource" "invoke_ecr_image_transfer_build_trigger" {
 
 # --- EKS Secrets Encryption Lambda ---
 data "archive_file" "eks_secrets_encryption_lambda_zip" {
-  type        = "zip", source_file = "${path.module}/lambda_code/eks_secrets_encryption.py", output_path = "${path.module}/lambda_code/eks_secrets_encryption.zip"
+  type        = "zip"
+  source_file = "${path.module}/lambda_code/eks_secrets_encryption.py"
+  output_path = "${path.module}/lambda_code/eks_secrets_encryption.zip"
 }
+
 resource "aws_lambda_function" "eks_kms_encrypt_lambda" {
-  function_name = "${var.stack_prefix}-HyperswitchKmsEncryptionLambda", handler = "eks_secrets_encryption.lambda_handler", runtime = "python3.9", role = var.lambda_role_arn_for_kms_encryption, timeout = 900
-  filename = data.archive_file.eks_secrets_encryption_lambda_zip.output_path, source_code_hash = data.archive_file.eks_secrets_encryption_lambda_zip.output_base64sha256
-  environment { variables = { SECRET_MANAGER_ARN = var.hyperswitch_app_secrets_manager_arn } }, tags = var.tags
+  function_name    = "${var.stack_prefix}-HyperswitchKmsEncryptionLambda"
+  handler         = "eks_secrets_encryption.lambda_handler"
+  runtime         = "python3.9"
+  role           = var.lambda_role_arn_for_kms_encryption
+  timeout        = 900
+  filename       = data.archive_file.eks_secrets_encryption_lambda_zip.output_path
+  source_code_hash = data.archive_file.eks_secrets_encryption_lambda_zip.output_base64sha256
+
+  environment {
+    variables = {
+      SECRET_MANAGER_ARN = var.hyperswitch_app_secrets_manager_arn
+    }
+  }
+
+  tags = var.tags
 }
 resource "null_resource" "trigger_eks_kms_encryption_lambda" {
   triggers = { lambda_arn = aws_lambda_function.eks_kms_encrypt_lambda.arn, secret_arn = var.hyperswitch_app_secrets_manager_arn }

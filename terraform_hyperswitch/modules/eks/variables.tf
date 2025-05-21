@@ -88,6 +88,11 @@ variable "cluster_enabled_log_types" {
 }
 
 # IAM Roles from IAM module
+variable "eks_cluster_role_arn" {
+  description = "ARN of the IAM role for EKS cluster."
+  type        = string
+}
+
 variable "eks_nodegroup_role_arn" {
   description = "ARN of the IAM role for EKS Node Groups."
   type        = string
