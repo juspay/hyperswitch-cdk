@@ -2,7 +2,9 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import { EC2Config } from './config';
 import * as cdk from "aws-cdk-lib";
-export class EC2Instance {
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+
+export class EC2Instance implements elbv2.IApplicationLoadBalancerTarget {
     private readonly instance: ec2.Instance;
     sg: ec2.SecurityGroup;
 
@@ -43,17 +45,12 @@ export class EC2Instance {
             machineImage: config.machineImage,
             ssmSessionPermissions: config.ssmSessionPermissions,
             associatePublicIpAddress: config.associatePublicIpAddress,
+            role: config.role
         });
 
         if (executeAfter){
             this.instance.node.addDependency(executeAfter);
         }
-
-        // make this identifier name to be 'StandaloneUrl' - refer to install.sh
-        // new cdk.CfnOutput(scope, '', {
-        //     value: "http://"+this.instance.instancePublicIp+"/health",
-        //     description: 'try health api',
-        // });
     }
 
     public getInstance(): ec2.Instance {
@@ -61,7 +58,14 @@ export class EC2Instance {
     }
 
     addClient(sg: ec2.ISecurityGroup, port: ec2.Port) {
-        this.sg.addIngressRule(sg, port);
         sg.addEgressRule(this.sg, port);
-      }
+        this.sg.addIngressRule(sg, port);
+    }
+
+    attachToApplicationTargetGroup(targetGroup: elbv2.IApplicationTargetGroup): elbv2.LoadBalancerTargetProps {
+        return {
+            targetType: elbv2.TargetType.INSTANCE,
+            targetJson: { id: this.instance.instanceId }
+        };
+    }
 }
