@@ -4,6 +4,10 @@ sudo yum update -y
 sudo yum install docker -y
 sudo service docker start
 sudo usermod -a -G docker ec2-user
+newgrp docker
+sudo yum install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
 
 # Installing Hyperswitch Router application [Backend application]
 
@@ -26,7 +30,7 @@ ROUTER__ANALYTICS__SQLX__PASSWORD={{password}}
 ROUTER__ANALYTICS__SQLX__DBNAME={{db_name}}
 ROUTER__LOCKER__MOCK_LOCKER=true
 ROUTER__SERVER__HOST=0.0.0.0
-ROUTER__SERVER__BASE_URL=$(curl ifconfig.me)
+ROUTER__SERVER__BASE_URL=https://{{app_cloudfront_url}}
 ROUTER__SECRETS__ADMIN_API_KEY={{admin_api_key}}
 EOF
 
@@ -40,8 +44,8 @@ docker run -d --env-file .env -p 80:8080 -v `pwd`/:/local/config juspaydotin/hyp
 docker pull juspaydotin/hyperswitch-control-center:v1.29.9
 
 cat << EOF >> .env
-apiBaseUrl=http://$(curl ifconfig.me):80
-sdkBaseUrl=http://$(curl ifconfig.me):80
+apiBaseUrl=https://{{app_cloudfront_url}}
+sdkBaseUrl=https://{{sdk_cloudfront_url}}/0.27.2/v0/HyperLoader.js
 EOF
 
 docker run -d --env-file .env -p 9000:9000 juspaydotin/hyperswitch-control-center:v1.29.9
