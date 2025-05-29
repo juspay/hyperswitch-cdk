@@ -3497,11 +3497,11 @@ ADD COLUMN IF NOT EXISTS organization_id VARCHAR(32) NOT NULL DEFAULT 'default_o
 -- WHERE r.merchant_id = ma.merchant_id;
 
 -- UPDATE payment_attempt pa
-SET profile_id = pi.profile_id
+-- SET profile_id = pi.profile_id
 -- FROM payment_intent pi
-WHERE pa.payment_id = pi.payment_id
-AND pa.merchant_id = pi.merchant_id
-AND pi.profile_id IS NOT NULL;
+-- WHERE pa.payment_id = pi.payment_id
+-- AND pa.merchant_id = pi.merchant_id
+-- AND pi.profile_id IS NOT NULL;
 -- Your SQL goes here
 ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS tax_details JSONB;
 -- Your SQL goes here
@@ -3576,7 +3576,6 @@ ALTER TABLE roles ALTER COLUMN entity_type SET DEFAULT 'merchant';
 
 ALTER TABLE roles ALTER COLUMN entity_type SET NOT NULL;
 
--- Database migrations between v1.112.0 and v1.113.0
 -- Your SQL goes here
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS profile_id VARCHAR(64);
 -- Your SQL goes here
