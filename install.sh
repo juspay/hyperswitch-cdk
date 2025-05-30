@@ -525,6 +525,9 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
 
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
 
+        echo "Please wait for the EKS cluster to be initialized. Approximate time is 2 minutes..."
+        sleep 120
+
         # Phase 2: Deploy distributions (CloudFront)
         CONTROL_CENTER_HOST_D=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
         APP_HOST_D=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -533,7 +536,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         helm get values -n hyperswitch hypers-v1 > values.yaml
         sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
 
-        echo "✅ All deployments complete!"
+        echo "✅  All deployments complete!"
         exit 0
     fi
 
@@ -588,7 +591,7 @@ else
         echoLog "$green Standalone Hosted at             $blue"$STANDALONE_HOST"$reset"
         echoLog "$green Control center server running on  $blue"$CONTROL_CENTER_HOST"$reset"
         echoLog "$green SDK Hosted at                    $blue"$SDK_HOST"$reset"
-        echoLog "$green Hyperswitch Demo Store running on $blue"$DEMO_APP"$reset"
+        #echoLog "$green Hyperswitch Demo Store running on $blue"$DEMO_APP"$reset"
         echoLog "--------------------------------------------------------------------------------"
     fi
 fi
