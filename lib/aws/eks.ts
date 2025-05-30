@@ -234,41 +234,39 @@ export class EksStack {
     const lbControllerPolicyUrl =
       "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.12.0/docs/install/iam_policy.json";
 
+    const albControllerServiceAccountName = "aws-load-balancer-controller-sa";
+    const albControllerNamespace = "kube-system";
+    const albControllerConditions = new cdk.CfnJson(scope, "ALBControllerConditionJson", {
+      value: {
+        [`${provider.openIdConnectProviderIssuer}:aud`]: "sts.amazonaws.com",
+        [`${provider.openIdConnectProviderIssuer}:sub`]: `system:serviceaccount:${albControllerNamespace}:${albControllerServiceAccountName}`,
+      },
+    });
+    const albControllerRole = new iam.Role(scope, "ALBControllerRole", {
+      assumedBy: new iam.FederatedPrincipal(
+        provider.openIdConnectProviderArn,
+        { StringEquals: albControllerConditions },
+        "sts:AssumeRoleWithWebIdentity"
+      ),
+    });
+    
     fetchAndCreatePolicy(lbControllerPolicyUrl)
       .then((policy) => {
-        nodegroupRole.attachInlinePolicy(
-          new iam.Policy(scope, "HSAWSLoadBalancerControllerIAMPolicyInfo", {
-            document: policy,
-          }),
-        );
-
-        nodegroupRole.attachInlinePolicy(
-          new iam.Policy(
-            scope,
-            "HSAWSLoadBalancerControllerIAMInlinePolicyInfo",
-            {
-              document: new iam.PolicyDocument({
-                statements: [
-                  new iam.PolicyStatement({
-                    actions: [
-                      "elasticloadbalancing:AddTags",
-                      "elasticloadbalancing:RemoveTags",
-                    ],
-                    effect: iam.Effect.ALLOW,
-                    resources: [
-                      "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
-                      "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*",
-                    ],
-                  }),
-                ],
-              }),
-            },
-          ),
+        albControllerRole.attachInlinePolicy(
+          new iam.Policy(scope, "ALBControllerIAMPolicy", { document: policy })
         );
       })
       .catch((error) => {
-        console.error("Error fetching or creating policy document:", error);
+        console.error("Error fetching or creating ALB controller policy document:", error);
       });
+
+      const albControllerServiceAccount = cluster.addServiceAccount("ALBControllerSA", {
+      name: albControllerServiceAccountName,
+      namespace: albControllerNamespace,
+      annotations: {
+        "eks.amazonaws.com/role-arn": albControllerRole.roleArn,
+      },
+    });
 
     nodegroupRole.attachInlinePolicy(cloudwatchPolicy);
 
@@ -567,12 +565,15 @@ export class EksStack {
           tag: "v2.12.0"
         },
         enableServiceMutatorWebhook: false,
-        extraArgs: {
-          "aws-region": `${process.env.CDK_DEFAULT_REGION}`,
-          "aws-vpc-id": `${cluster.vpc.vpcId}`,
+        region: `${process.env.CDK_DEFAULT_REGION}`,
+        vpcId: `${cluster.vpc.vpcId}`,
+        serviceAccount: {
+          create: false,
+          name: albControllerServiceAccount.serviceAccountName,
         },
       },
     });
+    albControllerChart.node.addDependency(albControllerServiceAccount);
 
     cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 

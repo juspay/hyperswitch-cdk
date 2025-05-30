@@ -123,7 +123,7 @@ def lambda_handler(event, context):
                      "message": message
                  })
         elif event['RequestType'] == 'Delete':
-            keys = ["db-pass", "master-key", "admin-api-key", "jwt-secret", "dummy-val", "kms-encrypted-api-hash-key", "locker-public-key", "tenant-private-key"]
+            keys = ["db-pass", "master-key", "admin-api-key", "jwt-secret", "dummy-val", "kms-encrypted-api-hash-key", "locker-public-key", "tenant-private-key", "paze-private-key", "paze-private-key-passphrase", "google-pay-root-signing-keys"]
             ssm = boto3.client('ssm')
             for key in keys:
                 parameter_name="/hyperswitch/{}".format(key)

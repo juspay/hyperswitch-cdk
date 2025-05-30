@@ -25,7 +25,7 @@ export class DistributionConstruct extends Construct {
       },
     });
 
-    new cdk.CfnOutput(this, 'ControlCenterDistributionDomain', {
+    new cdk.CfnOutput(this, 'ControlCenterURL', {
       value: controlCenterDistribution.distributionDomainName,
     });
 
@@ -41,8 +41,8 @@ export class DistributionConstruct extends Construct {
       },
     });
 
-    new cdk.CfnOutput(this, 'RouterDistributionDomain', {
-      value: this.routerDistribution.distributionDomainName,
+    new cdk.CfnOutput(this, 'RouterURL', {
+      value: this.routerDistribution.distributionDomainName + "/health"
     });
   }
 }
