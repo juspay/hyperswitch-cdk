@@ -1,5 +1,6 @@
 // import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { KeymanagerConfig } from "./keymanager/stack"
 
 export enum Environment {
@@ -67,6 +68,8 @@ export type EC2 = {
     master_enc_key: string;
     redis_host: string;
     db_host: string;
+    app_alb_dns?: string;
+    sdk_alb_dns?: string;
 };
 
 
@@ -108,4 +111,7 @@ export type EC2Config = {
     ssmSessionPermissions?: boolean;
     associatePublicIpAddress?: boolean;
     allowOutboundTraffic?: boolean;
+    role?: iam.IRole;
+    app_alb_dns?: string;
+    sdk_alb_dns?: string;
 }
