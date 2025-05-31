@@ -329,6 +329,10 @@ export class AWSStack extends cdk.Stack {
           elasticache.cluster.attrRedisEndpointAddress,
         );
       }
+
+      let _ = new DefaultRemoverStack(this, config);
+
+
       let eks = new EksStack(
         this,
         config,

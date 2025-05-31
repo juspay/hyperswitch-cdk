@@ -36,6 +36,7 @@ export type VpcConfig = {
 export type SubnetConfigs = {
     public: SubnetConfig;
     dmz: SubnetConfig;
+    remove_default: boolean;
 };
 
 export type SubnetConfig = {
