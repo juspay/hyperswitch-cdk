@@ -42,7 +42,7 @@ export class HyperswitchSDKStack extends Construct {
       })
     );
 
-    let sdkVersion = "0.109.2";
+    let sdkVersion = "0.121.2";
 
     const project = new codebuild.Project(scope, "HyperswitchSDK", {
       projectName: "HyperswitchSDK",

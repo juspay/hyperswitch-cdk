@@ -743,12 +743,12 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "0.109.2";
+    const sdk_version = "0.121.2";
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
       repository: "https://juspay.github.io/hyperswitch-helm/",
-      version: "0.2.2",
+      version: "0.2.4",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -772,16 +772,16 @@ export class EksStack {
           },
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.113.0-standalone`,
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.114.0-standalone`,
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.113.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.114.0-standalone`
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.113.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.114.0-standalone`
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.36.1`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.37.1`
             },
             sdk: {
               host: "https://${this.sdkDistribution.distributionDomainName}",
@@ -807,7 +807,11 @@ export class EksStack {
               }
             },
             secrets_management: {
-              secrets_manager: "aws_kms"
+              secrets_manager: "aws_kms",
+              aws_kms: {
+                key_id: kms_key.keyId,
+                region: kms_key.stack.region
+              }
             },
             region: `${process.env.CDK_DEFAULT_REGION}`,
             bucket_name: `logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
@@ -997,7 +1001,7 @@ export class EksStack {
               host: "http://localhost:8080"
             },
             sdkDemo: {
-              image: "juspaydotin/hyperswitch-web:v0.109.2",
+              image: "juspaydotin/hyperswitch-web:v0.121.2",
               hyperswitchPublishableKey: "pub_key",
               hyperswitchSecretKey: "secret_key"
             }
