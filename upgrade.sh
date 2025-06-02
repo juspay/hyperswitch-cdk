@@ -48,8 +48,8 @@ printf "##########################################\nPlease wait for the applicat
 APP_ENV="hyperswitch-app"
 SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
-HYPERLOADER="https://$SDK_URL/web/0.109.2/v1/HyperLoader.js"
-VERSION="0.2.2"
+HYPERLOADER="https://$SDK_URL/web/0.121.2/v1/HyperLoader.js"
+VERSION="0.2.4"
 helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" --set "$SDK_ENV.router.host=https://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=https://$SDK_URL,$APP_ENV.services.router.host=https://$APP_HOST,$SDK_BUILD.envSdkUrl=https://$SDK_URL,$SDK_BUILD.envBackendUrl=https://$APP_HOST" -n hyperswitch -f values.yaml
 
 echoLog "--------------------------------------------------------------------------------"
