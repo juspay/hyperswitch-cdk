@@ -16,9 +16,9 @@ chmod +x /usr/local/bin/kubectl
 kubectl version --client
 AWS_ARN=$(aws sts get-caller-identity --output json | jq -r .Arn)
 AWS_ACCOUNT=$(aws sts get-caller-identity --output json | jq -r .Account)
-wget https://github.com/juspay/hyperswitch-cdk/archive/refs/tags/v0.3.0.zip
-unzip v0.3.0.zip
-cd $(unzip -Z -1 v0.3.0.zip | head -1)
+wget https://github.com/juspay/hyperswitch-cdk/archive/refs/tags/v0.6.0.zip
+unzip v0.6.0.zip
+cd $(unzip -Z -1 v0.6.0.zip | head -1)
 
 npm install
 
