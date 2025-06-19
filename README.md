@@ -117,10 +117,10 @@ curl https://raw.githubusercontent.com/juspay/hyperswitch-cdk/main/locker.sh | b
 
 # Image Builder (Outgoing and Incoming Proxy)
 
-The imagebuilder component builds images for outgoing and incoming proxy(Squid and Envoy). Optionally you can choose to have hardened base image. You can buy the base image from [here](https://aws.amazon.com/marketplace/pp/prodview-53aklkzclj3wi?sr=0-1&ref_=beagle&applicationId=AWSMPContessa).
+The imagebuilder component builds images for outgoing and incoming proxy(Squid and Envoy). Optionally you can choose to have hardened base image. You can buy the base image from [here](https://aws.amazon.com/marketplace/pp/prodview-fqqp6ebucarnm?sr=0-15&ref_=beagle&applicationId=AWSMPContessa).
 
 Currently supported platforms:
-- Amazon Linux 2
+- Amazon Linux 2023
 
 ## Deploying
 

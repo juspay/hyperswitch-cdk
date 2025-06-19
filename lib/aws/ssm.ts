@@ -32,7 +32,7 @@ function addEntityToSSM(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["s3:PutObject"],
-        resources: [`arn:aws:s3:::s3://${config.log_bucket_name}/*`],
+        resources: [`arn:aws:s3:::${config.log_bucket_name}/*`],
       }),
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,

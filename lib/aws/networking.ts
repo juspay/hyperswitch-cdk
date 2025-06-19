@@ -1,4 +1,4 @@
-import * as cdk from "aws-cdk-lib";
+// import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { SubnetConfigs, VpcConfig } from "./config";
 import { Construct } from "constructs";
@@ -105,6 +105,11 @@ export class Vpc {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: 24,
         },
+        {
+          name: "istio-lb-transit-zone",
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          cidrMask: 24,
+        },
       ],
       ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
     });
@@ -112,4 +117,3 @@ export class Vpc {
     this.vpc = vpc;
   }
 }
-

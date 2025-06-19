@@ -159,25 +159,25 @@ show_install_options() {
     echo "${bold}${green}2. Production Ready ${reset} - ${bold}${blue}Optimized for scalability and performance, leveraging the power of AWS EKS for robust, enterprise-grade deployments.${reset}"
 }
 
-# declare base_ami,envoy_ami,squid_ami
+declare base_ami,envoy_ami,squid_ami
 
-# check_image_builder() {
-#     ssm=$(aws ssm get-parameters \
-#             --names base_image_ami squid_image_ami envoy_image_ami \
-#             --query "Parameters[*].{Name:Name,Value:Value}" --output json)
+check_image_builder() {
+    ssm=$(aws ssm get-parameters \
+            --names base_image_ami squid_image_ami envoy_image_ami \
+            --query "Parameters[*].{Name:Name,Value:Value}" --output json)
 
-#     length=$(echo "$ssm" | jq -r ".|length")
+    length=$(echo "$ssm" | jq -r ".|length")
 
-#     if [ "$length" -lt 3 ]; then
-#         display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
-#         exit 1
-#     fi
+    if [ "$length" -lt 3 ]; then
+        display_error "Unable to find base images for Proxy Servers. Please run the following command: bash deploy_imagebuilder.sh\nIf you have done it already please wait for 15-20 mins until it builds the images"
+        exit 1
+    fi
 
-#     base_ami=$(echo "$ssm" | jq '.[]|select(.Name=="base_image_ami")|.Value')
-#     envoy_ami=$(echo "$ssm" | jq '.[]|select(.Name=="envoy_image_ami")|.Value')
-#     squid_ami=$(echo "$ssm" | jq '.[]|select(.Name=="squid_image_ami")|.Value')
+    base_ami=$(echo "$ssm" | jq -r '.[]|select(.Name=="base_image_ami")|.Value')
+    envoy_ami=$(echo "$ssm" | jq -r '.[]|select(.Name=="envoy_image_ami")|.Value')
+    squid_ami=$(echo "$ssm" | jq -r '.[]|select(.Name=="squid_image_ami")|.Value')
 
-# }
+}
 
 # Function to read user input until a valid choice is made
 get_user_choice() {
@@ -200,7 +200,6 @@ get_user_choice() {
 clear
 list_services
 echo
-# check_image_builder
 show_install_options
 get_user_choice
 
@@ -502,10 +501,21 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         KEYMANAGER_ENABLED+="-c keymanager_enabled=true"
     fi
 
+    echo "Do you want to deploy proxy setup (Envoy/Squid)? [y/n]: "
+    read -r APP_PROXY_SETUP
+
+    APP_PROXY_CONTEXT=""
+    if [[ "$APP_PROXY_SETUP" == "y" ]]; then
+        echo "Checking for required AMI images for proxy setup..."
+        check_image_builder
+        APP_PROXY_CONTEXT="-c app_proxy_enabled=true -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami"
+    fi
+
     printf "${bold}Deploying Hyperswitch Services${reset}\n"
     # Deploy the EKS Cluster
     npm install
     export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=true
+    echo "Bootstrapping CDK environment..."
     if ! cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN; then
         BUCKET_NAME=cdk-hnb659fds-assets-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION
         ROLE_NAME=cdk-hnb659fds-cfn-exec-role-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION
@@ -519,21 +529,70 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         aws iam delete-role --role-name $ROLE_NAME 2>/dev/null
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
-    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER $KEYMANAGER_ENABLED -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
-        # Phase 1: Wait for the EKS Cluster to be deployed
-        echo $(aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability)
+    
+    echo "Deploying Hyperswitch Stack..."
+    # Single deployment that includes everything based on user choices
+    if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami $LOCKER $KEYMANAGER_ENABLED $APP_PROXY_CONTEXT -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
+        echo "Stack deployment successful."
+        
+        echo "Creating CloudWatch Observability addon..."
+        aws eks create-addon --cluster-name hs-eks-cluster --addon-name amazon-cloudwatch-observability --resolve-conflicts PRESERVE > /dev/null 2>&1 || echo "Failed to create/update cloudwatch-observability addon. It might already exist or an error occurred."
 
+        echo "Updating kubeconfig..."
         aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name hs-eks-cluster
 
         echo "Please wait for the EKS cluster to be initialized. Approximate time is 2 minutes..."
         sleep 120
 
-        # Phase 2: Deploy distributions (CloudFront)
-        CONTROL_CENTER_HOST_D=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        APP_HOST_D=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami $LOCKER $KEYMANAGER_ENABLED -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD -c control_center_host=$CONTROL_CENTER_HOST_D -c app_host=$APP_HOST_D
+        # Retrieve ingress hostnames for CloudFront configuration
+        echo "Retrieving ingress hostnames..."
+        CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
 
-        helm get values -n hyperswitch hypers-v1 > values.yaml
+        # Conditionally get APP_HOST based on whether proxy is enabled
+        if [[ "$APP_PROXY_SETUP" == "y" ]]; then
+
+            ENVOY_EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names envoy-external-lb --query 'LoadBalancers[0].DNSName' --output text)
+            
+            if [ -n "$ENVOY_EXT_ALB_DNS" ] && [ "$ENVOY_EXT_ALB_DNS" != "null" ]; then
+                APP_HOST="$ENVOY_EXT_ALB_DNS"
+                echo "Using Envoy External ALB as App Host: $APP_HOST"
+            else
+                echo "Envoy External ALB DNS not found."
+                APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+                echo "Using ALB ingress as App Host: $APP_HOST"
+            fi
+        else
+            # Default approach for non-proxy setup
+            APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+            echo "Using ALB ingress as App Host: $APP_HOST"
+        fi
+        
+        if [ -n "$CONTROL_CENTER_HOST" ] && [ -n "$APP_HOST" ]; then
+            echo "Control Center Host: $CONTROL_CENTER_HOST"
+            
+            # Update CloudFront distributions with the ingress hostnames
+            echo "Updating CloudFront distributions..."
+            cdk deploy --require-approval never \
+                -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN \
+                -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami \
+                $LOCKER $KEYMANAGER_ENABLED $APP_PROXY_CONTEXT \
+                -c open_search_service=$OPEN_SEARCH_SERVICE \
+                -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME \
+                -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD \
+                -c control_center_host="$CONTROL_CENTER_HOST" \
+                -c app_host="$APP_HOST"
+            
+            if [ $? -ne 0 ]; then
+                echo "${bold}${red}Error updating CloudFront distributions.${reset}"
+            else
+                echo "CloudFront distributions updated successfully."
+            fi
+        else
+            echo "${bold}${yellow}Warning: Could not retrieve ingress hostnames. CloudFront configuration may be incomplete.${reset}"
+        fi
+        
+        echo "Finalizing setup..."
+        helm get values -n hyperswitch hypers-v1 > values.yaml 2>/dev/null || echo "Failed to get helm values for hypers-v1"
         sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
 
         echo "✅  All deployments complete!"

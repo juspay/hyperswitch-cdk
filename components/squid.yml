@@ -1,5 +1,5 @@
 name: InstallSquid
-description: This document installs Squid and Wazuh on top of Amazon Linux 2
+description: This document installs Squid and Wazuh on top of Amazon Linux 2023
 schemaVersion: 1.0
 
 phases:
@@ -9,14 +9,18 @@ phases:
           action: ExecuteBash
           inputs:
             commands:
+                - echo "=== Installing Wazuh Agent on Amazon Linux 2023 ==="
                 - sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
-                - sudo echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" >> /etc/yum.repos.d/wazuh.repo
-                - WAZUH_MANAGER="10.0.0.2" sudo yum install -y wazuh-agent
+                - echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" | sudo tee /etc/yum.repos.d/wazuh.repo > /dev/null
+                - sudo dnf install -y wazuh-agent
+                - sudo sed -i 's|<address>MANAGER_IP</address>|<address>10.0.0.2</address>|' /var/ossec/etc/ossec.conf
                 - sudo systemctl daemon-reload
                 - sudo systemctl enable wazuh-agent
-                - sudo systemctl start wazuh-agent
-                - sudo sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
-                - sudo yum update -y
-                - sudo yum install -y squid
+                - sudo systemctl start wazuh-agent || echo "Wazuh agent failed to start, continuing..."
+                - sudo sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/wazuh.repo
+                - sudo dnf update -y
+                
+                - echo "=== Installing Squid Proxy ==="
+                - sudo dnf install -y squid
                 - sudo systemctl enable squid
                 - sudo systemctl start squid

@@ -53,7 +53,7 @@ function CreateImagePipeline(
 
     const squid_recipe = new image_builder.CfnImageRecipe(stack, props.recipe_name, {
         name: props.recipe_name,
-        version: "1.0.3",
+        version: "1.0.4",
         components: [
             { "componentArn": component.attrArn }
         ],
@@ -110,7 +110,7 @@ export class ImageBuilderStack extends cdk.Stack {
         role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"))
         role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("EC2InstanceProfileForImageBuilder"))
 
-        const base_image_id = config.ami_id || MachineImage.latestAmazonLinux2().getImage(this).imageId
+        const base_image_id = config.ami_id || MachineImage.latestAmazonLinux2023().getImage(this).imageId 
 
         let squid_properties = {
             pipeline_name: "SquidImagePipeline",

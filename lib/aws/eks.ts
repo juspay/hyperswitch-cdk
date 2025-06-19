@@ -29,12 +29,14 @@ import { env } from "process";
 import { WAF } from "./waf";
 import { Keymanager } from "./keymanager/stack"
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
+import { AppProxiesConstruct } from './app_proxies_construct';
+import { IstioResources } from './istio_stack';
+import { SecurityGroups } from './security_groups';
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
-  trafficControl: eks.HelmChart;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
   sdkDistribution: cloudfront.CloudFrontWebDistribution;
@@ -46,6 +48,8 @@ export class EksStack {
     elasticache: ElasticacheStack,
     admin_api_key: string,
     locker: LockerSetup | undefined,
+    s3VpcEndpoint: ec2.GatewayVpcEndpoint,
+    securityGroups: SecurityGroups,
   ) {
 
     const ecrTransfer = new DockerImagesToEcr(scope, vpc);
@@ -72,6 +76,7 @@ export class EksStack {
       endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...vpn_ips),
       vpc: vpc,
       clusterName: "hs-eks-cluster",
+      securityGroup: securityGroups.clusterSecurityGroup,
       clusterLogging: [
         eks.ClusterLoggingTypes.API,
         eks.ClusterLoggingTypes.AUDIT,
@@ -525,23 +530,13 @@ export class EksStack {
     //   },
     // );
 
-    // Create a security group for the load balancer
-    const lbSecurityGroup = new ec2.SecurityGroup(scope, "HSLBSecurityGroup", {
-      vpc: cluster.vpc,
-      allowAllOutbound: false,
-      securityGroupName: "hs-loadbalancer-sg",
-    });
+    // Use the load balancer security group from centralized SecurityGroups
+    const lbSecurityGroup = securityGroups.lbSecurityGroup;
 
     this.sg = cluster.clusterSecurityGroup;
 
-    // Add inbound rule for all traffic
-    lbSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic());
-
-    // Add outbound rule to the EKS cluster
-    lbSecurityGroup.addEgressRule(
-      cluster.clusterSecurityGroup,
-      ec2.Port.allTraffic(),
-    );
+    // Add EKS cluster rules to the security groups
+    securityGroups.addEksClusterRules(cluster.clusterSecurityGroup);
 
     cluster.clusterSecurityGroup.addIngressRule(
       lbSecurityGroup,
@@ -641,64 +636,6 @@ export class EksStack {
         }
       },
     });
-
-    const istioBase = cluster.addHelmChart("IstioBase", {
-      chart: "base",
-      repository: "https://istio-release.storage.googleapis.com/charts",
-      namespace: "istio-system",
-      release: "istio-base",
-      version: "1.25.0",
-      values: {
-        defaultRevision: "default"
-      },
-      createNamespace: true,
-      wait: true
-    });
-
-    const istiod = cluster.addHelmChart("Istiod", {
-      chart: "istiod",
-      repository: "https://istio-release.storage.googleapis.com/charts",
-      namespace: "istio-system",
-      release: "istiod",
-      version: "1.25.0",
-      values: {
-        global: {
-          hub: `${privateEcrRepository}/istio`,
-          tag: "1.25.0",
-        },
-        pilot: {
-          nodeSelector: {
-            "node-type": "memory-optimized",
-          },
-        },
-      },
-      wait: true
-    });
-
-    istiod.node.addDependency(istioBase);
-
-    const gateway = cluster.addHelmChart("Gateway", {
-      chart: "gateway",
-      repository: "https://istio-release.storage.googleapis.com/charts",
-      namespace: "istio-system",
-      release: "istio-ingressgateway",
-      version: "1.25.0",
-      values: {
-        global: {
-          hub: `${privateEcrRepository}/istio`,
-          tag: "1.25.0",
-        },
-        service: {
-          type: "ClusterIP"
-        },
-        nodeSelector: {
-          "node-type": "memory-optimized",
-        },
-      },
-      wait: true,
-    });
-
-    gateway.node.addDependency(istiod);
 
     const sdkCorsRule: s3.CorsRule = {
       allowedOrigins: ["*"],
@@ -1048,263 +985,44 @@ export class EksStack {
     });
 
     this.sdkBucket = sdkBucket;
-    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption); 
 
-    const lbSubents = cluster.vpc.selectSubnets({
-      subnetGroupName: "service-layer-zone",
-    });
+    const appProxyEnabled = scope.node.tryGetContext('app_proxy_enabled') === 'true';
+    
+    if (appProxyEnabled) {
+      const istioResources = new IstioResources(scope, 'IstioResources', {
+        cluster: cluster,
+        vpc: vpc,
+        securityGroups: securityGroups,
+      });
+      istioResources.trafficControlChart.node.addDependency(hypersChart);
 
-    const trafficControl = cluster.addHelmChart("TrafficControl", {
-      chart: "hyperswitch-istio",
-      repository: "https://juspay.github.io/hyperswitch-helm/charts/incubator/hyperswitch-istio",
-      release: "hs-istio",
-      values: {
-        image: {
-          version: "v1o107o0"
-        },
-        ingress: {
-          enabled: true,
-          className: "alb",
-          annotations: {
-            "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
-            "alb.ingress.kubernetes.io/backend-protocol-version": "HTTP1",
-            "alb.ingress.kubernetes.io/group.name": "hyperswitch-istio-app-alb-ingress-group",
-            "alb.ingress.kubernetes.io/healthcheck-interval-seconds": "5",
-            "alb.ingress.kubernetes.io/healthcheck-path": "/healthz/ready",
-            "alb.ingress.kubernetes.io/healthcheck-port": "15021",
-            "alb.ingress.kubernetes.io/healthcheck-protocol": "HTTP",
-            "alb.ingress.kubernetes.io/healthcheck-timeout-seconds": "2",
-            "alb.ingress.kubernetes.io/healthy-threshold-count": "5",
-            "alb.ingress.kubernetes.io/ip-address-type": "ipv4",
-            "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80}]',
-            "alb.ingress.kubernetes.io/load-balancer-attributes": "routing.http.drop_invalid_header_fields.enabled=true,routing.http.xff_client_port.enabled=true,routing.http.preserve_host_header.enabled=true",
-            "alb.ingress.kubernetes.io/scheme": "internal",
-            "alb.ingress.kubernetes.io/security-groups": lbSecurityGroup.securityGroupId,
-            "alb.ingress.kubernetes.io/subnets": lbSubents.subnetIds.join(","),
-            "alb.ingress.kubernetes.io/target-type": "ip",
-            "alb.ingress.kubernetes.io/unhealthy-threshold-count": "3",
-          },
-          hosts: {
-            paths: [
-              {
-                path: "/",
-                pathType: "Prefix",
-                port: 80,
-                name: "istio-ingress",
-              },
-              {
-                path: "/healthz/ready",
-                pathType: "Prefix",
-                port: 15021,
-                name: "istio-ingress",
-              }
-            ]
-          }
-        }
-      },
-    });
+      const envoyAmiId = scope.node.tryGetContext('envoy_ami');
+      const squidAmiId = scope.node.tryGetContext('squid_ami');
+      
+      if (envoyAmiId || squidAmiId) {
+        // Create AppProxiesConstruct with centralized security groups
+        const appProxiesConstruct = new AppProxiesConstruct(scope, 'AppProxies', {
+          vpc: vpc,
+          cluster: cluster,
+          securityGroups: securityGroups,
+          istioInternalAlbDnsName: istioResources.istioInternalAlbDnsName,
+          envoyAmiId: envoyAmiId,
+          squidAmiId: squidAmiId,
+          s3VpcEndpointId: s3VpcEndpoint.vpcEndpointId,
+        });
 
-    trafficControl.node.addDependency(istioBase, istiod, gateway, hypersChart);
-    this.trafficControl = trafficControl;
-
-    const proxyBucket = new s3.Bucket(scope, "proxy-config-bucket", {
-      bucketName: `proxy-config-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
-      blockPublicAccess: new s3.BlockPublicAccess({
-        blockPublicAcls: true,
-      }),
-      publicReadAccess: false,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-    });
-
-    const proxyBucketPolicy = new iam.Policy(scope, 'envoy-policy', {
-      statements: [
-        new iam.PolicyStatement({
-          actions: ['s3:GetObject'],
-          resources: [`${proxyBucket.bucketArn}/*`],
-          effect: iam.Effect.ALLOW,
-        }),
-      ],
-    });
-
-    const waf = new WAF(scope, "HyperswitchWAF");
-    const externalAppLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "ExternalAppLoadBalancer", {
-      vpc: cluster.vpc,
-      internetFacing: true,
-      securityGroup: lbSecurityGroup,
-      loadBalancerName: "external-app-lb",
-      vpcSubnets: {
-        subnetGroupName: "external-incoming-zone",
+        appProxiesConstruct.node.addDependency(istioResources);
+        
       }
-    });
-
-    // Attach the WAF to the external ALB
-    const waf_v2 = new wafv2.CfnWebACLAssociation(scope, 'WebACLAssociation-To-ExtALB', {
-      resourceArn: externalAppLoadBalncer.loadBalancerArn,
-      webAclArn: waf.waf_arn,
-    });
-
-    externalAppLoadBalncer.node.addDependency(waf);
-
-    const envoyAmi = scope.node.tryGetContext("envoy_ami");
-    if (envoyAmi) {
-      const internalLoadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(scope, 'HyperswitchLoadBalancer', {
-        loadBalancerTags: { 'ingress.k8s.aws/stack': 'hyperswitch-istio-app-alb-ingress-group' },
-      });
-
-      internalLoadBalancer.node.addDependency(trafficControl);
-
-      let envoyConfig = readFileSync("lib/aws/configurations/envoy/envoy.yaml", "utf8")
-        .replaceAll("{{external_loadbalancer_dns}}", externalAppLoadBalncer.loadBalancerDnsName)
-        .replaceAll("{{internal_loadbalancer_dns}}", internalLoadBalancer.loadBalancerDnsName);
-
-      const uploadConfig = new s3deploy.BucketDeployment(scope, "proxy-config-deployment", {
-        sources: [s3deploy.Source.yamlData("envoy/envoy.yaml", envoyConfig)],
-        destinationBucket: proxyBucket,
-      });
-
-      uploadConfig.node.addDependency(internalLoadBalancer, externalAppLoadBalncer);
-
-      let envoy_userdata = readFileSync("lib/aws/userdata/envoy_userdata.sh", "utf8")
-        .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
-
-      const envoyRole = new iam.Role(scope, 'envoy-role', {
-        assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-      });
-
-      envoyRole.attachInlinePolicy(proxyBucketPolicy);
-
-      const envoyKeyPair = new ec2.KeyPair(scope, 'envoy-keypair', {
-        keyPairName: "hyperswitch-envoy-keypair",
-      });
-
-      const envoyLaunchTemplate = new ec2.LaunchTemplate(scope, 'envoy-launch-template', {
-        machineImage: ec2.MachineImage.genericLinux({ [`${process.env.CDK_DEFAULT_REGION}`]: envoyAmi }),
-        instanceType: new ec2.InstanceType("t3.medium"),
-        securityGroup: lbSecurityGroup,
-        keyName: "hyperswitch-envoy-keypair",
-        userData: ec2.UserData.custom(envoy_userdata.toString()),
-        role: envoyRole,
-      });
-
-      envoyLaunchTemplate.node.addDependency(envoyKeyPair);
-
-      const envoyASG = new AutoScalingGroup(scope, 'envoy-asg', {
-        vpc: cluster.vpc,
-        minCapacity: 1,
-        maxCapacity: 1,
-        desiredCapacity: 1,
-        launchTemplate: envoyLaunchTemplate,
-        vpcSubnets: { subnetGroupName: "external-incoming-zone" }
-      });
-
-      envoyASG.node.addDependency(uploadConfig);
-
-      const listener = externalAppLoadBalncer.addListener('Listener', {
-        port: 80,
-        open: true,
-      });
-
-      listener.addTargets('Target', {
-        port: 80,
-        targets: [envoyASG],
-        healthCheck: {
-          path: "/health",
-          port: "80",
-          protocol: elbv2.Protocol.HTTP,
-        }
-      });
     }
 
-    const squidAmi = scope.node.tryGetContext("squid_ami");
-    if (squidAmi) {
-
-      const squidLoadBalncer = new elbv2.ApplicationLoadBalancer(scope, "hsOutgoingProxy", {
-        vpc: cluster.vpc,
-        internetFacing: true,
-        securityGroup: lbSecurityGroup,
-        loadBalancerName: "hyperswitch-outgoing-proxy",
-        vpcSubnets: {
-          subnetGroupName: "service-layer-zone",
-        }
-      });
-
-      const logsBucket = new s3.Bucket(scope, "hyperswitch-outgoing-proxy-logs-bucket", {
-        bucketName: `outgoing-proxy-logs-bucket-${process.env.CDK_DEFAULT_ACCOUNT}-${process.env.CDK_DEFAULT_REGION}`,
-        blockPublicAccess: new s3.BlockPublicAccess({
-          blockPublicAcls: true,
-        }),
-        publicReadAccess: false,
-        removalPolicy: cdk.RemovalPolicy.DESTROY,
-        autoDeleteObjects: true,
-      });
-
-      const uploadConfig = new s3deploy.BucketDeployment(scope, "outgoing-proxy-config-deployment", {
-        sources: [s3deploy.Source.asset("lib/aws/configurations/squid")],
-        destinationBucket: proxyBucket,
-      });
-
-      let squid_userdata = readFileSync("lib/aws/userdata/squid_userdata.sh", "utf8")
-        .replaceAll("{{bucket-name}}", proxyBucket.bucketName);
-
-      const squidPolicy = new iam.Policy(scope, 'squid-policy', {
-        statements: [
-          new iam.PolicyStatement({
-            actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
-            resources: [`${logsBucket.bucketArn}/*`],
-            effect: iam.Effect.ALLOW,
-          }),
-        ],
-      });
-
-      const squidRole = new iam.Role(scope, 'squid-role', {
-        assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-      });
-
-      squidRole.attachInlinePolicy(squidPolicy);
-      squidRole.attachInlinePolicy(proxyBucketPolicy);
-
-      const squidKeyPair = new ec2.KeyPair(scope, 'squid-keypair', {
-        keyPairName: "hyperswitch-squid-keypair",
-      });
-
-      const squidLaunchTemplate = new ec2.LaunchTemplate(scope, 'outgoing-proxy-launch-template', {
-        machineImage: ec2.MachineImage.genericLinux({ [`${process.env.CDK_DEFAULT_REGION}`]: squidAmi }),
-        instanceType: new ec2.InstanceType("t3.medium"),
-        securityGroup: lbSecurityGroup,
-        keyName: "hyperswitch-squid-keypair",
-        userData: ec2.UserData.custom(squid_userdata.toString()),
-        role: squidRole,
-      });
-
-      squidLaunchTemplate.node.addDependency(squidKeyPair);
-
-      const squidASG = new AutoScalingGroup(scope, 'hyperswitch-outgoing-proxy-asg', {
-        vpc: cluster.vpc,
-        minCapacity: 2,
-        maxCapacity: 10,
-        desiredCapacity: 2,
-        launchTemplate: squidLaunchTemplate,
-        vpcSubnets: { subnetGroupName: "outgoing-proxy-zone" }
-      });
-
-      squidASG.node.addDependency(uploadConfig);
-
-      const listener = squidLoadBalncer.addListener('Listener', {
-        port: 80,
-        open: true,
-      });
-
-      listener.addTargets('Target', {
-        port: 80,
-        targets: [squidASG],
-        healthCheck: {
-          path: "/health",
-          port: "80",
-          protocol: elbv2.Protocol.HTTP,
-        }
-      });
-    }
+    // Add ingress rule from Istio Internal LB security group to EKS cluster security group
+    cluster.clusterSecurityGroup.addIngressRule(
+      securityGroups.istioInternalLbSecurityGroup,
+      ec2.Port.tcp(80),
+      "Allow HTTP traffic from Istio Internal LB security group",
+    );
 
     const conditions = new cdk.CfnJson(scope, "ConditionJson", {
       value: {
@@ -1405,24 +1123,14 @@ export class EksStack {
     loki_s3.grantReadWrite(grafanaServiceAccountRole);
     cluster.node.addDependency(loki_s3);
 
-    const grafana_ingress_lb_sg = new ec2.SecurityGroup(scope, "grafana-ingress-lb", {
-      vpc: cluster.vpc,
-      allowAllOutbound: true,
-      securityGroupName: "grafana-ingress-lb",
-    });
+    // Use the Grafana security group from centralized SecurityGroups
+    const grafana_ingress_lb_sg = securityGroups.grafanaIngressLbSecurityGroup;
 
     cluster.clusterSecurityGroup.addIngressRule(grafana_ingress_lb_sg, ec2.Port.tcp(3000));
     cluster.clusterSecurityGroup.addIngressRule(grafana_ingress_lb_sg, ec2.Port.tcp(80));
 
     // Add VPN-specific ingress rules if any VPN IPs are provided
-    vpn_ips.forEach(ip => {
-      if (ip != "0.0.0.0/0") {
-        const vpnPorts = [443, 80];
-        vpnPorts.forEach(port =>
-          grafana_ingress_lb_sg.addIngressRule(ec2.Peer.ipv4(ip), ec2.Port.tcp(port))
-        );
-      }
-    });
+    securityGroups.addGrafanaVpnRules(vpn_ips);
 
     const ext_incoming_zone_subnet = cluster.vpc.selectSubnets({
       subnetGroupName: "external-incoming-zone",
