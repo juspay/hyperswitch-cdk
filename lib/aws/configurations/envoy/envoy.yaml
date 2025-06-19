@@ -35,20 +35,31 @@ static_resources:
                       format: |
                         [%START_TIME%] "%REQ(:METHOD)% %REQ(X-MASKED-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% %UPSTREAM_CLUSTER% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" "%REQ(x-merchantid?:-)%" "%REQ(x-jp-merchant-id?:-)%" %REQ(CONTENT-TYPE)%
                 http_filters:
-                  - name: envoy.filters.http.ratelimit
+                  - name: envoy.filters.http.health_check
                     typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
-                      domain: "hyperswitch_api_key_prod_ratelimit"
-                      request_type: external
-                      failure_mode_deny: false
-                      enable_x_ratelimit_headers: DRAFT_VERSION_03
-                      rate_limit_service:
-                        transport_api_version: V3
-                        grpc_service:
-                          envoy_grpc:
-                            cluster_name: ratelimit_service
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
+                      pass_through_mode: false
+                      # cache_time: 2.5s
+                      headers:
+                        - name: ":path"
+                          string_match:
+                            exact: "/healthz"
+                  # - name: envoy.filters.http.ratelimit
+                  #   typed_config:
+                  #     "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+                  #     domain: "hyperswitch_api_key_prod_ratelimit"
+                  #     request_type: external
+                  #     failure_mode_deny: false
+                  #     enable_x_ratelimit_headers: DRAFT_VERSION_03
+                  #     rate_limit_service:
+                  #       transport_api_version: V3
+                  #       grpc_service:
+                  #         envoy_grpc:
+                  #           cluster_name: ratelimit_service
                   - name: envoy.filters.http.router
-                    typed_config: {}
+                    typed_config: 
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      dynamic_stats: true
                 local_reply_config:
                   mappers:
                     - filter:
@@ -81,11 +92,23 @@ static_resources:
                         - "*"
                       routes:
                         - match:
-                            prefix: "/health"
-                          route:
-                            timeout: 60s
-                            idle_timeout: 60s
-                            cluster: hyperswitch-cluster
+                            path: "/healthz"
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: "ok"
+                        - match:
+                            path: "/ready"
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: "ready"
+                        - match:
+                            path: "/debug"
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: "Upstream: {{internal_loadbalancer_dns}}"
                         - match:
                             prefix: "/"
                             headers:
@@ -104,8 +127,8 @@ static_resources:
                           route:
                             rate_limits:
                               - actions:
-                                - generic_key:
-                                    descriptor_value: "api_key_category_B"
+                                  - generic_key:
+                                      descriptor_value: "api_key_category_B"
                             timeout: 60s
                             idle_timeout: 60s
                             cluster: hyperswitch-cluster
@@ -124,23 +147,24 @@ static_resources:
                     socket_address:
                       address: {{internal_loadbalancer_dns}}
                       port_value: 80
-    - name: ratelimit_service
-      connect_timeout: 0.25s
-      type: LOGICAL_DNS
-      typed_extension_protocol_options:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          upstream_http_protocol_options:
-            auto_sni: true
-          explicit_http_config:
-            http2_protocol_options: {}
-      protocol_selection: USE_CONFIGURED_PROTOCOL
-      load_assignment:
-        cluster_name: ratelimit_service
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: ratelimiter-nlb-e73f87b77a657156.elb.us-east-1.amazonaws.com
-                      port_value: 8091
+    # - name: ratelimit_service
+    #   connect_timeout: 0.25s
+    #   type: LOGICAL_DNS
+    #   ignore_health_on_host_removal: true
+    #   typed_extension_protocol_options:
+    #     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    #       "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    #       upstream_http_protocol_options:
+    #         auto_sni: true
+    #       explicit_http_config:
+    #         http2_protocol_options: {}
+    #   protocol_selection: USE_CONFIGURED_PROTOCOL
+    #   load_assignment:
+    #     cluster_name: ratelimit_service
+    #     endpoints:
+    #       - lb_endpoints:
+    #           - endpoint:
+    #               address:
+    #                 socket_address:
+    #                   address: ratelimiter-nlb-e73f87b77a657156.elb.us-east-1.amazonaws.com
+    #                   port_value: 8091

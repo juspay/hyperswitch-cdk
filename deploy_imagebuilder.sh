@@ -137,6 +137,54 @@ else
     echo "${bold}${green}AWS credentials detected successfully.${reset}"
 fi
 
+# Check and set AWS region
+echo "Checking AWS region configuration..."
+AWS_DEFAULT_REGION=$(aws configure get region)
+
+# If no region is configured, prompt the user
+if [[ -z "$AWS_DEFAULT_REGION" ]]; then
+    # Try to get region from environment variable
+    if [[ -n "$AWS_REGION" ]]; then
+        AWS_DEFAULT_REGION="$AWS_REGION"
+    else
+        read -p "Please enter the AWS region to deploy the services: " AWS_DEFAULT_REGION
+    fi
+else
+    read -p "Please enter the AWS region to deploy the services (Press enter to keep the current region ${blue}${bold}$AWS_DEFAULT_REGION${reset}): " input_region
+    if [[ -n "$input_region" ]]; then
+        AWS_DEFAULT_REGION=$input_region
+    fi
+fi
+
+export AWS_DEFAULT_REGION
+
+# Validate the region by checking if it's available
+while true; do
+    AVAILABLE_REGIONS_JSON=$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1)
+
+    if [[ $AVAILABLE_REGIONS_JSON == *"UnauthorizedOperation"* ]]; then
+        display_error "Error: Unauthorized operation. You do not have permission to perform 'ec2:DescribeRegions'."
+        display_error "Contact your AWS administrator to obtain the necessary permissions."
+        exit 1
+    elif [[ $AVAILABLE_REGIONS_JSON == *"supported format"* ]]; then
+        display_error "Error: Invalid region format. Please enter a valid region code (e.g. us-east-1)."
+    else
+        # Convert the region list into an array
+        AVAILABLE_REGIONS=($AVAILABLE_REGIONS_JSON)
+
+        # Check if AWS_DEFAULT_REGION is in the list of available regions
+        if [[ " ${AVAILABLE_REGIONS[*]} " =~ " $AWS_DEFAULT_REGION " ]]; then
+            echo "${bold}${green}AWS region validated: $AWS_DEFAULT_REGION${reset}"
+            break
+        else
+            display_error "Error: Region $AWS_DEFAULT_REGION is not enabled for your account or invalid region code."
+        fi
+    fi
+
+    # Prompt for region again
+    read -p "Please enter the AWS region to deploy the services: " AWS_DEFAULT_REGION
+done
+
 # Trying to retrieve AWS account owner's details
 if ! AWS_ACCOUNT_DETAILS_JSON=$(aws sts get-caller-identity 2>&1); then
     display_error "Unable to obtain AWS caller identity: $AWS_ACCOUNT_DETAILS_JSON"

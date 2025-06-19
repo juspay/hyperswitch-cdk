@@ -11,6 +11,7 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import { readFileSync } from "fs";
 import { EksStack } from "./eks";
 import { SubnetStack } from "./subnet";
+import { SecurityGroups } from "./security_groups";
 import { EC2Instance } from "./ec2";
 import { LockerSetup } from "./card-vault/components";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -55,25 +56,14 @@ export class AWSStack extends cdk.Stack {
         config = update_hosts_standalone(config, rds.standaloneDb.instanceEndpoint.hostname, elasticache.cluster.attrRedisEndpointAddress);
       }
 
-      const ec2Sg = new ec2.SecurityGroup(this, 'EC2SecurityGroup', {
+      // Create SecurityGroups for standalone mode
+      const securityGroups = new SecurityGroups(this, 'HyperswitchSecurityGroups', {
         vpc: vpc.vpc,
-        description: 'Security group for EC2 instances',
-        allowAllOutbound: true
+        isStandalone: true,
       });
 
-      const appAlbSg = new ec2.SecurityGroup(this, 'AppAlbSg', {
-        vpc: vpc.vpc,
-        description: 'SG for App ALB',
-        allowAllOutbound: true,
-      });
-      appAlbSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80));
-      appAlbSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(9000));
-
-      ec2Sg.addEgressRule(
-        ec2.Peer.anyIpv4(),
-        ec2.Port.tcp(443),
-        'Allow outbound HTTPS traffic for SSM'
-      );
+      const ec2Sg = securityGroups.ec2SecurityGroup!;
+      const appAlbSg = securityGroups.appAlbSecurityGroup!;
 
       const appAlb = new cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer(this, 'AppALB', {
         vpc: vpc.vpc,
@@ -85,13 +75,7 @@ export class AWSStack extends cdk.Stack {
         },
       });
 
-      const sdkAlbSg = new ec2.SecurityGroup(this, 'SdkAlbSg', {
-        vpc: vpc.vpc,
-        description: 'SG for SDK ALB',
-        allowAllOutbound: true,
-      });
-      sdkAlbSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(9090));
-      sdkAlbSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(5252));
+      const sdkAlbSg = securityGroups.sdkAlbSecurityGroup!;
 
       const sdkAlb = new cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer(this, 'SdkALB', {
         vpc: vpc.vpc,
@@ -329,7 +313,27 @@ export class AWSStack extends cdk.Stack {
           elasticache.cluster.attrRedisEndpointAddress,
         );
       }
-      let eks = new EksStack(
+      // Get proxy configuration from context
+      const appProxyEnabled = this.node.tryGetContext('app_proxy_enabled') === 'true';
+      const envoyAmiId = this.node.tryGetContext('envoy_ami');
+      const squidAmiId = this.node.tryGetContext('squid_ami');
+
+      const securityGroups = new SecurityGroups(this, 'HyperswitchSecurityGroups', {
+        vpc: vpc.vpc,
+        isStandalone: false,
+        appProxyEnabled: appProxyEnabled,
+      });
+
+      const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
+        vpc: vpc.vpc,
+        service: ec2.GatewayVpcEndpointAwsService.S3,
+        subnets: [ 
+          { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+          { subnetType: ec2.SubnetType.PRIVATE_ISOLATED }
+        ]
+      });
+
+      let eksStack = new EksStack( 
         this,
         config,
         vpc.vpc,
@@ -337,24 +341,27 @@ export class AWSStack extends cdk.Stack {
         elasticache,
         config.hyperswitch_ec2.admin_api_key,
         locker,
+        s3VPCEndpoint,
+        securityGroups,
       );
 
-      const controlCenterHost = this.node.tryGetContext("control_center_host");
-      const appHost = this.node.tryGetContext("app_host");
+        const controlCenterHost = this.node.tryGetContext("control_center_host");
+        const appHost = this.node.tryGetContext("app_host");
 
-      if (controlCenterHost && appHost) {
-        const distribution = new DistributionConstruct(this, "CloudFrontDistributions", {
-          controlCenterHost,
-          appHost,
-        });
-        let hsSdk = new HyperswitchSDKStack(this, eks, distribution);
-      } else {
-        console.warn("Skipping DistributionConstruct creation as context values are missing in stack.ts");
-      }
+        if (controlCenterHost && appHost) {
+          const distribution = new DistributionConstruct(this, "CloudFrontDistributions", {
+            controlCenterHost,
+            appHost,
+          });
+          let hsSdk = new HyperswitchSDKStack(this, eksStack, distribution); 
+        } else {
+          console.warn("Skipping DistributionConstruct creation as context values are missing in stack.ts");
+        }
+      
     
-      if (locker) locker.locker_ec2.addClient(eks.sg, ec2.Port.tcp(8080));
-      rds.sg.addIngressRule(eks.sg, ec2.Port.tcp(5432));
-      elasticache.sg.addIngressRule(eks.sg, ec2.Port.tcp(6379));
+      if (locker) locker.locker_ec2.addClient(eksStack.sg, ec2.Port.tcp(8080));
+      rds.sg.addIngressRule(eksStack.sg, ec2.Port.tcp(5432));
+      elasticache.sg.addIngressRule(eksStack.sg, ec2.Port.tcp(6379));
 
       let internal_jump = new EC2Instance(
         this,
@@ -477,11 +484,6 @@ export class AWSStack extends cdk.Stack {
         subnets: {
           subnetGroupName: "locker-database-zone",
         },
-      });
-
-      const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
-        vpc: vpc.vpc,
-        service: ec2.GatewayVpcEndpointAwsService.S3,
       });
 
       const kmsVPCEndpoint = new ec2.InterfaceVpcEndpoint(this, "KMSVPCEndpoint", {

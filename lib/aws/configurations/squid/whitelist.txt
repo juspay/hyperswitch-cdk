@@ -81,7 +81,6 @@
 .try.access.worldpay.com
 .upcomers.com
 .urbanshoewalks.eu
-.venkatesh.com
 .wazuh-indexer-0.wazuh-indexer
 .webhook.site
 .wh.riskified.com

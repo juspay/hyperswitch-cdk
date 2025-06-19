@@ -52,7 +52,9 @@ export class HyperswitchSDKStack extends Construct {
         phases: {
           install: {
             commands: [
-              'HOST=$(aws elbv2 describe-load-balancers --names hyperswitch --query "LoadBalancers[0].DNSName" --output text)',
+              'LB_NAME=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?LoadBalancerName==\'envoy-external-lb\'].LoadBalancerName | [0]" --output text)',
+              'if [ "$LB_NAME" = "None" ] || [ -z "$LB_NAME" ]; then LB_NAME="hyperswitch"; fi',
+              'HOST=$(aws elbv2 describe-load-balancers --names $LB_NAME --query "LoadBalancers[0].DNSName" --output text)',
               'BACKEND_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName==\'${HOST}\']].DomainName" --output text)',
               'export ENV_BACKEND_URL="https://${BACKEND_URL}"',
               "git clone --branch v" + sdkVersion + " https://github.com/juspay/hyperswitch-web",
@@ -91,7 +93,7 @@ export class HyperswitchSDKStack extends Construct {
 
     eks.sdkBucket.grantReadWrite(project);
 
-    project.node.addDependency(eks.trafficControl);
+    project.node.addDependency(eks.lokiChart); 
     project.node.addDependency(distribution.routerDistribution);
 
     const lambdaStartBuildCode = readFileSync('./dependencies/code_builder/start_build.py').toString();
