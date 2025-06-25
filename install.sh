@@ -551,13 +551,13 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         # Conditionally get APP_HOST based on whether proxy is enabled
         if [[ "$APP_PROXY_SETUP" == "y" ]]; then
 
-            ENVOY_EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names envoy-external-lb --query 'LoadBalancers[0].DNSName' --output text)
+            EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names external-lb --query 'LoadBalancers[0].DNSName' --output text)
             
-            if [ -n "$ENVOY_EXT_ALB_DNS" ] && [ "$ENVOY_EXT_ALB_DNS" != "null" ]; then
-                APP_HOST="$ENVOY_EXT_ALB_DNS"
-                echo "Using Envoy External ALB as App Host: $APP_HOST"
+            if [ -n "$EXT_ALB_DNS" ] && [ "$EXT_ALB_DNS" != "null" ]; then
+                APP_HOST="$EXT_ALB_DNS"
+                echo "Using External ALB as App Host: $APP_HOST"
             else
-                echo "Envoy External ALB DNS not found."
+                echo "External ALB DNS not found."
                 APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
                 echo "Using ALB ingress as App Host: $APP_HOST"
             fi
@@ -593,7 +593,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         
         echo "Finalizing setup..."
         helm get values -n hyperswitch hypers-v1 > values.yaml 2>/dev/null || echo "Failed to get helm values for hypers-v1"
-        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT"
+        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT" "$APP_PROXY_SETUP"
 
         echo "✅  All deployments complete!"
         exit 0

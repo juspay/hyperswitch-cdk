@@ -35,7 +35,7 @@ export class SecurityGroups extends Construct {
   public readonly vpcEndpointSecurityGroup: ec2.SecurityGroup;
   public readonly grafanaIngressLbSecurityGroup: ec2.SecurityGroup;
   public readonly clusterSecurityGroup: ec2.SecurityGroup;
-  public readonly envoyExternalLbSecurityGroup?: ec2.SecurityGroup;
+  public readonly externalLbSecurityGroup?: ec2.SecurityGroup;
   public readonly squidInternalLbSecurityGroup?: ec2.SecurityGroup;
   public readonly squidAsgSecurityGroup?: ec2.SecurityGroup;
   
@@ -97,16 +97,33 @@ export class SecurityGroups extends Construct {
     // 6. EKS Cluster Security Group
     this.clusterSecurityGroup = new ec2.SecurityGroup(this, 'ClusterSecurityGroup', {
       vpc: vpc,
-      allowAllOutbound: true,
+      allowAllOutbound: false,
       description: 'Security group for EKS cluster',
     });
     
+    // Add essential outbound rules for EKS cluster
+    this.clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'Allow HTTPS for EKS API, ECR, S3'
+    );
+    this.clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.udp(53),
+      'Allow DNS UDP'
+    );
+    this.clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(53),
+      'Allow DNS TCP'
+    );
+    
     // Create app proxy security groups if enabled
     if (appProxyEnabled) {
-      // Envoy External Load Balancer Security Group
-      this.envoyExternalLbSecurityGroup = new ec2.SecurityGroup(this, 'EnvoyExternalLbSecurityGroup', {
+      // External Load Balancer Security Group
+      this.externalLbSecurityGroup = new ec2.SecurityGroup(this, 'ExternalLbSecurityGroup', {
         vpc: vpc,
-        description: 'Security group for Envoy external ALB',
+        description: 'Security group for external ALB',
         allowAllOutbound: false,
       });
       
@@ -169,11 +186,11 @@ export class SecurityGroups extends Construct {
    */
   private setupBasicRules(): void {
     // Envoy ASG instance rules
-    if (!this.envoyExternalLbSecurityGroup) {
+    if (!this.externalLbSecurityGroup) {
       this.envoyAsgSecurityGroup.addIngressRule(
         this.lbSecurityGroup,
         ec2.Port.tcp(80),
-        'Allow HTTP traffic from External Envoy ALB (legacy)'
+        'Allow HTTP traffic from External ALB (legacy)'
       );
     }
     
@@ -268,20 +285,77 @@ export class SecurityGroups extends Construct {
   /**
    * Add rules for EKS cluster security group after cluster is created
    * @param clusterSecurityGroup The EKS cluster security group
+   * @param appProxyEnabled Whether app proxy is enabled for conditional rules
    */
-  public addEksClusterRules(clusterSecurityGroup: ec2.ISecurityGroup): void {
-    // Add outbound rule from LB to EKS cluster
+  public addEksClusterRules(clusterSecurityGroup: ec2.ISecurityGroup, appProxyEnabled: boolean = false): void {
+    // --- Ingress to Cluster ---
+    // Allow traffic from the main and Istio load balancers to the cluster
     this.lbSecurityGroup.addEgressRule(
       clusterSecurityGroup,
       ec2.Port.allTraffic(),
       'Allow all traffic to EKS cluster'
     );
-    
-    // Add outbound rule from Istio Internal LB to EKS cluster
+    clusterSecurityGroup.addIngressRule(
+      this.lbSecurityGroup,
+      ec2.Port.allTraffic(),
+      'Allow all traffic from main LB'
+    );
+
     this.istioInternalLbSecurityGroup.addEgressRule(
       clusterSecurityGroup,
       ec2.Port.tcp(80),
       'Allow HTTP to EKS cluster only'
+    );
+    clusterSecurityGroup.addIngressRule(
+      this.istioInternalLbSecurityGroup,
+      ec2.Port.tcp(80),
+      'Allow HTTP from Istio Internal LB'
+    );
+
+    // --- Egress from Cluster ---
+    // Conditional outbound rules based on app proxy configuration
+    if (appProxyEnabled && this.squidInternalLbSecurityGroup) {
+      // App proxy enabled: Allow outbound traffic to Squid proxy
+      clusterSecurityGroup.addEgressRule(
+        this.squidInternalLbSecurityGroup,
+        ec2.Port.tcp(3128),
+        'Allow outbound traffic to Squid proxy'
+      );
+      // And allow ingress on the squid LB from the cluster
+      this.squidInternalLbSecurityGroup.addIngressRule(
+        clusterSecurityGroup,
+        ec2.Port.tcp(3128),
+        'Allow traffic from EKS cluster security group'
+      );
+    } else {
+      // App proxy disabled: Allow direct internet access for applications
+      clusterSecurityGroup.addEgressRule(
+        ec2.Peer.anyIpv4(),
+        ec2.Port.tcp(80),
+        'Allow HTTP to internet (direct access)'
+      );
+      clusterSecurityGroup.addEgressRule(
+        ec2.Peer.anyIpv4(),
+        ec2.Port.tcp(443),
+        'Allow HTTPS to internet (direct access)'
+      );
+    }
+    
+    // Add essential outbound rules for EKS cluster operations (e.g., pulling images, talking to AWS APIs)
+    clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'Allow HTTPS for EKS API, ECR, S3'
+    );
+    clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.udp(53),
+      'Allow DNS UDP'
+    );
+    clusterSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(53),
+      'Allow DNS TCP'
     );
   }
   
@@ -322,49 +396,51 @@ export class SecurityGroups extends Construct {
    * Set up app proxy workflow rules
    */
   private setupAppProxyWorkflowRules(): void {
-    if (!this.envoyExternalLbSecurityGroup || !this.squidInternalLbSecurityGroup || !this.squidAsgSecurityGroup) {
+    if (!this.externalLbSecurityGroup || !this.squidInternalLbSecurityGroup || !this.squidAsgSecurityGroup) {
       return;
     }
     
-    // 1. CloudFront -> Envoy External LB (HTTPS/HTTP)
-    this.envoyExternalLbSecurityGroup.addIngressRule(
+    // 1. CloudFront -> External LB (HTTPS/HTTP)
+    this.externalLbSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(80),
       'Allow HTTP from CloudFront'
     );
-    this.envoyExternalLbSecurityGroup.addIngressRule(
+    this.externalLbSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(443),
       'Allow HTTPS from CloudFront'
     );
     
-    // 2. Envoy External LB -> Envoy ASG
-    this.envoyExternalLbSecurityGroup.addEgressRule(
+    // 2. External LB -> Envoy ASG
+    this.externalLbSecurityGroup.addEgressRule(
       this.envoyAsgSecurityGroup,
       ec2.Port.tcp(8080),
       'Allow traffic to Envoy ASG instances'
     );
     this.envoyAsgSecurityGroup.addIngressRule(
-      this.envoyExternalLbSecurityGroup,
+      this.externalLbSecurityGroup,
       ec2.Port.tcp(8080),
-      'Allow traffic from Envoy External LB'
+      'Allow traffic from External LB'
     );
     
     // 3. Envoy ASG -> Istio Internal LB (already configured in setupCrossSecurityGroupRules)
     
     // 4. Istio Internal LB -> EKS Cluster (handled in addEksClusterRules)
     
+    // ALB health checks come from the ALB itself, not from Envoy ASG
+    this.istioInternalLbSecurityGroup.addIngressRule(
+      this.istioInternalLbSecurityGroup,
+      ec2.Port.tcp(80),
+      'Allow ALB health checks on port 80'
+    );
+    this.istioInternalLbSecurityGroup.addIngressRule(
+      this.istioInternalLbSecurityGroup,
+      ec2.Port.tcp(15021),
+      'Allow ALB health checks on Istio status port 15021'
+    );
+    
     // 5. EKS Cluster -> Squid Internal LB (for outbound traffic)
-    this.clusterSecurityGroup.addEgressRule(
-      this.squidInternalLbSecurityGroup,
-      ec2.Port.tcp(3128),
-      'Allow outbound traffic to Squid proxy'
-    );
-    this.squidInternalLbSecurityGroup.addIngressRule(
-      this.clusterSecurityGroup,
-      ec2.Port.tcp(3128),
-      'Allow traffic from EKS cluster'
-    );
     
     // 6. Squid Internal LB -> Squid ASG
     this.squidInternalLbSecurityGroup.addEgressRule(
@@ -398,32 +474,21 @@ export class SecurityGroups extends Construct {
    * Set up health check rules for ALBs
    */
   private setupHealthCheckRules(): void {
-    if (!this.envoyExternalLbSecurityGroup || !this.squidInternalLbSecurityGroup || !this.squidAsgSecurityGroup) {
+    if (!this.externalLbSecurityGroup || !this.squidInternalLbSecurityGroup || !this.squidAsgSecurityGroup) {
       return;
     }
     
-    // Health check rules for Envoy ALB
-    this.envoyExternalLbSecurityGroup.addEgressRule(
+    // Health check rules for External ALB
+    this.externalLbSecurityGroup.addEgressRule(
       this.envoyAsgSecurityGroup,
       ec2.Port.tcp(8081), // Health check port
       'Health check to Envoy instances'
     );
     this.envoyAsgSecurityGroup.addIngressRule(
-      this.envoyExternalLbSecurityGroup,
+      this.externalLbSecurityGroup,
       ec2.Port.tcp(8081),
-      'Health check from Envoy LB'
+      'Health check from External LB'
     );
     
-    // Health check rules for Squid ALB
-    this.squidInternalLbSecurityGroup.addEgressRule(
-      this.squidAsgSecurityGroup,
-      ec2.Port.tcp(3129), // Health check port
-      'Health check to Squid instances'
-    );
-    this.squidAsgSecurityGroup.addIngressRule(
-      this.squidInternalLbSecurityGroup,
-      ec2.Port.tcp(3129),
-      'Health check from Squid LB'
-    );
   }
 }

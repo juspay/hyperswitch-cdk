@@ -1,55 +1,77 @@
 #!/bin/bash
 
-# Setup Wazuh
-aws s3 cp s3://{{bucket-name}}/wazuh.conf /var/ossec/etc/ossec.conf
-chown root:ossec /var/ossec/etc/ossec.conf
-systemctl restart wazuh-agent
+set -e
+LOG_FILE="/var/log/squid-userdata.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
-# Setup Vector
-rm /etc/vector/vector.toml
-aws s3 cp s3://{{bucket-name}}/squid_vector.toml /etc/vector/vector.toml
-chown vector:vector /etc/vector/vector.toml
-systemctl restart vector
+BUCKET_NAME="{{bucket-name}}"
+S3_PREFIX="squid"
+SQUID_LOGS_BUCKET="{{squid-logs-bucket}}"
 
-# update squid conf
-cp /etc/squid/squid.conf /etc/squid/squid.conf.old
-aws s3 cp s3://{{bucket-name}}/squid.conf /etc/squid/squid.conf
+echo "$(date '+%H:%M:%S') Starting Squid userdata script"
+# Setup Wazuh Agent Configuration
+echo "$(date '+%H:%M:%S') Setting up Wazuh configuration"
+echo "$(date '+%H:%M:%S') Downloading wazuh.conf to /var/ossec/etc/ossec.conf"
+sudo aws s3 cp "s3://${BUCKET_NAME}/${S3_PREFIX}/wazuh.conf" "/var/ossec/etc/ossec.conf"
+sudo chown root:wazuh /var/ossec/etc/ossec.conf
+sudo chmod 640 /var/ossec/etc/ossec.conf
 
-# Ensure Squid applies the new main configuration
-if systemctl is-active --quiet squid; then
-    echo "Squid service is active, attempting to reconfigure..."
-    if /usr/sbin/squid -k reconfigure; then
-        echo "Squid reconfigured successfully."
+# Setup Vector Configuration
+echo "$(date '+%H:%M:%S') Setting up Vector configuration"
+echo "$(date '+%H:%M:%S') Downloading squid_vector.toml to /etc/vector/vector.toml"
+sudo aws s3 cp "s3://${BUCKET_NAME}/${S3_PREFIX}/squid_vector.toml" "/etc/vector/vector.toml"
+sudo sed -i "s|{{squid_logs_bucket}}|$SQUID_LOGS_BUCKET|g" /etc/vector/vector.toml
+sudo chown vector:vector /etc/vector/vector.toml
+sudo chmod 644 /etc/vector/vector.toml
+sudo usermod -a -G squid vector
+sudo rm -f /etc/vector/vector.yaml
+sudo systemctl restart vector
+
+# Setup Squid Configuration
+echo "$(date '+%H:%M:%S') Setting up Squid configuration"
+echo "$(date '+%H:%M:%S') Downloading squid.conf to /etc/squid/squid.conf"
+sudo aws s3 cp "s3://${BUCKET_NAME}/${S3_PREFIX}/squid.conf" "/etc/squid/squid.conf"
+sudo chown root:squid /etc/squid/squid.conf
+sudo chmod 644 /etc/squid/squid.conf
+
+
+# Setup whitelist update mechanism
+echo "$(date '+%H:%M:%S') Setting up whitelist updates"
+sudo mkdir -p /var/spool/squid
+sudo chown squid:squid /var/spool/squid
+
+# Create whitelist update script
+sudo cat > /etc/squid/update_whitelist.sh << 'EOF'
+#!/bin/bash
+sudo aws s3 cp "s3://{{bucket-name}}/squid/whitelist.txt" "/tmp/whitelist.txt"
+if [ $? -eq 0 ]; then
+    if [ -f "/etc/squid/squid.allowed.sites.txt" ]; then
+        upstreamVersion=$(md5sum /tmp/whitelist.txt | awk '{print $1}')
+        hostVersion=$(md5sum /etc/squid/squid.allowed.sites.txt | awk '{print $1}')
     else
-        echo "Squid reconfigure failed, attempting restart..."
-        sudo systemctl restart squid
+        hostVersion=""
     fi
-else
-    echo "Squid service is not active, attempting to start..."
-    sudo systemctl start squid
+    
+    if [ "$upstreamVersion" != "$hostVersion" ]; then
+        sudo cp /tmp/whitelist.txt /etc/squid/squid.allowed.sites.txt
+        sudo chown squid:squid /etc/squid/squid.allowed.sites.txt
+        sudo chmod 644 /etc/squid/squid.allowed.sites.txt
+        /usr/sbin/squid -k reconfigure
+    fi
+    rm -f /tmp/whitelist.txt
 fi
-echo "Current Squid service status:"
-sudo systemctl status squid || echo "Squid service status check failed or service not active/found."
+EOF
+sudo sed -i "s/{{bucket-name}}/$BUCKET_NAME/g" /etc/squid/update_whitelist.sh
+sudo chmod +x /etc/squid/update_whitelist.sh
 
-# Refresh squid
-echo 'aws s3 cp s3://{{bucket-name}}/whitelist.txt /etc/squid/tmp_whitelist.txt
-upstreamVersion=$(md5sum /etc/squid/tmp_whitelist.txt | awk {'\''print \$1'\''})
-hostVersion=$(md5sum /etc/squid/squid.allowed.sites.txt| awk {'\''print \$1'\''})
-if [ $upstreamVersion != $hostVersion ]
-then
-  cp /etc/squid/squid.allowed.sites.txt /etc/squid/squid.allowed.sites.txt.old
-  cp /etc/squid/tmp_whitelist.txt /etc/squid/squid.allowed.sites.txt
-  /usr/sbin/squid -k reconfigure
-  echo "`date "+%Y-%m-%d %H-%M-%S %Z"` Squid config updated"
-else
-  echo "`date "+%Y-%m-%d %H-%M-%S %Z"` No change"
-fi'> /etc/squid/update_whitelist.sh
+# Run initial update
+sudo bash /etc/squid/update_whitelist.sh
 
-# Create squid coredump dir
-mkdir -p /var/spool/squid
+# Add cron job
+echo "*/15 * * * * root /etc/squid/update_whitelist.sh" | sudo tee -a /etc/crontab
 
-chmod +x /etc/squid/update_whitelist.sh
-bash /etc/squid/update_whitelist.sh
-echo "*/15 * * * * root /etc/squid/update_whitelist.sh" >> /etc/crontab
+# start squid
+sudo systemctl restart squid
+sudo systemctl enable squid
 
-ufw allow out 3100/tcp
+echo "$(date '+%H:%M:%S') Squid userdata script completed"

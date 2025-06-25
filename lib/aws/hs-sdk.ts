@@ -52,7 +52,7 @@ export class HyperswitchSDKStack extends Construct {
         phases: {
           install: {
             commands: [
-              'LB_NAME=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?LoadBalancerName==\'envoy-external-lb\'].LoadBalancerName | [0]" --output text)',
+              'LB_NAME=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?LoadBalancerName==\'external-lb\'].LoadBalancerName | [0]" --output text)',
               'if [ "$LB_NAME" = "None" ] || [ -z "$LB_NAME" ]; then LB_NAME="hyperswitch"; fi',
               'HOST=$(aws elbv2 describe-load-balancers --names $LB_NAME --query "LoadBalancers[0].DNSName" --output text)',
               'BACKEND_URL=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName==\'${HOST}\']].DomainName" --output text)',

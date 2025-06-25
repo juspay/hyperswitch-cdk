@@ -15,19 +15,25 @@ sh ./bash/deps.sh
 # Deploy Load balancer and Ingress
 echo "##########################################"
 ADMIN_API_KEY=$1
+APP_PROXY_SETUP=$3
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
-SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
+#SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
 SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkDistribution'].OutputValue" --output text)
 
 # Determine INGRESS_APP_HOST
-ENVOY_EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names envoy-external-lb --query 'LoadBalancers[0].DNSName' --output text)
-SQUID_ALB_DNS=$(aws elbv2 describe-load-balancers --names squid-lb --query 'LoadBalancers[0].DNSName' --output text)
+if [[ "$APP_PROXY_SETUP" == "y" ]]; then
+    EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names external-lb --query 'LoadBalancers[0].DNSName' --output text)
+    SQUID_ALB_DNS=$(aws elbv2 describe-load-balancers --names squid-nlb --query 'LoadBalancers[0].DNSName' --output text)
+else
+    EXT_ALB_DNS=""
+    SQUID_ALB_DNS=""
+fi
 
-if [ -n "$ENVOY_EXT_ALB_DNS" ] && [ "$ENVOY_EXT_ALB_DNS" != "null" ]; then
-    INGRESS_APP_HOST="$ENVOY_EXT_ALB_DNS"
-    echo "Using Envoy External ALB DNS for INGRESS_APP_HOST: $INGRESS_APP_HOST"
+if [ -n "$EXT_ALB_DNS" ] && [ "$EXT_ALB_DNS" != "null" ]; then
+    INGRESS_APP_HOST="$EXT_ALB_DNS"
+    echo "Using External ALB DNS for INGRESS_APP_HOST: $INGRESS_APP_HOST"
 else 
     INGRESS_APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     if [ -z "$INGRESS_APP_HOST" ]; then
@@ -66,19 +72,18 @@ if [ -n "$SQUID_ALB_DNS" ] && [ "$SQUID_ALB_DNS" != "null" ]; then
       server:
         proxy:
           enabled: true
-          http_url: http://$SQUID_ALB_DNS:80
-          https_url: http://$SQUID_ALB_DNS:80
+          http_url: http://$SQUID_ALB_DNS:3128
+          https_url: http://$SQUID_ALB_DNS:3128
           bypass_proxy_hosts: "\"$BYPASS_HOSTS\""
 EOF
     
     echo "Proxy configuration will be applied"
 else
-    echo "No Squid proxy detected, proxy will be disabled"
     cat > proxy-values.yaml <<-EOF
     hyperswitch-app:
       server:
         proxy:
-          enabled: true
+          enabled: false
 EOF
 fi
 

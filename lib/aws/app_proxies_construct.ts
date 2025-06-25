@@ -24,7 +24,7 @@ export interface AppProxiesConstructProps {
 }
 
 export class AppProxiesConstruct extends Construct {
-  public readonly envoyExternalAlbDns?: string;
+  public readonly ExternalAlbDns?: string;
   public readonly squidAlbDns?: string;
   public readonly envoyAsgSecurityGroup?: ec2.ISecurityGroup;
 
@@ -125,14 +125,14 @@ export class AppProxiesConstruct extends Construct {
     if (props.envoyAmiId) {
       const envoyScope = new Construct(this, 'EnvoyProxy');
 
-      // WAF for Envoy's external ALB
+      // WAF for external ALB
       const envoyWaf = new WAF(envoyScope, "EnvoyWAF");
 
-      const externalAppLoadBalancer = new elbv2.ApplicationLoadBalancer(envoyScope, "EnvoyExternalAlb", {
+      const externalAppLoadBalancer = new elbv2.ApplicationLoadBalancer(envoyScope, "ExternalAlb", {
         vpc: vpc,
         internetFacing: true,
-        securityGroup: props.securityGroups.envoyExternalLbSecurityGroup!,
-        loadBalancerName: "envoy-external-lb",
+        securityGroup: props.securityGroups.externalLbSecurityGroup!,
+        loadBalancerName: "external-lb",
         vpcSubnets: { subnetGroupName: 'external-incoming-zone' }
       });
 
@@ -149,6 +149,7 @@ export class AppProxiesConstruct extends Construct {
       const envoyConfigDeployment = new s3deploy.BucketDeployment(envoyScope, "EnvoyConfigDeployment", {
         sources: [s3deploy.Source.data("envoy/envoy.yaml", envoyConfigContent)],
         destinationBucket: proxyConfigBucket,
+        prune: false,
       });
       envoyConfigDeployment.node.addDependency(externalAppLoadBalancer);
 
@@ -231,19 +232,19 @@ export class AppProxiesConstruct extends Construct {
         }
       });
 
-      this.envoyExternalAlbDns = externalAppLoadBalancer.loadBalancerDnsName;
+      this.ExternalAlbDns = externalAppLoadBalancer.loadBalancerDnsName;
       this.envoyAsgSecurityGroup = envoyAsgInstanceSg;
     }
 
     if (props.squidAmiId) {
       const squidScope = new Construct(this, 'SquidProxy');
 
-      const squidLoadBalancer = new elbv2.ApplicationLoadBalancer(squidScope, "SquidAlb", {
+      const squidLoadBalancer = new elbv2.NetworkLoadBalancer(squidScope, "SquidNlb", {
         vpc: vpc,
         internetFacing: false,
-        securityGroup: props.securityGroups.squidInternalLbSecurityGroup!,
-        loadBalancerName: "squid-lb",
-        vpcSubnets: { subnetGroupName: 'service-layer-zone' }
+        loadBalancerName: "squid-nlb",
+        vpcSubnets: { subnetGroupName: 'service-layer-zone' },
+        securityGroups: [props.securityGroups.squidInternalLbSecurityGroup!]
       });
       
       this.squidAlbDns = squidLoadBalancer.loadBalancerDnsName;
@@ -260,10 +261,14 @@ export class AppProxiesConstruct extends Construct {
         sources: [s3deploy.Source.asset("lib/aws/configurations/squid")],
         destinationBucket: proxyConfigBucket,
         destinationKeyPrefix: "squid", 
+        prune: false,
       });
+      squidConfigDeployment.node.addDependency(squidLoadBalancer);
 
       let squidUserdataContent = readFileSync("lib/aws/userdata/squid_userdata.sh", "utf8") 
-        .replaceAll("{{bucket-name}}", proxyConfigBucket.bucketName); 
+        .replaceAll("{{bucket-name}}", proxyConfigBucket.bucketName)
+        .replaceAll("{{squid-logs-bucket}}", squidLogsBucket.bucketName);
+
 
       const squidRole = new iam.Role(squidScope, 'SquidInstanceRole', {
         assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
@@ -299,22 +304,20 @@ export class AppProxiesConstruct extends Construct {
       });
       squidAsg.node.addDependency(squidConfigDeployment);
 
-      const squidListener = squidLoadBalancer.addListener('SquidListenerHttp', {
-        port: 80,
-        open: true,
-        protocol: elbv2.ApplicationProtocol.HTTP,
+      const squidListener = squidLoadBalancer.addListener('SquidListenerTcp', {
+        port: 3128,
+        protocol: elbv2.Protocol.TCP,
       });
 
       squidListener.addTargets('SquidTarget', {
-        port: 3128, 
-        protocol: elbv2.ApplicationProtocol.HTTP,
+        port: 3128,
+        protocol: elbv2.Protocol.TCP,
         targets: [squidAsg],
         healthCheck: {
-          path: "/squid-internal-mgr/health", 
           port: "3128",
-          protocol: elbv2.Protocol.HTTP,
+          protocol: elbv2.Protocol.TCP,  
           interval: cdk.Duration.seconds(30),
-          timeout: cdk.Duration.seconds(5),
+          timeout: cdk.Duration.seconds(10),
           healthyThresholdCount: 2,
           unhealthyThresholdCount: 2,
         }

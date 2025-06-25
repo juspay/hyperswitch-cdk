@@ -535,16 +535,10 @@ export class EksStack {
 
     this.sg = cluster.clusterSecurityGroup;
 
-    // Add EKS cluster rules to the security groups
-    securityGroups.addEksClusterRules(cluster.clusterSecurityGroup);
-
-    cluster.clusterSecurityGroup.addIngressRule(
-      lbSecurityGroup,
-      ec2.Port.allTcp(),
-      "Allow inbound traffic from an existing load balancer security group",
-    );
-
-
+    const appProxyEnabled = scope.node.tryGetContext('app_proxy_enabled') === 'true';
+    
+    securityGroups.addEksClusterRules(securityGroups.clusterSecurityGroup, appProxyEnabled);
+    securityGroups.addEksClusterRules(cluster.clusterSecurityGroup, appProxyEnabled);
 
     const albControllerChart = cluster.addHelmChart("ALBController", {
       createNamespace: false,
@@ -987,8 +981,6 @@ export class EksStack {
     this.sdkBucket = sdkBucket;
     hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption); 
 
-    const appProxyEnabled = scope.node.tryGetContext('app_proxy_enabled') === 'true';
-    
     if (appProxyEnabled) {
       const istioResources = new IstioResources(scope, 'IstioResources', {
         cluster: cluster,
@@ -1310,6 +1302,7 @@ export class EksStack {
 
 
     lokiChart.node.addDependency(hypersChart);
+    
     this.lokiChart = lokiChart;
 
     cluster.addHelmChart("MetricsServer", {
