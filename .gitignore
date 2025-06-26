@@ -185,4 +185,5 @@ bun.lockb
 cdk.context.json
 
 values.yaml
+proxy-values.yaml
 cdk.services.log

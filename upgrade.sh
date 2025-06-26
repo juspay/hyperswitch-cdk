@@ -15,13 +15,77 @@ sh ./bash/deps.sh
 # Deploy Load balancer and Ingress
 echo "##########################################"
 ADMIN_API_KEY=$1
+APP_PROXY_SETUP=$3
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
-SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
+#SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
 SDK_URL=$(aws cloudformation describe-stacks --stack-name hyperswitch --query "Stacks[0].Outputs[?OutputKey=='SdkDistribution'].OutputValue" --output text)
-INGRESS_APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}');
-APP_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_APP_HOST}']].DomainName" --output text);
+
+# Determine INGRESS_APP_HOST
+if [[ "$APP_PROXY_SETUP" == "y" ]]; then
+    EXT_ALB_DNS=$(aws elbv2 describe-load-balancers --names external-lb --query 'LoadBalancers[0].DNSName' --output text)
+    SQUID_ALB_DNS=$(aws elbv2 describe-load-balancers --names squid-nlb --query 'LoadBalancers[0].DNSName' --output text)
+else
+    EXT_ALB_DNS=""
+    SQUID_ALB_DNS=""
+fi
+
+if [ -n "$EXT_ALB_DNS" ] && [ "$EXT_ALB_DNS" != "null" ]; then
+    INGRESS_APP_HOST="$EXT_ALB_DNS"
+    echo "Using External ALB DNS for INGRESS_APP_HOST: $INGRESS_APP_HOST"
+else 
+    INGRESS_APP_HOST=$(kubectl get ingress hyperswitch-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    if [ -z "$INGRESS_APP_HOST" ]; then
+        echo "${bold}${red}Error: Failed to retrieve DNS for hyperswitch-alb-ingress Exiting.${reset}"
+        exit 1
+    fi
+    echo "Using hyperswitch-alb-ingress DNS for INGRESS_APP_HOST: $INGRESS_APP_HOST"
+fi
+
+APP_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_APP_HOST}']].DomainName" --output text)
+if [ -z "$APP_HOST" ]; then
+    echo "${bold}${yellow}Warning: Could not find CloudFront distribution for INGRESS_APP_HOST '$INGRESS_APP_HOST'. Using INGRESS_APP_HOST directly for APP_HOST.${reset}"
+    APP_HOST="$INGRESS_APP_HOST"
+fi
+
+# Configure proxy settings if Squid proxy is available
+PROXY_CONFIG=""
+if [ -n "$SQUID_ALB_DNS" ] && [ "$SQUID_ALB_DNS" != "null" ]; then
+    echo "Squid proxy detected: $SQUID_ALB_DNS"
+    
+    # Get RDS and Redis hostnames for bypass list
+    RDS_HOST=$(helm get values -n hyperswitch hypers-v1 -o json 2>/dev/null | jq -r '.["hyperswitch-app"].externalPostgresql.primary.host // ""')
+    REDIS_HOST=$(helm get values -n hyperswitch hypers-v1 -o json 2>/dev/null | jq -r '.["hyperswitch-app"].externalRedis.host // ""')
+    
+    # Build bypass proxy hosts list
+    BYPASS_HOSTS="localhost,127.0.0.1,.svc,.svc.cluster.local,kubernetes.default.svc,169.254.169.254,.amazonaws.com"
+    if [ -n "$RDS_HOST" ] && [ "$RDS_HOST" != "null" ]; then
+        BYPASS_HOSTS="$BYPASS_HOSTS,$RDS_HOST"
+    fi
+    if [ -n "$REDIS_HOST" ] && [ "$REDIS_HOST" != "null" ]; then
+        BYPASS_HOSTS="$BYPASS_HOSTS,$REDIS_HOST"
+    fi
+
+    cat > proxy-values.yaml <<-EOF
+    hyperswitch-app:
+      server:
+        proxy:
+          enabled: true
+          http_url: http://$SQUID_ALB_DNS:3128
+          https_url: http://$SQUID_ALB_DNS:3128
+          bypass_proxy_hosts: "\"$BYPASS_HOSTS\""
+EOF
+    
+    echo "Proxy configuration will be applied"
+else
+    cat > proxy-values.yaml <<-EOF
+    hyperswitch-app:
+      server:
+        proxy:
+          enabled: false
+EOF
+fi
 
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm/ --force-update
@@ -50,7 +114,16 @@ SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
 HYPERLOADER="https://$SDK_URL/web/0.121.2/v1/HyperLoader.js"
 VERSION="0.2.4"
-helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" --set "$SDK_ENV.router.host=https://$APP_HOST,$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY,$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY,$APP_ENV.services.sdk.host=https://$SDK_URL,$APP_ENV.services.router.host=https://$APP_HOST,$SDK_BUILD.envSdkUrl=https://$SDK_URL,$SDK_BUILD.envBackendUrl=https://$APP_HOST" -n hyperswitch -f values.yaml
+helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" \
+    --set "$SDK_ENV.router.host=https://$APP_HOST" \
+    --set "$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY" \
+    --set "$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY" \
+    --set "$APP_ENV.services.sdk.host=https://$SDK_URL" \
+    --set "$APP_ENV.services.router.host=https://$APP_HOST" \
+    --set "$SDK_BUILD.envSdkUrl=https://$SDK_URL" \
+    --set "$SDK_BUILD.envBackendUrl=https://$APP_HOST" \
+    --values proxy-values.yaml \
+    -n hyperswitch -f values.yaml
 
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$bold Service                           Host$reset"
