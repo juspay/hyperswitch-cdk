@@ -340,23 +340,6 @@ export class SecurityGroups extends Construct {
         'Allow HTTPS to internet (direct access)'
       );
     }
-    
-    // Add essential outbound rules for EKS cluster operations (e.g., pulling images, talking to AWS APIs)
-    clusterSecurityGroup.addEgressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      'Allow HTTPS for EKS API, ECR, S3'
-    );
-    clusterSecurityGroup.addEgressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.udp(53),
-      'Allow DNS UDP'
-    );
-    clusterSecurityGroup.addEgressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(53),
-      'Allow DNS TCP'
-    );
   }
   
   /**
