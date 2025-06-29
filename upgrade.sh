@@ -3,6 +3,8 @@
 bold=$(tput bold)
 blue=$(tput setaf 4)
 green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+red=$(tput setaf 1)
 reset=$(tput sgr0)
 
 export LOG_FILE="cdk.services.log"
@@ -130,8 +132,8 @@ echoLog "$bold Service                           Host$reset"
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$green HyperloaderJS Hosted at           $blue$HYPERLOADER$reset"
 echoLog "$green App server running on             $blue"https://$APP_HOST/health"$reset"
-echoLog "$green Logs server running on            $blue"https://$LOGS_HOST"$reset, Login with $YELLOW username: admin, password: admin$reset , Please change on startup"
-echoLog "$green Control center server running on  $blue"https://$CONTROL_CENTER_HOST"$reset, Login with $YELLOW Email: test@gmail.com, password: admin$reset , Please change on startup"
+echoLog "$green Logs server running on            $blue"https://$LOGS_HOST"$reset, Login with $yellow username: admin, password: admin$reset , Please change on startup"
+echoLog "$green Control center server running on  $blue"https://$CONTROL_CENTER_HOST"$reset, Login with $yellow Email: test@gmail.com, password: admin$reset , Please change on startup"
 #echoLog "$green Hyperswitch Demo Store running on $blue"https://$SDK_HOST"$reset"
 echoLog "--------------------------------------------------------------------------------"
 echoLog "##########################################"

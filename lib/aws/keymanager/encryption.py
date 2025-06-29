@@ -28,12 +28,16 @@ def worker():
     ca_cert = enc_pl("ca_cert")
     tls_key = enc_pl("tls_key")
     tls_cert = enc_pl("tls_cert")
+    access_token = enc_pl("access_token")
+    hash_context = enc_pl("hash_context")
 
     secretval = {
         "db_pass": db_pass,
         "ca_cert": ca_cert,
         "tls_key": tls_key,
-        "tls_cert": tls_cert
+        "tls_cert": tls_cert,
+        "access_token": access_token,
+        "hash_context": hash_context
     }
 
     for key in secretval:
@@ -101,7 +105,7 @@ def lambda_handler(event, context):
                      "message": message
                  })
         elif event['RequestType'] == 'Delete':
-            keys = ["db_pass", "ca_cert", "tls_key", "tls_cert"]
+            keys = ["db_pass", "ca_cert", "tls_key", "tls_cert", "access_token", "hash_context"]
             ssm = boto3.client('ssm')
             for key in keys:
                 parameter_name = "/keymanager/{}".format(key)
