@@ -37,6 +37,8 @@ export class Configuration {
         tls_key: tls_key_exists ? readFileSync("./rsa_sha256_key.pem").toString() : "", 
         tls_cert: tls_cert_exists ? readFileSync("./rsa_sha256_cert.pem").toString() : "", 
         ca_cert: ca_cert_exists ? readFileSync("./ca_cert.pem").toString() : "",
+        access_token: scope.node.tryGetContext('keymanager_access_token') || "secret123",
+        hash_context: scope.node.tryGetContext('keymanager_hash_context') || "keymanager:hyperswitch",
       },
       extra_subnets: [],
       rds: {
