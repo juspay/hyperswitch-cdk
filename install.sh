@@ -661,7 +661,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         
         echo "Finalizing setup..."
         helm get values -n hyperswitch hypers-v1 > values.yaml 2>/dev/null || echo "Failed to get helm values for hypers-v1"
-        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT" "$APP_PROXY_SETUP"
+        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT" "$APP_PROXY_SETUP" "$KEYMANAGER"
 
         echo "✅  All deployments complete!"
         exit 0

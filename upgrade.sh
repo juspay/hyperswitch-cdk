@@ -17,7 +17,9 @@ sh ./bash/deps.sh
 # Deploy Load balancer and Ingress
 echo "##########################################"
 ADMIN_API_KEY=$1
+CARD_VAULT=$2
 APP_PROXY_SETUP=$3
+KEYMANAGER_ENABLED=$4
 LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
@@ -89,6 +91,33 @@ else
 EOF
 fi
 
+# Configure keymanager settings if enabled
+KEYMANAGER_CONFIG=""
+if [[ "$KEYMANAGER_ENABLED" == "y" ]]; then
+    echo "Configuring keymanager integration..."
+    
+    # Check if keymanager namespace exists
+    if kubectl get namespace keymanager &>/dev/null; then
+        # Retrieve certificates from SSM
+        KEYMANAGER_CA_CERT=$(aws ssm get-parameter --name "/keymanager/ca_cert" --with-decryption --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+        KEYMANAGER_CLIENT_CERT=$(aws ssm get-parameter --name "/keymanager/client_cert" --with-decryption --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+        
+        if [ -n "$KEYMANAGER_CA_CERT" ] && [ -n "$KEYMANAGER_CLIENT_CERT" ]; then
+            # Build keymanager configuration for helm
+            KEYMANAGER_CONFIG="--set hyperswitch-app.server.keymanager.enabled=true \
+                              --set hyperswitch-app.server.keymanager.url=https://hs-keymanager.keymanager.svc.cluster.local:5000 \
+                              --set hyperswitch-app.server.secrets.keymanager.ca=\"$KEYMANAGER_CA_CERT\" \
+                              --set hyperswitch-app.server.secrets.keymanager.cert=\"$KEYMANAGER_CLIENT_CERT\""
+            
+            echo "Keymanager configuration loaded successfully"
+        else
+            echo "Warning: Could not retrieve keymanager certificates from SSM"
+        fi
+    else
+        echo "Warning: Keymanager namespace not found, skipping keymanager configuration"
+    fi
+fi
+
 # Deploy the hyperswitch application with the load balancer host name
 helm repo add hs https://juspay.github.io/hyperswitch-helm/ --force-update
 export MERCHANT_ID=$(curl --connect-timeout 5 --retry 5 --retry-delay 30 --silent --location --request POST 'https://'$APP_HOST'/user/signup' \
@@ -115,7 +144,7 @@ APP_ENV="hyperswitch-app"
 SDK_ENV="hyperswitchsdk.services"
 SDK_BUILD="hyperswitchsdk.autoBuild.buildParam"
 HYPERLOADER="https://$SDK_URL/web/0.121.2/v1/HyperLoader.js"
-VERSION="0.2.4"
+VERSION="0.2.5"
 helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" \
     --set "$SDK_ENV.router.host=https://$APP_HOST" \
     --set "$SDK_ENV.sdkDemo.hyperswitchPublishableKey=$PUB_KEY" \
@@ -125,6 +154,7 @@ helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" \
     --set "$SDK_BUILD.envSdkUrl=https://$SDK_URL" \
     --set "$SDK_BUILD.envBackendUrl=https://$APP_HOST" \
     --values proxy-values.yaml \
+    $KEYMANAGER_CONFIG \
     -n hyperswitch -f values.yaml
 
 echoLog "--------------------------------------------------------------------------------"

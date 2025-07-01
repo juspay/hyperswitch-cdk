@@ -30,6 +30,7 @@ export type KeymanagerConfig = {
     ca_cert: string;
     tls_key: string;
     tls_cert: string;
+    client_cert: string;
     access_token: string;
     hash_context: string;
 }
@@ -147,6 +148,7 @@ export class Keymanager extends Construct {
                 ca_cert: cdk.SecretValue.unsafePlainText(config.ca_cert),
                 tls_key: cdk.SecretValue.unsafePlainText(config.tls_key),
                 tls_cert: cdk.SecretValue.unsafePlainText(config.tls_cert),
+                client_cert: cdk.SecretValue.unsafePlainText(config.client_cert),
                 access_token: cdk.SecretValue.unsafePlainText(config.access_token),
                 hash_context: cdk.SecretValue.unsafePlainText(config.hash_context),
             },
@@ -286,6 +288,7 @@ class KmsSecrets {
     readonly kms_encrypted_tls_cert: string;
     readonly kms_encrypted_db_pass: string;
     readonly kms_encrypted_ca_cert: string;
+    readonly kms_encrypted_client_cert: string;
     readonly kms_encrypted_access_token: string;
     readonly kms_encrypted_hash_context: string;
 
@@ -296,6 +299,7 @@ class KmsSecrets {
         this.kms_encrypted_tls_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/tls_cert", 1);
         this.kms_encrypted_tls_key = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/tls_key", 1);
         this.kms_encrypted_ca_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/ca_cert", 1);
+        this.kms_encrypted_client_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/client_cert", 1);
         this.kms_encrypted_access_token = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/access_token", 1);
         this.kms_encrypted_hash_context = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/hash_context", 1);
     }
