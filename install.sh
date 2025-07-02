@@ -359,6 +359,36 @@ validate_api_key() {
     return 0
 }
 
+validate_access_token() {
+    local token=$1
+    
+    # Check minimum length
+    if [[ ${#token} -lt 32 ]]; then
+        display_error "Error: Access token must be at least 32 characters long."
+        return 1
+    fi
+    
+    # Check for valid characters
+    if [[ ! $token =~ ^[A-Za-z0-9_+/=-]+$ ]]; then
+        display_error "Error: Access token contains invalid characters."
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_hash_context() {
+    local context=$1
+    
+    # Check if it follows the pattern "service:domain"
+    if [[ ! $context =~ ^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$ ]]; then
+        display_error "Error: Hash context should follow the pattern 'service:domain' (e.g., 'keymanager:hyperswitch')."
+        return 1
+    fi
+    
+    return 0
+}
+
 # Prompt for Admin API Key
 while true; do
     echo "Please enter the Admin API key (required to access Hyperswitch APIs): "
@@ -453,7 +483,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
     while true; do
         echo "Please enter the AES master encryption key. It must be 64 characters long and consist of hexadecimal digits:"
         echo "${bold}${red}Please create the AES master encryption key as described below.${reset}"
-        echo "${bold}${yellow}To generate the master key, run the following command: openssl enc -aes-256-cbc -k secret -P -md sha1${reset}"
+        echo "${bold}${yellow}To generate the master key, run the following command:${reset}${bold}${green} openssl enc -aes-256-cbc -k secret -P -md sha1${reset}"
         echo "${bold}${yellow}Copy the value of 'key' from the output and use it as the master key.${reset}"
         read -r -s MASTER_ENC_KEY
         if [[ ${#MASTER_ENC_KEY} -eq 64 && $MASTER_ENC_KEY =~ ^[0-9a-fA-F]+$ ]]; then
@@ -467,6 +497,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
     echo "If you do not have static ip you can enter${bold}${red} 0.0.0.0, but this will make the cluster open to internet ${reset}."
     read -r VPN_IPS
 
+    echo
     echo "Do you want to deploy the Card Vault? [y/n]: "
     read -r CARD_VAULT
 
@@ -492,15 +523,49 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         LOCKER+="-c locker_pass=$LOCKER_DB_PASS "
     fi
 
+    echo
     echo "Do you want to deploy Keymanager? (Mandatory for non standalone builds) [y/n]: "
     read -r KEYMANAGER
 
     KEYMANAGER_ENABLED=""
     if [[ "$KEYMANAGER" == "y" ]]; then
         generate_keymanager_certificates
-        KEYMANAGER_ENABLED+="-c keymanager_enabled=true"
+        
+        # Prompt for Access Token
+        echo "${bold}${blue}Keymanager Access Token Configuration${reset}"
+        echo "The access token is a cryptographically secure string used for authenticating requests to the keymanager service."
+        echo "${bold}${yellow}To generate a secure access token, you can use:${reset}${bold}${green}  openssl rand -hex 32${reset}"
+        
+        while true; do
+            echo "Please enter the Keymanager Access Token (minimum 32 characters):"
+            read -r -s KEYMANAGER_ACCESS_TOKEN
+            if validate_access_token "$KEYMANAGER_ACCESS_TOKEN"; then
+                break
+            fi
+        done
+        
+        # Prompt for Hash Context
+        echo "${bold}${blue}Keymanager Hash Context Configuration${reset}"
+        echo "The hash context is a domain separation string "
+        
+        while true; do
+            echo "Please enter the Hash Context (or press Enter for default 'keymanager:hyperswitch'):"
+            read -r KEYMANAGER_HASH_CONTEXT
+            if [[ -z "$KEYMANAGER_HASH_CONTEXT" ]]; then
+                KEYMANAGER_HASH_CONTEXT="keymanager:hyperswitch"
+                echo "Using default: keymanager:hyperswitch"
+                break
+            elif validate_hash_context "$KEYMANAGER_HASH_CONTEXT"; then
+                break
+            fi
+        done
+        
+        KEYMANAGER_ENABLED+="-c keymanager_enabled=true "
+        KEYMANAGER_ENABLED+="-c keymanager_access_token=$KEYMANAGER_ACCESS_TOKEN "
+        KEYMANAGER_ENABLED+="-c keymanager_hash_context=$KEYMANAGER_HASH_CONTEXT"
     fi
 
+    echo
     echo "Do you want to deploy proxy setup (Envoy/Squid)? [y/n]: "
     read -r APP_PROXY_SETUP
 
@@ -511,6 +576,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         APP_PROXY_CONTEXT="-c app_proxy_enabled=true -c envoy_ami=$envoy_ami -c squid_ami=$squid_ami"
     fi
 
+    echo
     printf "${bold}Deploying Hyperswitch Services${reset}\n"
     # Deploy the EKS Cluster
     npm install
@@ -530,7 +596,9 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION -c aws_arn=$AWS_ARN
     fi
     
-    echo "Deploying Hyperswitch Stack..."
+    echo
+    echo "${bold}Deploying Hyperswitch Stack...${reset}"
+    echo
     # Single deployment that includes everything based on user choices
     if cdk deploy --require-approval never -c db_pass=$DB_PASS -c admin_api_key=$ADMIN_API_KEY -c aws_arn=$AWS_ARN -c master_enc_key=$MASTER_ENC_KEY -c vpn_ips=$VPN_IPS -c base_ami=$base_ami $LOCKER $KEYMANAGER_ENABLED $APP_PROXY_CONTEXT -c open_search_service=$OPEN_SEARCH_SERVICE -c open_search_master_user_name=$OPEN_SEARCH_MASTER_USER_NAME -c open_search_master_password=$OPEN_SEARCH_MASTER_PASSWORD; then
         echo "Stack deployment successful."
@@ -593,7 +661,7 @@ if [[ "$INSTALLATION_MODE" == 2 ]]; then
         
         echo "Finalizing setup..."
         helm get values -n hyperswitch hypers-v1 > values.yaml 2>/dev/null || echo "Failed to get helm values for hypers-v1"
-        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT" "$APP_PROXY_SETUP"
+        sh upgrade.sh "$ADMIN_API_KEY" "$CARD_VAULT" "$APP_PROXY_SETUP" "$KEYMANAGER"
 
         echo "✅  All deployments complete!"
         exit 0

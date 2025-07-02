@@ -679,7 +679,7 @@ export class EksStack {
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
       repository: "https://juspay.github.io/hyperswitch-helm/",
-      version: "0.2.4",
+      version: "0.2.5",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,

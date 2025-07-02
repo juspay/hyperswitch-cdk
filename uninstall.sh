@@ -105,7 +105,7 @@ fi
 export AWS_DEFAULT_REGION;
 
 # delete the load balancers created by the ingress. names: hyperswitch, hyperswitch-sdk-demo, hyperswitch-control-center, hyperswitch-web, hyperswitch-logs
-load_balancers=("hyperswitch" "hyperswitch-sdk-demo" "hyperswitch-control-center" "hyperswitch-web" "hyperswitch-logs")
+load_balancers=("hyperswitch" "hyperswitch-sdk-demo" "hyperswitch-control-center" "hyperswitch-web" "hyperswitch-logs" "hyperswitch-grafana-logs")
 
 # Loop over each load balancer
 for lb in "${load_balancers[@]}"; do

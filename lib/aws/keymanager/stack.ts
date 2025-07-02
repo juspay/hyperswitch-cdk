@@ -30,6 +30,9 @@ export type KeymanagerConfig = {
     ca_cert: string;
     tls_key: string;
     tls_cert: string;
+    client_cert: string;
+    access_token: string;
+    hash_context: string;
 }
 
 export class Keymanager extends Construct {
@@ -145,6 +148,9 @@ export class Keymanager extends Construct {
                 ca_cert: cdk.SecretValue.unsafePlainText(config.ca_cert),
                 tls_key: cdk.SecretValue.unsafePlainText(config.tls_key),
                 tls_cert: cdk.SecretValue.unsafePlainText(config.tls_cert),
+                client_cert: cdk.SecretValue.unsafePlainText(config.client_cert),
+                access_token: cdk.SecretValue.unsafePlainText(config.access_token),
+                hash_context: cdk.SecretValue.unsafePlainText(config.hash_context),
             },
         });
 
@@ -175,17 +181,34 @@ export class Keymanager extends Construct {
             namespace: "keymanager",
             release: "hs-keymanager",
             createNamespace: true,
-            wait: false,
+            wait: true,
+            timeout: cdk.Duration.minutes(10),
             values: {
+                backend: "aws",
                 server: {
-                    image: "juspaydotin/hyperswitch-encryption-service:v0.1.7",
+                    image: "docker.juspay.io/juspaydotin/hyperswitch-encryption-service:v0.1.8",
+                    annotations: {
+                        "eks.amazonaws.com/role-arn": kms_role.roleArn,
+                    },
                     secrets: {
-                        key_id: kms_key.keyId,
                         iam_role: kms_role.roleArn,
+                    }
+                },
+                secrets: {
+                    access_token: kmsSecrets.kms_encrypted_access_token,
+                    hash_context: kmsSecrets.kms_encrypted_hash_context,
+                    database: {
+                        password: kmsSecrets.kms_encrypted_db_pass,
+                        root_ca: kmsSecrets.kms_encrypted_ca_cert,
+                    },
+                    aws: {
+                        key_id: kms_key.keyId,
                         region: process.env.CDK_DEFAULT_REGION,
-                        ca_cert: kmsSecrets.kms_encrypted_ca_cert,
-                        tls_key: kmsSecrets.kms_encrypted_tls_key,
-                        tls_cert: kmsSecrets.kms_encrypted_tls_cert,
+                    },
+                    tls: {
+                        cert: kmsSecrets.kms_encrypted_tls_cert,
+                        key: kmsSecrets.kms_encrypted_tls_key,
+                        ca: kmsSecrets.kms_encrypted_ca_cert,
                     }
                 },
                 postgresql: {
@@ -199,7 +222,8 @@ export class Keymanager extends Construct {
                             port: 5432,
                             username: config.db_user,
                             password: kmsSecrets.kms_encrypted_db_pass,
-                            database: "keymanager_db",
+                            plainpassword: config.db_pass, 
+                            database: "encryption_db",
                         }
                     }
                 }
@@ -215,7 +239,7 @@ export class KeymanagerDB extends Construct {
     constructor(scope: Construct, vpc: ec2.IVpc, username: string, password: string, clusterSg: ec2.ISecurityGroup) {
         super(scope, "KeymanagerStack");
 
-        const db_name = "keymanager_db";
+        const db_name = "encryption_db";
 
         let security_group = new SecurityGroup(scope, "Keymanager-DB-SG", {
             securityGroupName: "Keymanager-DB-SG",
@@ -239,7 +263,7 @@ export class KeymanagerDB extends Construct {
         });
 
         const engine = DatabaseClusterEngine.auroraPostgres({
-            version: AuroraPostgresEngineVersion.VER_14_5,
+            version: AuroraPostgresEngineVersion.VER_14_11,
         });
 
         const dbCluster = new DatabaseCluster(scope, "keymanager-db-cluster", {
@@ -266,6 +290,9 @@ class KmsSecrets {
     readonly kms_encrypted_tls_cert: string;
     readonly kms_encrypted_db_pass: string;
     readonly kms_encrypted_ca_cert: string;
+    readonly kms_encrypted_client_cert: string;
+    readonly kms_encrypted_access_token: string;
+    readonly kms_encrypted_hash_context: string;
 
     constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -274,5 +301,8 @@ class KmsSecrets {
         this.kms_encrypted_tls_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/tls_cert", 1);
         this.kms_encrypted_tls_key = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/tls_key", 1);
         this.kms_encrypted_ca_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/ca_cert", 1);
+        this.kms_encrypted_client_cert = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/client_cert", 1);
+        this.kms_encrypted_access_token = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/access_token", 1);
+        this.kms_encrypted_hash_context = ssm.StringParameter.valueForStringParameter(scope, "/keymanager/hash_context", 1);
     }
 }
