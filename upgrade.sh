@@ -105,7 +105,7 @@ if [[ "$KEYMANAGER_ENABLED" == "y" ]]; then
         if [ -n "$KEYMANAGER_CA_CERT" ] && [ -n "$KEYMANAGER_CLIENT_CERT" ]; then
             # Build keymanager configuration for helm
             KEYMANAGER_CONFIG="--set hyperswitch-app.server.keymanager.enabled=true \
-                              --set hyperswitch-app.server.keymanager.url=https://hs-keymanager.keymanager.svc.cluster.local:5000 \
+                              --set hyperswitch-app.server.keymanager.url=https://keymanager.keymanager.svc.cluster.local \
                               --set hyperswitch-app.server.secrets.keymanager.ca=\"$KEYMANAGER_CA_CERT\" \
                               --set hyperswitch-app.server.secrets.keymanager.cert=\"$KEYMANAGER_CLIENT_CERT\""
             

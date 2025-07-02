@@ -181,7 +181,8 @@ export class Keymanager extends Construct {
             namespace: "keymanager",
             release: "hs-keymanager",
             createNamespace: true,
-            wait: false,
+            wait: true,
+            timeout: cdk.Duration.minutes(10),
             values: {
                 backend: "aws",
                 server: {
@@ -221,6 +222,7 @@ export class Keymanager extends Construct {
                             port: 5432,
                             username: config.db_user,
                             password: kmsSecrets.kms_encrypted_db_pass,
+                            plainpassword: config.db_pass, 
                             database: "encryption_db",
                         }
                     }
