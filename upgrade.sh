@@ -20,7 +20,7 @@ ADMIN_API_KEY=$1
 CARD_VAULT=$2
 APP_PROXY_SETUP=$3
 KEYMANAGER_ENABLED=$4
-LOGS_HOST=$(kubectl get ingress hyperswitch-grafana-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+LOGS_HOST=$(kubectl get ingress loki-grafana -n loki -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
 #SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
@@ -162,7 +162,7 @@ echoLog "$bold Service                           Host$reset"
 echoLog "--------------------------------------------------------------------------------"
 echoLog "$green HyperloaderJS Hosted at           $blue$HYPERLOADER$reset"
 echoLog "$green App server running on             $blue"https://$APP_HOST/health"$reset"
-echoLog "$green Logs server running on            $blue"https://$LOGS_HOST"$reset, Login with $yellow username: admin, password: admin$reset , Please change on startup"
+echoLog "$green Logs server running on            $blue"http://$LOGS_HOST"$reset, Login with $yellow username: admin, password: admin$reset , Please change on startup"
 echoLog "$green Control center server running on  $blue"https://$CONTROL_CENTER_HOST"$reset, Login with $yellow Email: test@gmail.com, password: admin$reset , Please change on startup"
 #echoLog "$green Hyperswitch Demo Store running on $blue"https://$SDK_HOST"$reset"
 echoLog "--------------------------------------------------------------------------------"
