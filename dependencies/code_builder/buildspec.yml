@@ -1,6 +1,28 @@
 version: 0.2
 
 phases:
+  pre_build:
+    commands:
+      - echo "Installing Helm..."
+      - curl -fsSL https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar xz
+      - mv linux-amd64/helm /usr/local/bin/
+      - helm version
+      - |
+        echo "Fetching loki-stack chart to extract compatible versions..."
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
+        LATEST_VERSION=$(helm search repo grafana/loki-stack -o json | jq -r '.[0].version')
+        echo "Using loki-stack chart version: $LATEST_VERSION"
+        helm pull grafana/loki-stack --version $LATEST_VERSION --untar
+        cd loki-stack
+        LOKI_TAG=$(cat ./charts/loki/Chart.yaml | grep "^appVersion:" | awk '{print $2}' | tr -d '"')
+        PROMTAIL_TAG=$(cat ./charts/promtail/Chart.yaml | grep "^appVersion:" | awk '{print $2}' | tr -d '"')
+        GRAFANA_TAG=$(cat ./charts/grafana/Chart.yaml | grep "^appVersion:" | awk '{print $2}' | tr -d '"')
+        cd ..
+        export LOKI_TAG=${LOKI_TAG:-latest}
+        export PROMTAIL_TAG=${PROMTAIL_TAG:-latest}
+        export GRAFANA_TAG=${GRAFANA_TAG:-latest}
+
   build:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
@@ -48,6 +70,18 @@ phases:
               docker pull "$IMAGE:1.25.0" && \
               docker tag "$IMAGE:1.25.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
+          elif [[ $IMAGE == "grafana/grafana" ]]; then
+              docker pull "$IMAGE:${GRAFANA_TAG}" && \
+              docker tag "$IMAGE:${GRAFANA_TAG}" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${GRAFANA_TAG}" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${GRAFANA_TAG}"
+          elif [[ $IMAGE == "grafana/loki" ]]; then
+              docker pull "$IMAGE:${LOKI_TAG}" && \
+              docker tag "$IMAGE:${LOKI_TAG}" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${LOKI_TAG}" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${LOKI_TAG}"
+          elif [[ $IMAGE == "grafana/promtail" ]]; then
+              docker pull "$IMAGE:${PROMTAIL_TAG}" && \
+              docker tag "$IMAGE:${PROMTAIL_TAG}" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${PROMTAIL_TAG}" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:${PROMTAIL_TAG}"
           elif [[ $IMAGE == "kiwigrid/k8s-sidecar" ]]; then
               docker pull "$IMAGE:1.30.3" && \
               docker tag "$IMAGE:1.30.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"
@@ -98,4 +132,3 @@ phases:
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.5.1
           fi
         done
-

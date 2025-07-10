@@ -20,7 +20,7 @@ ADMIN_API_KEY=$1
 CARD_VAULT=$2
 APP_PROXY_SETUP=$3
 KEYMANAGER_ENABLED=$4
-LOGS_HOST=$(kubectl get ingress hyperswitch-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+LOGS_HOST=$(kubectl get ingress hyperswitch-grafana-logs-alb-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 INGRESS_CONTROL_CENTER_HOST=$(kubectl get ingress hyperswitch-control-center-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 CONTROL_CENTER_HOST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?DomainName=='${INGRESS_CONTROL_CENTER_HOST}']].DomainName" --output text);
 #SDK_HOST=$(kubectl get ingress hyperswitch-sdk-demo-ingress -n hyperswitch -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') #sdk-demo-ingress NOT FOUND
