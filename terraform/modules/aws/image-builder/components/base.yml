@@ -1,0 +1,77 @@
+name: InstallBase
+description: This document installs all required packages on top of Amazon Linux 2023
+schemaVersion: 1.0
+
+phases:
+    - name: build
+      steps:
+        - name: InstallBase
+          action: ExecuteBash
+          inputs:
+            commands:                
+                - echo "=== Wazuh Agent Installation ==="
+                - sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+                - echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" | sudo tee /etc/yum.repos.d/wazuh.repo > /dev/null
+                - WAZUH_MANAGER="10.0.0.2" sudo dnf install -y wazuh-agent
+                - sudo sed -i 's/<address>MANAGER_IP<\/address>/<address>10.0.0.2<\/address>/' /var/ossec/etc/ossec.conf
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable wazuh-agent
+
+                - sudo dnf update -y
+                - sudo dnf install -y redis6
+                - sudo dnf install -y postgresql15 postgresql15-server
+                - sudo /usr/bin/postgresql-setup --initdb
+                - sudo systemctl enable postgresql
+                - sudo systemctl start postgresql
+                
+                - echo "=== Installing ClamAV 1.4.2 on Amazon Linux 2023 ==="
+                - sudo dnf install -y libxml2 openssl-libs bzip2-libs zlib libcurl pcre2 systemd
+                - curl -L -o /tmp/clamav-1.4.2.rpm https://www.clamav.net/downloads/production/clamav-1.4.2.linux.x86_64.rpm
+                - sudo dnf install -y /tmp/clamav-1.4.2.rpm
+                - sudo useradd -r -s /sbin/nologin clamav 2>/dev/null || true
+                - sudo mkdir -p /usr/local/var/{lib,run,log}/clamav
+                - sudo chown -R clamav:clamav /usr/local/var/{lib,run,log}/clamav
+                
+                - echo "Configure clamd"
+                - sudo cp /usr/local/etc/clamd.conf.sample /usr/local/etc/clamd.conf
+                - |
+                  sudo sed -i -e 's/^Example/#Example/' \
+                              -e 's|^#PidFile .*|PidFile /usr/local/var/run/clamav/clamd.pid|' \
+                              -e 's|^#LocalSocket .*|LocalSocket /usr/local/var/run/clamav/clamd.sock|' \
+                              -e 's|^#User .*|User clamav|' \
+                              -e 's|^#LogFile .*|LogFile /usr/local/var/log/clamav/clamd.log|' \
+                              /usr/local/etc/clamd.conf
+                - sudo cp /usr/local/etc/freshclam.conf.sample /usr/local/etc/freshclam.conf
+                - |
+                  sudo sed -i -e 's/^Example/#Example/' \
+                              -e 's|^#DatabaseOwner .*|DatabaseOwner clamav|' \
+                              -e 's|^#UpdateLogFile .*|UpdateLogFile /usr/local/var/log/clamav/freshclam.log|' \
+                              /usr/local/etc/freshclam.conf
+                - sudo /usr/local/bin/freshclam --config-file=/usr/local/etc/freshclam.conf
+                - |
+                  sudo tee /etc/systemd/system/clamd.service >/dev/null <<EOF
+                  [Unit]
+                  Description=ClamAV 1.4.2 Daemon
+                  After=network.target
+                  
+                  [Service]
+                  Type=simple
+                  User=clamav
+                  Group=clamav
+                  ExecStart=/usr/local/bin/clamd --config-file=/usr/local/etc/clamd.conf --foreground=true
+                  Restart=on-failure
+                  
+                  [Install]
+                  WantedBy=multi-user.target
+                  EOF
+                - sudo sed -i 's|ExecStart=/usr/local/bin/clamd|ExecStart=/usr/local/sbin/clamd|' /etc/systemd/system/clamd.service
+                
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable --now clamd.service
+                
+                - sudo systemctl enable redis6
+                - sudo systemctl start redis6
+                
+                - sudo systemctl start wazuh-agent || echo "Wazuh agent failed to start, continuing"
+                
+                - sudo sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo

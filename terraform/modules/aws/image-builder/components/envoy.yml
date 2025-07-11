@@ -1,0 +1,57 @@
+name: InstallEnvoy
+description: This document installs envoy and wazuh on top of Amazon Linux 2023
+schemaVersion: 1.0
+
+phases:
+    - name: build
+      steps:
+        - name: InstallEnvoyAndWazuh
+          action: ExecuteBash
+          inputs:
+            commands:
+                - echo "=== Installing Wazuh Agent ==="
+                - sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+                - echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" | sudo tee /etc/yum.repos.d/wazuh.repo > /dev/null
+                - WAZUH_MANAGER="10.0.0.2" sudo dnf install -y wazuh-agent
+                - sudo sed -i 's|<address>MANAGER_IP</address>|<address>10.0.0.2</address>|' /var/ossec/etc/ossec.conf
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable wazuh-agent
+                - sudo systemctl start wazuh-agent || echo "Wazuh agent failed to start, continuing with installation"
+                - sudo sed -i 's/^\s*enabled=1/enabled=0/' /etc/yum.repos.d/wazuh.repo
+                
+                - echo "=== Installing Envoy Proxy 1.34.0 ==="
+                - sudo dnf install -y wget dnf-utils || echo "wget/dnf-utils already installed"
+                - ENVOY_VERSION="1.34.0"
+                - cd /tmp
+                - curl --retry 3 -L -o envoy "https://github.com/envoyproxy/envoy/releases/download/v${ENVOY_VERSION}/envoy-${ENVOY_VERSION}-linux-x86_64"
+                - sudo chmod +x envoy
+                - sudo mv envoy /usr/local/bin/envoy
+                - sudo useradd -r -s /bin/false envoy || echo "User envoy may already exist"
+                - sudo mkdir -p /etc/envoy /var/log/envoy
+                - sudo chown envoy:envoy /etc/envoy /var/log/envoy
+                - echo "=== Creating Envoy systemd service ==="
+                - |
+                  sudo tee /etc/systemd/system/envoy.service > /dev/null <<EOF
+                  [Unit]
+                  Description=Envoy Proxy
+                  Documentation=https://www.envoyproxy.io/docs/envoy/latest/
+                  After=network.target
+
+                  [Service]
+                  Type=simple
+                  User=envoy
+                  Group=envoy
+                  AmbientCapabilities=CAP_NET_BIND_SERVICE
+                  ExecStart=/usr/local/bin/envoy -c /etc/envoy/envoy.yaml --service-cluster envoy --service-node envoy_node --log-level info
+                  Restart=on-failure
+                  RestartSec=5s
+                  LimitNOFILE=1048576
+                  StandardOutput=journal
+                  StandardError=journal
+
+                  [Install]
+                  WantedBy=multi-user.target
+                  EOF
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable envoy
+                - echo "Envoy systemd service created and enabled."
