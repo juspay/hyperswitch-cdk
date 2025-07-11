@@ -27,9 +27,8 @@ sudo curl -L https://raw.githubusercontent.com/Shailesh-714/cdk-tf/refs/heads/ma
 sudo unzip -o sdk_assets.zip
 
 # Replace placeholders in SDK files
-sudo find /sdk_assets -type f -name "*.js" -exec sed -i "s|{{app_cloudfront_url}}|$API_URL|g" {} \;
-sudo find /sdk_assets -type f -name "*.js" -exec sed -i "s|{{sdk_cloudfront_url}}|$SDK_URL|g" {} \;
-
+sudo find /sdk_assets -type f \( -name "*.js" -o -name "*.env" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s|{{app_cloudfront_url}}|$API_URL|g" {} \;
+sudo find /sdk_assets -type f \( -name "*.js" -o -name "*.env" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s|{{sdk_cloudfront_url}}|$SDK_URL|g" {} \;
 # Create SDK directory structure
 sudo mkdir -p /sdk/web/${sdk_version}/${sdk_sub_version}
 sudo mv /sdk_assets/* /sdk/web/${sdk_version}/${sdk_sub_version}

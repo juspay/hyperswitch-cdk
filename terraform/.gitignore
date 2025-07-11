@@ -6,7 +6,7 @@
 *.tfstate.*
 
 # .terraform lock files
-*.terraform.lock.hcl
+.terraform.lock.hcl
 
 # Crash log files
 crash.log
@@ -63,9 +63,6 @@ venv/
 # Backup files
 *.backup
 *.bak
-
-# Lock files (keep terraform lock file)
-!.terraform.lock.hcl
 
 # Sensitive files
 secrets/

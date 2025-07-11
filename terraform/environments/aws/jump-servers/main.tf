@@ -38,7 +38,7 @@ locals {
 
 # External Jump Host
 module "external_jump" {
-  source = "./modules/jump-hosts/external"
+  source = "../../../modules/aws/external_jump"
 
   stack_name                 = var.stack_name
   vpc_id                     = var.vpc_id
@@ -49,12 +49,12 @@ module "external_jump" {
   enable_ssm_session_manager = true
   vpce_security_group_id     = var.vpce_security_group_id
 
-  tags = var.common_tags
+  common_tags = var.common_tags
 }
 
 # Internal Jump Host
 module "internal_jump" {
-  source = "./modules/jump-hosts/internal"
+  source = "../../../modules/aws/internal_jump"
 
   stack_name          = var.stack_name
   vpc_id              = var.vpc_id
@@ -69,5 +69,5 @@ module "internal_jump" {
   locker_ec2_sg_id  = var.locker_ec2_security_group_id
   locker_db_sg_id   = var.locker_db_security_group_id
 
-  tags = var.common_tags
+  common_tags = var.common_tags
 }

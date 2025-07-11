@@ -2,5 +2,9 @@ aws_region  = "us-west-2"
 stack_name  = "tf-hypers-prod"
 environment = "production"
 
-vpc_cidr = "10.0.0.0/16"
-
+vpc_cidr               = "10.0.0.0/16"
+vpc_id                 = "vpc-02753e32bbac32426"
+vpce_security_group_id = "sg-0ab75a56d2d01d97a"
+management_subnet_id   = "subnet-0307058fd64a532d5"
+utils_subnet_id        = "subnet-0bfbd7dc826b25f51"
+kms_key_arn            = "arn:aws:kms:us-west-2:225681119357:key/63c3e19a-7813-4a43-bf4c-5ee0aaf3ead7"

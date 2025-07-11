@@ -13,7 +13,7 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "vpc_cidr_block" {
+variable "vpc_cidr" {
   description = "CIDR block of the VPC"
   type        = string
 }
@@ -30,11 +30,6 @@ variable "key_name" {
   default     = null
 }
 
-variable "kms_key_arn" {
-  description = "ARN of the KMS key for SSM encryption"
-  type        = string
-}
-
 variable "common_tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
@@ -42,25 +37,36 @@ variable "common_tags" {
 }
 
 variable "ami_id" {
-  description = "AMI ID for the jump host (optional - defaults to latest Amazon Linux 2)"
+  description = "AMI ID for the jump host (optional - defaults to latest Amazon Linux)"
   type        = string
   default     = null
 }
 
-variable "enable_ssm_session_manager" {
-  description = "Enable SSM Session Manager access"
-  type        = bool
-  default     = true
+variable "external_jump_sg_id" {
+  description = "Security group ID of the external jump host for SSH access"
+  type        = string
 }
 
-variable "enable_ssm_full_access" {
-  description = "Enable full SSM access (AmazonSSMFullAccess policy)"
-  type        = bool
-  default     = false
+variable "rds_sg_id" {
+  description = "Security group ID of the RDS instance"
+  type        = string
+  default     = null
 }
 
-variable "vpce_security_group_id" {
-  description = "Security group ID for VPC endpoints"
+variable "elasticache_sg_id" {
+  description = "Security group ID of the ElastiCache cluster"
+  type        = string
+  default     = null
+}
+
+variable "locker_ec2_sg_id" {
+  description = "Security group ID of the locker EC2 instance"
+  type        = string
+  default     = null
+}
+
+variable "locker_db_sg_id" {
+  description = "Security group ID of the locker database"
   type        = string
   default     = null
 }
