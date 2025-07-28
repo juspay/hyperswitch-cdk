@@ -82,8 +82,8 @@ Ensure your AWS credentials have permissions for:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/Shailesh-714/cdk-tf.git
-   cd cdk-tf
+   git clone https://github.com/juspay/hyperswitch-cdk.git
+   cd hyperswitch-cdk/terraform
    ```
 
 2. **Choose an environment**
@@ -251,7 +251,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For issues and questions:
 
-- Create an issue in the [GitHub repository](https://github.com/Shailesh-714/cdk-tf/issues)
+- Create an issue in the [GitHub repository](https://github.com/juspay/hyperswitch-cdk/issues)
 - Check existing documentation in module README files
 
 ## 🔒 Security

@@ -23,7 +23,7 @@ echo "SDK URL: $SDK_URL"
 
 # Download and setup SDK
 cd /
-sudo curl -L https://raw.githubusercontent.com/Shailesh-714/cdk-tf/refs/heads/main/environments/aws/free-tier/userdata/sdk_assets.zip --output sdk_assets.zip
+sudo curl -L https://raw.githubusercontent.com/juspay/hyperswitch-cdk/refs/heads/main/terraform/environments/aws/free-tier/userdata/sdk_assets.zip --output sdk_assets.zip
 sudo unzip -o sdk_assets.zip
 
 # Replace placeholders in SDK files
