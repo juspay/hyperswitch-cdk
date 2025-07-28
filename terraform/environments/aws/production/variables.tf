@@ -25,7 +25,7 @@ variable "vpc_cidr" {
 variable "vpn_ips" {
   description = "List of VPN IPs for security group rules"
   type        = list(string)
-  default     = ["3.7.40.245/32", "13.232.74.226/32", "65.1.52.128/32"]
+  default     = ["0.0.0.0/0"]
 }
 
 variable "az_count" {
