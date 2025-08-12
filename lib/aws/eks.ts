@@ -564,12 +564,6 @@ export class EksStack {
     });
     albControllerChart.node.addDependency(albControllerServiceAccount);
 
-    // Create Helm Installer Service Account with CRD permissions
-    const helmInstallerServiceAccount = cluster.addServiceAccount("HelmInstallerSA", {
-      name: "helm-installer",
-      namespace: "kube-system",
-    });
-
     cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 
     nodegroupRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy'));
@@ -932,7 +926,7 @@ export class EksStack {
           },
         },
         "hyperswitch-web": {
-          enabled: false,
+          enabled: true,
           services: {
             router: {
               host: "http://localhost:8080"
@@ -985,7 +979,7 @@ export class EksStack {
     });
 
     this.sdkBucket = sdkBucket;
-    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption, helmInstallerClusterRoleBinding);
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption); 
 
     if (appProxyEnabled) {
       const istioResources = new IstioResources(scope, 'IstioResources', {

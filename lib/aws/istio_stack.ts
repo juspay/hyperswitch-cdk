@@ -170,7 +170,7 @@ export class IstioResources extends Construct {
       wait: true,
     });
     this.trafficControlChart = trafficControlChart; 
-    this.trafficControlChart.node.addDependency(gateway,istiod); 
+    this.trafficControlChart.node.addDependency(gateway); 
 
     // Create a Lambda function to find the Istio ALB DNS name
     const albLookupFunction = new lambda.Function(this, 'GetIstioAlbDnsFunction', {
