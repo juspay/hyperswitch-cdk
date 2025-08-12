@@ -29,4 +29,25 @@ provider "google" {
   region      = var.region
 }
 
+module "helm" {
+  source       = "../../../modules/gcp/helm"
+  project_id   = var.project_id
+  region       = var.region
+  stack_name   = var.stack_name
+  gke_cluster_name = var.gke_cluster_name
+  hyperswitch_namespace = "hyperswitch"
+  app_cdn_domain_name = "http://localhost:8080"
+  sdk_cdn_domain_name = "http://localhost:9050"
+  sdk_version = "0.125.0"
+  db_primary_host_endpoint = "http://localhost:5432"
+  db_reader_host_endpoint = "http://localhost:5432"
+  db_password = "password"
+  redis_host_endpoint = "http://localhost:6379"
+  redis_port = 6379
+}
 
+# module "secrets_manager" {
+#   source     = "../../../modules/gcp/secrets_manager"
+#   project_id = var.project_id
+#   region     = var.region
+# }

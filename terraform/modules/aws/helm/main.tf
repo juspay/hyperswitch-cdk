@@ -21,7 +21,6 @@ resource "null_resource" "update_kubeconfig" {
 
 data "aws_eks_cluster_auth" "main" {
   name = var.eks_cluster_name
-  
   depends_on = [null_resource.update_kubeconfig]
 }
 
