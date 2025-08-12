@@ -177,7 +177,8 @@ export class Keymanager extends Construct {
         const kmsSecrets = new KmsSecrets(scope, triggerKMSEncryption);
         const keymanagerChart = cluster.addHelmChart("KeymanagerService", {
             chart: "hyperswitch-keymanager",
-            repository: "https://juspay.github.io/hyperswitch-helm/charts/incubator/hyperswitch-keymanager",
+            repository: "https://juspay.github.io/hyperswitch-helm/",
+            version: "0.1.1",
             namespace: "keymanager",
             release: "hs-keymanager",
             createNamespace: true,
@@ -186,7 +187,7 @@ export class Keymanager extends Construct {
             values: {
                 backend: "aws",
                 server: {
-                    image: "docker.juspay.io/juspaydotin/hyperswitch-encryption-service:v0.1.8",
+                    image: "docker.juspay.io/juspaydotin/hyperswitch-encryption-service:v0.1.10",
                     annotations: {
                         "eks.amazonaws.com/role-arn": kms_role.roleArn,
                     },

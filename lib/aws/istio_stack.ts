@@ -119,7 +119,8 @@ export class IstioResources extends Construct {
 
     const trafficControlChart = cluster.addHelmChart('TrafficControlChart', {
       chart: 'hyperswitch-istio',
-      repository: 'https://juspay.github.io/hyperswitch-helm/charts/incubator/hyperswitch-istio',
+      repository: 'https://juspay.github.io/hyperswitch-helm/',
+      version: '0.1.1',
       release: 'hs-istio', 
       namespace: 'istio-system', 
       values: {
@@ -169,7 +170,7 @@ export class IstioResources extends Construct {
       wait: true,
     });
     this.trafficControlChart = trafficControlChart; 
-    this.trafficControlChart.node.addDependency(gateway); 
+    this.trafficControlChart.node.addDependency(gateway,istiod); 
 
     // Create a Lambda function to find the Istio ALB DNS name
     const albLookupFunction = new lambda.Function(this, 'GetIstioAlbDnsFunction', {

@@ -564,6 +564,62 @@ export class EksStack {
     });
     albControllerChart.node.addDependency(albControllerServiceAccount);
 
+    // Create Helm Installer Service Account with CRD permissions
+    const helmInstallerServiceAccount = cluster.addServiceAccount("HelmInstallerSA", {
+      name: "helm-installer",
+      namespace: "kube-system",
+    });
+
+    // Create ClusterRole for CRD management
+    const helmInstallerClusterRole = cluster.addManifest("HelmInstallerClusterRole", {
+      apiVersion: "rbac.authorization.k8s.io/v1",
+      kind: "ClusterRole",
+      metadata: {
+        name: "helm-installer-role",
+      },
+      rules: [
+        {
+          apiGroups: ["apiextensions.k8s.io"],
+          resources: ["customresourcedefinitions"],
+          verbs: ["create", "get", "list", "watch", "update", "patch", "delete"],
+        },
+        {
+          apiGroups: ["*"],
+          resources: ["*"],
+          verbs: ["*"],
+        },
+        {
+          apiGroups: [""],
+          resources: ["namespaces"],
+          verbs: ["create", "get", "list", "watch", "update", "patch", "delete"],
+        },
+      ],
+    });
+
+    // Create ClusterRoleBinding
+    const helmInstallerClusterRoleBinding = cluster.addManifest("HelmInstallerClusterRoleBinding", {
+      apiVersion: "rbac.authorization.k8s.io/v1",
+      kind: "ClusterRoleBinding",
+      metadata: {
+        name: "helm-installer-role-binding",
+      },
+      roleRef: {
+        apiGroup: "rbac.authorization.k8s.io",
+        kind: "ClusterRole",
+        name: "helm-installer-role",
+      },
+      subjects: [
+        {
+          kind: "ServiceAccount",
+          name: "helm-installer",
+          namespace: "kube-system",
+        },
+      ],
+    });
+
+    helmInstallerClusterRoleBinding.node.addDependency(helmInstallerClusterRole);
+    helmInstallerClusterRoleBinding.node.addDependency(helmInstallerServiceAccount);
+
     cluster.openIdConnectProvider.openIdConnectProviderIssuer;
 
     nodegroupRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy'));
@@ -926,7 +982,7 @@ export class EksStack {
           },
         },
         "hyperswitch-web": {
-          enabled: true,
+          enabled: false,
           services: {
             router: {
               host: "http://localhost:8080"
@@ -979,7 +1035,7 @@ export class EksStack {
     });
 
     this.sdkBucket = sdkBucket;
-    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption); 
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption, helmInstallerClusterRoleBinding);
 
     if (appProxyEnabled) {
       const istioResources = new IstioResources(scope, 'IstioResources', {
