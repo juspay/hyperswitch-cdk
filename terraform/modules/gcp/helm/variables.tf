@@ -40,6 +40,18 @@ variable "sdk_version" {
   default = "0.125.0"
 }
 
+variable "enable_external_postgresql" {
+  description = "Flag to enable or disable the use of an external PostgreSQL database."
+  type        = bool
+  default     = false
+}
+
+variable "enable_external_redis" {
+  description = "Flag to enable or disable the use of an external Redis instance."
+  type        = bool
+  default     = false
+}
+
 variable "locker_enabled" {
   description = "Flag to enable or disable the locker service."
   type        = bool

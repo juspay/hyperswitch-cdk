@@ -456,17 +456,35 @@ resource "helm_release" "hyperswitch_services" {
         }
 
         producer = {
-          affinity = { nodeAffinity = {
-            requiredDuringSchedulingIgnoredDuringExecution = {
-              nodeSelectorTerms = [{
-                matchExpressions = [{
-                  key      = "node-type"
-                  operator = "In"
-                  values   = ["generic-compute"]
+          affinity = {
+            nodeAffinity = {
+              requiredDuringSchedulingIgnoredDuringExecution = {
+                nodeSelectorTerms = [{
+                  matchExpressions = [{
+                    key      = "node-type"
+                    operator = "In"
+                    values   = ["generic-compute"]
+                  }]
                 }]
-              }]
+              }
             }
-          } }
+          }
+        }
+
+        drainer = {
+          affinity = {
+            nodeAffinity = {
+              requiredDuringSchedulingIgnoredDuringExecution = {
+                nodeSelectorTerms = [{
+                  matchExpressions = [{
+                    key      = "node-type"
+                    operator = "In"
+                    values   = ["generic-compute"]
+                  }]
+                }]
+              }
+            }
+          }
         }
 
         controlCenter = {
@@ -489,11 +507,11 @@ resource "helm_release" "hyperswitch_services" {
         }
 
         postgresql = {
-          enabled = false
+          enabled = !var.enable_external_postgresql
         }
 
         externalPostgresql = {
-          enabled = true
+          enabled = var.enable_external_postgresql
           primary = {
             host = var.db_primary_host_endpoint
             auth = {
@@ -515,11 +533,11 @@ resource "helm_release" "hyperswitch_services" {
         }
 
         redis = {
-          enabled = false
+          enabled = !var.enable_external_redis
         }
 
         externalRedis = {
-          enabled = true
+          enabled = var.enable_external_redis
           host    = var.redis_host_endpoint
           port    = var.redis_port
         }
