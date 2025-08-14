@@ -4,7 +4,7 @@ import boto3
 import base64
 
 def worker():
-    dummy_val = "dummy_val"
+    dummy_val = "dummyVal"
     api_hash_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
     secrets_manager = boto3.client('secretsmanager')
@@ -26,9 +26,15 @@ def worker():
     locker_public_key = enc_pl("locker_public_key")
     tenant_private_key = enc_pl("tenant_private_key")
 
-    paze_private_key = kms_fun("PAZE_PRIVATE_KEY")
-    paze_private_key_passphrase = kms_fun("PAZE_PRIVATE_KEY_PASSPHRASE")
-    google_pay_root_signing_keys = kms_fun("GOOGLE_PAY_ROOT_SIGNING_KEYS")
+    # Use properly formatted dummy keys that Hyperswitch can handle
+    dummy_pem_key = """-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5g5Q5Q5Q5Q5Q5
+Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5
+-----END PRIVATE KEY-----"""
+    
+    paze_private_key = kms_fun(dummy_pem_key)
+    paze_private_key_passphrase = kms_fun("dummy_passphrase")
+    google_pay_root_signing_keys = kms_fun("dummy_google_pay_keys")
 
     dummy_val = kms_fun(dummy_val)
     kms_encrypted_api_hash_key = kms_fun(api_hash_key)

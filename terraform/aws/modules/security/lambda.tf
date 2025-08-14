@@ -36,6 +36,13 @@ resource "aws_lambda_invocation" "kms_encrypt" {
     }
   })
 
+  lifecycle {
+    replace_triggered_by = [
+      aws_lambda_function.kms_encrypt.source_code_hash,
+      aws_secretsmanager_secret_version.hyperswitch.version_id
+    ]
+  }
+
   depends_on = [
     aws_secretsmanager_secret_version.hyperswitch,
     aws_lambda_function.kms_encrypt

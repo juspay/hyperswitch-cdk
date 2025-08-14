@@ -65,7 +65,7 @@ locals {
 
 # VPC configuration
 module "vpc" {
-  source = "../../../modules/aws/networking"
+  source = "../../modules/networking"
 
   vpc_cidr             = local.vpc_cidr
   availability_zones   = slice(local.azs, 0, 2)
@@ -78,7 +78,7 @@ module "vpc" {
 }
 
 module "security" {
-  source = "../../../modules/aws/security"
+  source = "../../modules/security"
 
   stack_name    = var.stack_name
   common_tags   = local.common_tags
@@ -98,7 +98,7 @@ module "security" {
 }
 
 module "rds" {
-  source = "../../../modules/aws/rds"
+  source = "../../modules/rds"
 
   stack_name  = var.stack_name
   common_tags = local.common_tags
@@ -111,7 +111,7 @@ module "rds" {
 }
 
 module "elasticache" {
-  source = "../../../modules/aws/elasticache"
+  source = "../../modules/elasticache"
 
   stack_name  = var.stack_name
   common_tags = local.common_tags
@@ -120,7 +120,7 @@ module "elasticache" {
 }
 
 module "dockertoecr" {
-  source = "../../../modules/aws/dockertoecr"
+  source = "../../modules/dockertoecr"
 
   stack_name         = var.stack_name
   common_tags        = local.common_tags
@@ -130,7 +130,7 @@ module "dockertoecr" {
 }
 
 module "loadbalancers" {
-  source = "../../../modules/aws/loadbalancers"
+  source = "../../modules/loadbalancers"
 
   stack_name      = var.stack_name
   common_tags     = local.common_tags
@@ -142,7 +142,7 @@ module "loadbalancers" {
 }
 
 module "sdk" {
-  source = "../../../modules/aws/sdk"
+  source = "../../modules/sdk"
 
   stack_name                            = var.stack_name
   common_tags                           = local.common_tags
@@ -154,7 +154,7 @@ module "sdk" {
 }
 
 module "eks" {
-  source = "../../../modules/aws/eks"
+  source = "../../modules/eks"
 
   stack_name                    = var.stack_name
   common_tags                   = local.common_tags
@@ -173,7 +173,7 @@ module "eks" {
 
 # Proxy Configuration S3 Bucket (shared between Envoy and Squid)
 module "proxy_config" {
-  source = "../../../modules/aws/proxy-config"
+  source = "../../modules/proxy-config"
 
   stack_name  = var.stack_name
   common_tags = local.common_tags
@@ -182,7 +182,7 @@ module "proxy_config" {
 
 # Squid Proxy Module (Comment out if not needed)
 module "squid_proxy" {
-  source = "../../../modules/aws/squid-proxy"
+  source = "../../modules/squid-proxy"
 
   stack_name                    = var.stack_name
   common_tags                   = local.common_tags
@@ -195,7 +195,7 @@ module "squid_proxy" {
 }
 
 module "helm" {
-  source = "../../../modules/aws/helm"
+  source = "../../modules/helm"
 
   stack_name                            = var.stack_name
   common_tags                           = local.common_tags
@@ -228,7 +228,7 @@ module "helm" {
 
 # Envoy Proxy Module
 module "envoy_proxy" {
-  source = "../../../modules/aws/envoy-proxy"
+  source = "../../modules/envoy-proxy"
 
   stack_name                            = var.stack_name
   common_tags                           = local.common_tags

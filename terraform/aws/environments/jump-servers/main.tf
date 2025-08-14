@@ -38,7 +38,7 @@ locals {
 
 # External Jump Host
 module "external_jump" {
-  source = "../../../modules/aws/external_jump"
+  source = "../../modules/external_jump"
 
   stack_name                 = var.stack_name
   vpc_id                     = var.vpc_id
@@ -54,7 +54,7 @@ module "external_jump" {
 
 # Internal Jump Host
 module "internal_jump" {
-  source = "../../../modules/aws/internal_jump"
+  source = "../../modules/internal_jump"
 
   stack_name          = var.stack_name
   vpc_id              = var.vpc_id

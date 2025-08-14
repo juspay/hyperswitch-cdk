@@ -94,9 +94,10 @@ resource "aws_lambda_invocation" "start_codebuild" {
   })
 
   lifecycle {
-    # Only trigger on creation
+    # Trigger when Lambda or buildspec changes
     replace_triggered_by = [
-      aws_lambda_function.start_codebuild.source_code_hash
+      aws_lambda_function.start_codebuild.source_code_hash,
+      aws_codebuild_project.ecr_image_transfer.source[0].buildspec
     ]
   }
 }

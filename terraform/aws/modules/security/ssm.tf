@@ -33,6 +33,7 @@ locals {
     google_pay_root_signing_keys                  = "/hyperswitch/google-pay-root-signing-keys"
     paze_private_key                              = "/hyperswitch/paze-private-key"
     paze_private_key_passphrase                   = "/hyperswitch/paze-private-key-passphrase"
+    dummy_val                                     = "/hyperswitch/dummy-val"
   }
 }
 

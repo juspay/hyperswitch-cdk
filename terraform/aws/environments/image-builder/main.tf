@@ -33,7 +33,7 @@ locals {
 }
 
 module "image_builder" {
-  source     = "../../../modules/aws/image-builder"
+  source     = "../../modules/image-builder"
   stack_name = var.stack_name
   vpc_cidr   = local.vpc_cidr
   az_count   = var.az_count

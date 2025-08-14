@@ -5,7 +5,7 @@ phases:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
-        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot")
+        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-drainer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot")
         PULL_FROM_AWS=("eks/aws-load-balancer-controller" "ebs-csi-driver/aws-ebs-csi-driver" "eks-distro/kubernetes-csi/external-provisioner" "eks-distro/kubernetes-csi/external-attacher" "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" "eks-distro/kubernetes-csi/livenessprobe" "eks-distro/kubernetes-csi/external-resizer" "eks-distro/kubernetes-csi/node-driver-registrar" "ebs-csi-driver/volume-modifier-for-k8s")
 
         repository_exists() {
@@ -28,14 +28,14 @@ phases:
         done
 
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
-          if [[ $IMAGE == "juspaydotin/hyperswitch-router" || $IMAGE == "juspaydotin/hyperswitch-producer" || $IMAGE == "juspaydotin/hyperswitch-consumer" ]]; then
-              docker pull "$IMAGE:v1.114.0-standalone" && \
-              docker tag "$IMAGE:v1.114.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.114.0-standalone" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.114.0-standalone"
+          if [[ $IMAGE == "juspaydotin/hyperswitch-router" || $IMAGE == "juspaydotin/hyperswitch-producer" || $IMAGE == "juspaydotin/hyperswitch-consumer" || $IMAGE == "juspaydotin/hyperswitch-drainer" ]]; then
+              docker pull "$IMAGE:v1.116.0-standalone" && \
+              docker tag "$IMAGE:v1.116.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-control-center" ]]; then
-              docker pull "$IMAGE:v1.37.1" && \
-              docker tag "$IMAGE:v1.37.1" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.1" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.1"
+              docker pull "$IMAGE:v1.37.3" && \
+              docker tag "$IMAGE:v1.37.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
               docker pull "$IMAGE:v0.121.2" && \
               docker tag "$IMAGE:v0.121.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.121.2" && \
@@ -98,4 +98,3 @@ phases:
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.5.1
           fi
         done
-
