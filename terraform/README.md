@@ -27,33 +27,30 @@ This project provides a modular approach to infrastructure deployment using Terr
 ## 📁 Project Structure
 
 ```
-.
-├── environments/          # Environment-specific configurations
-│   ├── aws/              # AWS environment configurations
+terraform/
+├── aws/                  # AWS-specific Terraform configurations
+│   ├── environments/     # Environment-specific configurations
 │   │   ├── free-tier/    # Free tier compatible resources
 │   │   ├── production/   # Production environment
 │   │   ├── image-builder/# AMI building infrastructure
 │   │   └── jump-servers/ # Bastion/Jump server setup
-│   ├── azure/            # Azure environments (placeholder)
-│   └── gcp/              # GCP environments (placeholder)
-│
-└── modules/              # Reusable Terraform modules
-    ├── aws/              # AWS-specific modules
-    │   ├── dockertoecr/  # Docker to ECR pipeline
-    │   ├── eks/          # Elastic Kubernetes Service
-    │   ├── elasticache/  # ElastiCache (Redis/Memcached)
-    │   ├── envoy-proxy/  # Envoy proxy configuration
-    │   ├── helm/         # Helm chart deployments
-    │   ├── image-builder/# EC2 Image Builder
-    │   ├── loadbalancers/# ALB/NLB/CloudFront
-    │   ├── networking/   # VPC, Subnets, Routes
-    │   ├── proxy/        # Proxy solutions
-    │   ├── rds/          # RDS databases
-    │   ├── sdk/          # SDK deployment infrastructure
-    │   ├── security/     # Security components (IAM, WAF, etc.)
-    │   └── squid-proxy/  # Squid proxy configuration
-    ├── azure/            # Azure modules (to be implemented)
-    └── gcp/              # GCP modules (to be implemented)
+│   │
+│   └── modules/          # Reusable AWS Terraform modules
+│       ├── dockertoecr/  # Docker to ECR pipeline
+│       ├── eks/          # Elastic Kubernetes Service
+│       ├── elasticache/  # ElastiCache (Redis/Memcached)
+│       ├── envoy-proxy/  # Envoy proxy configuration
+│       ├── external_jump/# External jump server
+│       ├── helm/         # Helm chart deployments (Istio, Hyperswitch)
+│       ├── image-builder/# EC2 Image Builder
+│       ├── internal_jump/# Internal jump server
+│       ├── loadbalancers/# ALB/NLB/CloudFront
+│       ├── networking/   # VPC, Subnets, Routes, VPC Endpoints
+│       ├── proxy-config/ # Shared proxy configuration bucket
+│       ├── rds/          # RDS databases
+│       ├── sdk/          # SDK deployment infrastructure
+│       ├── security/     # Security components (IAM, KMS, WAF, SSM)
+│       └── squid-proxy/  # Squid proxy configuration
 ```
 
 ## 🔧 Prerequisites
@@ -89,7 +86,7 @@ Ensure your AWS credentials have permissions for:
 2. **Choose an environment**
 
    ```bash
-   cd environments/aws/free-tier  # or another environment
+   cd aws/environments/free-tier  # or another environment
    ```
 
 3. **Initialize Terraform**
@@ -145,7 +142,7 @@ Ensure your AWS credentials have permissions for:
 
 ```hcl
 module "vpc" {
-  source = "../../modules/aws/networking"
+  source = "../../modules/networking"
 
   vpc_cidr = "10.0.0.0/16"
   availability_zones = ["us-east-1a", "us-east-1b"]
@@ -157,7 +154,7 @@ module "vpc" {
 }
 
 module "eks_cluster" {
-  source = "../../modules/aws/eks"
+  source = "../../modules/eks"
 
   cluster_name = "my-eks-cluster"
   vpc_id       = module.vpc.vpc_id
@@ -198,7 +195,7 @@ Each environment typically includes:
 ### Deploy a Free Tier Environment
 
 ```bash
-cd environments/aws/free-tier
+cd aws/environments/free-tier
 terraform init
 terraform plan -var-file="terraform.tfvars"
 terraform apply -auto-approve
@@ -206,7 +203,7 @@ terraform apply -auto-approve
 
 ### Create a Custom Module
 
-1. Create a new directory under `modules/aws/`
+1. Create a new directory under `aws/modules/`
 2. Add the following files:
    - `main.tf`: Resource definitions
    - `variables.tf`: Input variables
@@ -221,7 +218,7 @@ Configure remote state in `backend.tf`:
 terraform {
   backend "s3" {
     bucket = "my-terraform-state"
-    key    = "environments/production/terraform.tfstate"
+    key    = "aws/environments/production/terraform.tfstate"
     region = "us-east-1"
   }
 }

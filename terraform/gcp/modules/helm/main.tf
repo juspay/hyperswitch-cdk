@@ -122,6 +122,8 @@ resource "helm_release" "istio_services" {
   version    = "0.1.2"
   namespace  = "istio-system"
 
+  create_namespace = true
+
   wait = true
 
   values = [
