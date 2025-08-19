@@ -151,6 +151,8 @@ helm upgrade --install hypers-v1 hs/hyperswitch-stack --version "$VERSION" \
     --set "$SDK_ENV.sdkDemo.hyperswitchSecretKey=$API_KEY" \
     --set "$APP_ENV.services.sdk.host=https://$SDK_URL" \
     --set "$APP_ENV.services.router.host=https://$APP_HOST" \
+    --set "$APP_ENV.server.multitenancy.tenants.public.base_url=https://$APP_HOST" \
+    --set "$APP_ENV.server.multitenancy.tenants.public.user.control_center_url=https://$CONTROL_CENTER_HOST" \
     --set "$SDK_BUILD.envSdkUrl=https://$SDK_URL" \
     --set "$SDK_BUILD.envBackendUrl=https://$APP_HOST" \
     --values proxy-values.yaml \
