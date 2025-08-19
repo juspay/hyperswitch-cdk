@@ -674,12 +674,12 @@ export class EksStack {
       const km = new Keymanager(scope, config.keymanager, vpc, cluster, albControllerChart, nodegroupRole);
     }
 
-    const sdk_version = "0.121.2";
+    const sdk_version = "0.125.0";
 
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
       repository: "https://juspay.github.io/hyperswitch-helm/",
-      version: "0.2.5",
+      version: "0.2.12",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
@@ -688,10 +688,10 @@ export class EksStack {
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
         },
-        prometheus: {
-          enabled: false
+        "hyperswitch-monitoring": {
+          enabled: false,
         },
-        alertmanager: {
+        "hyperswitch-ucs": {
           enabled: false,
         },
         "hyperswitch-app": {
@@ -703,16 +703,16 @@ export class EksStack {
           },
           services: {
             router: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.114.0-standalone`,
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.116.0-standalone`,
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.114.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.116.0-standalone`
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.114.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.116.0-standalone`
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.37.1`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.37.3`
             },
             sdk: {
               host: "https://${this.sdkDistribution.distributionDomainName}",
@@ -720,7 +720,6 @@ export class EksStack {
               subversion: "v1"
             }
           },
-
           server: {
             nodeAffinity: {
               requiredDuringSchedulingIgnoredDuringExecution: {
@@ -750,6 +749,12 @@ export class EksStack {
               "eks.amazonaws.com/role-arn": hyperswitchServiceAccountRole.roleArn,
             },
             server_base_url: "https://sandbox.hyperswitch.io",
+            network_tokenization_service: {
+              public_key: kmsSecrets.network_tokenization_service.public_key,
+              private_key: kmsSecrets.network_tokenization_service.private_key,
+              token_service_api_key: kmsSecrets.network_tokenization_service.token_service_api_key,
+              webhook_source_verification_key: kmsSecrets.network_tokenization_service.webhook_source_verification_key,
+            },
             secrets: {
               podAnnotations: {
                 traffic_sidecar_istio_io_excludeOutboundIPRanges:
@@ -911,6 +916,9 @@ export class EksStack {
           clickhouse: {
             enabled: false,
           },
+          mailhog: {
+            enabled: false,
+          },
           "hyperswitch-card-vault": {
             enabled: false,
             postgresql: {
@@ -926,7 +934,7 @@ export class EksStack {
           },
         },
         "hyperswitch-web": {
-          enabled: true,
+          enabled: false,
           services: {
             router: {
               host: "http://localhost:8080"
@@ -1389,6 +1397,12 @@ class KmsSecrets {
   readonly google_pay_root_signing_keys: string;
   readonly paze_private_key: string;
   readonly paze_private_key_passphrase: string;
+  readonly network_tokenization_service: {
+    public_key: string;
+    private_key: string;
+    token_service_api_key: string;
+    webhook_source_verification_key: string;
+  };
 
   constructor(scope: Construct, kms: cdk.CustomResource) {
 
@@ -1425,6 +1439,12 @@ class KmsSecrets {
     this.google_pay_root_signing_keys = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/google-pay-root-signing-keys", 1);
     this.paze_private_key = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key", 1);
     this.paze_private_key_passphrase = ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/paze-private-key-passphrase", 1);
+    this.network_tokenization_service = {
+      public_key: ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1),
+      private_key: ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val", 1),
+      token_service_api_key: ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val",1),
+      webhook_source_verification_key: ssm.StringParameter.valueForStringParameter(scope, "/hyperswitch/dummy-val",1),
+    };
   }
 }
 
