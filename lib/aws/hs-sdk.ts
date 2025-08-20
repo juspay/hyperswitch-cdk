@@ -42,7 +42,7 @@ export class HyperswitchSDKStack extends Construct {
       })
     );
 
-    let sdkVersion = "0.121.2";
+    let sdkVersion = "0.125.0";
 
     const project = new codebuild.Project(scope, "HyperswitchSDK", {
       projectName: "HyperswitchSDK",
@@ -67,7 +67,7 @@ export class HyperswitchSDKStack extends Construct {
             ],
           },
           build: {
-            commands: "ENV_SDK_URL=$envSdkUrl npm run build:sandbox",
+            commands: "DISABLE_CSP=false ENV_SDK_URL=$envSdkUrl npm run build:sandbox",
           },
           post_build: {
             commands: [

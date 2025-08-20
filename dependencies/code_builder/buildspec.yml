@@ -51,17 +51,17 @@ phases:
 
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
           if [[ $IMAGE == "juspaydotin/hyperswitch-router" || $IMAGE == "juspaydotin/hyperswitch-producer" || $IMAGE == "juspaydotin/hyperswitch-consumer" ]]; then
-              docker pull "$IMAGE:v1.114.0-standalone" && \
-              docker tag "$IMAGE:v1.114.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.114.0-standalone" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.114.0-standalone"
+              docker pull "$IMAGE:v1.116.0-standalone" && \
+              docker tag "$IMAGE:v1.116.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-control-center" ]]; then
-              docker pull "$IMAGE:v1.37.1" && \
-              docker tag "$IMAGE:v1.37.1" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.1" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.1"
+              docker pull "$IMAGE:v1.37.3" && \
+              docker tag "$IMAGE:v1.37.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
-              docker pull "$IMAGE:v0.121.2" && \
-              docker tag "$IMAGE:v0.121.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.121.2" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.121.2"
+              docker pull "$IMAGE:v0.125.0" && \
+              docker tag "$IMAGE:v0.125.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.125.0" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.125.0"
           elif [[ $IMAGE == "bitnami/metrics-server" ]]; then
               docker pull "$IMAGE:0.7.2" && \
               docker tag "$IMAGE:0.7.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
