@@ -105,12 +105,116 @@ resource "kubernetes_namespace" "hyperswitch" {
   }
 }
 
+# Helm release for Istio base components
+resource "helm_release" "istio_base" {
+  name             = "istio-base"
+  repository       = "https://istio-release.storage.googleapis.com/charts"
+  chart            = "base"
+  namespace        = "istio-system"
+  version          = "1.25.0"
+  create_namespace = true
+  wait             = true
+  # Force replace CRDs on upgrade to avoid conflicts
+  force_update = true
+  values = [
+    yamlencode({
+      defaultRevision = "default"
+      # Ensure CRDs are managed by this release
+      base = {
+        enableCRDTemplates = true
+      }
+    })
+  ]
+}
+
+# Helm release for Istio control plane (istiod)
+resource "helm_release" "istiod" {
+  name       = "istiod"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "istiod"
+
+  namespace  = "istio-system"
+  version    = "1.25.0"
+  wait       = true
+
+  values = [
+    yamlencode({
+      global = {
+        hub = "${var.private_ecr_repository}/istio"
+        tag = "1.25.0"
+        proxy = {
+          # This ensures init containers can access external services
+          holdApplicationUntilProxyStarts = true
+        }
+      }
+      pilot = {
+        nodeSelector = {
+          "node-type" = "memory-optimized"
+        }
+        serviceAccount = {
+          create = true
+          name   = "istiod"
+          annotations = {
+            "eks.amazonaws.com/role-arn" = var.istio_service_account_role_arn
+          }
+        }
+      }
+      meshConfig = {
+        defaultConfig = {
+          # Ensures proxy starts before application containers
+          holdApplicationUntilProxyStarts = true
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.istio_base
+  ]
+}
+
+# Helm release for Istio ingress gateway
+resource "helm_release" "istio_gateway" {
+  name       = "istio-ingressgateway"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "gateway"
+  namespace  = "istio-system"
+  version    = "1.25.0"
+  wait       = true
+
+  values = [
+    yamlencode({
+      global = {
+        hub = "${var.private_ecr_repository}/istio"
+        tag = "1.25.0"
+      }
+      service = {
+        type = "ClusterIP"
+      }
+      nodeSelector = {
+        "node-type" = "memory-optimized"
+      }
+      serviceAccount = {
+        create = true
+        name   = "istio-ingressgateway"
+        annotations = {
+          "eks.amazonaws.com/role-arn" = var.istio_service_account_role_arn
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.istiod
+  ]
+}
+
 # Helm release for Hyperswitch Istio chart
 resource "helm_release" "istio_services" {
   name       = "hs-istio"
   repository = "https://juspay.github.io/hyperswitch-helm/"
   chart      = "hyperswitch-istio"
-  version    = "0.1.2"
+  version    = "0.1.3"
   namespace  = "istio-system"
 
   create_namespace = true
@@ -190,64 +294,21 @@ resource "helm_release" "istio_services" {
       }
       # Istio Base Configuration
       istio-base = {
-        enabled         = true
-        defaultRevision = "default"
-        # Ensure CRDs are managed by this release
-        base = {
-          enableCRDTemplates = true
-        }
+        enabled = false
       }
 
       # Istiod Configuration
       istiod = {
-        enabled = true
-        global = {
-          hub = "${var.private_ecr_repository}/istio"
-          tag = "1.25.0"
-          proxy = {
-            # This ensures init containers can access external services
-            holdApplicationUntilProxyStarts = true
-          }
-        }
-        pilot = {
-          nodeSelector = {
-            "node-type" = "memory-optimized"
-          }
-          serviceAccount = {
-            create = true
-            name   = "istiod"
-            annotations = {
-              "eks.amazonaws.com/role-arn" = var.istio_service_account_role_arn
-            }
-          }
-        }
-        meshConfig = {
-          defaultConfig = {
-            # Ensures proxy starts before application containers
-            holdApplicationUntilProxyStarts = true
-          }
-        }
+        enabled = false
       }
       # Istio Gateway Configuration
       istio-gateway = {
-        enabled = true
-        global = {
-          hub = "${var.private_ecr_repository}/istio"
-          tag = "1.25.0"
-        }
-        service = {
-          type = "ClusterIP"
-        }
-        nodeSelector = {
-          "node-type" = "memory-optimized"
-        }
-        serviceAccount = {
-          create = true
-          name   = "istio-ingressgateway"
-          annotations = {
-            "eks.amazonaws.com/role-arn" = var.istio_service_account_role_arn
-          }
-        }
+        enabled = false
+      }
+
+      # Disable wait for crds job
+      waitForCrds = {
+        enabled = false
       }
     })
   ]
@@ -255,6 +316,9 @@ resource "helm_release" "istio_services" {
   depends_on = [
     helm_release.alb_controller,
     kubernetes_namespace.hyperswitch,
+    helm_release.istio_base,
+    helm_release.istiod,
+    helm_release.istio_gateway,
     aws_security_group.internal_alb_sg
   ]
 }
