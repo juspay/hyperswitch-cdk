@@ -1139,8 +1139,7 @@ export class EksStack {
             imageRegisrty: `${privateEcrRepository}`,
           },
           image: {
-            repository: `${privateEcrRepository}/grafana/grafana`,
-            tag: "latest",
+            repository: `${privateEcrRepository}/grafana/grafana`
           },
           sidecar: {
             image: {
@@ -1149,7 +1148,18 @@ export class EksStack {
               sha: ""
             },
             imagePullPolicy: "IfNotPresent",
-            resources: {}
+            resources: {},
+            env: {
+              SKIP_TLS_VERIFY: "true",
+              LOG_LEVEL: "info",
+              REQ_RETRY_TOTAL: "10",
+              REQ_RETRY_CONNECT: "10",
+              REQ_RETRY_READ: "10",
+              REQ_RETRY_BACKOFF_FACTOR: "1.0",
+              REQ_TIMEOUT: "30",
+              SLEEP_TIME: "60"
+            },
+            sleepBeforeStart: 30
           },
           enabled: true,
           adminPassword: "admin",
@@ -1272,7 +1282,6 @@ export class EksStack {
           },
           image: {
             repository: `${privateEcrRepository}/grafana/loki`,
-            tag: "latest",
           },
         },
         promtail: {
@@ -1283,7 +1292,6 @@ export class EksStack {
           image: {
             registry: `${privateEcrRepository}`,
             repository: "grafana/promtail",
-            tag: "latest"
           },
           config: {
             snippets: {
@@ -1488,7 +1496,7 @@ class DockerImagesToEcr {
       statements: [
         new iam.PolicyStatement({
           actions: [
-            "codebuild:StartBuild",
+            "codebuild:StartBuild", 
           ],
           resources: [this.codebuildProject.projectArn],
         }),
