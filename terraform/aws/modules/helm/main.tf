@@ -498,6 +498,17 @@ resource "helm_release" "hyperswitch_services" {
             host = "basilisk-host"
           }
 
+          multitenancy = {
+            tenants = {
+              public = {
+                base_url = "https://${var.external_alb_distribution_domain_name}/api"
+                user={
+                  control_center_url = "https://${var.external_alb_distribution_domain_name}"
+                }
+              }
+            }
+          }
+
           run_env = "sandbox"
         }
 
