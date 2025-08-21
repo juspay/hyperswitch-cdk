@@ -49,7 +49,7 @@ resource "google_service_account" "hyperswitch_istio_gsa" {
 
 # Grant the Workload Identity User role to the GSA for multiple KSAs.
 resource "google_service_account_iam_binding" "istio_workload_identity" {
-  service_account_id = google_service_account.istio_gsa.name
+  service_account_id = google_service_account.hyperswitch_istio_gsa.name
   role               = "roles/iam.workloadIdentityUser"
   members = [
     "serviceAccount:${var.project_id}.svc.id.goog[istio-system/istiod]",
@@ -61,20 +61,20 @@ resource "google_service_account_iam_binding" "istio_workload_identity" {
 resource "google_project_iam_member" "istio_load_balancer_read" {
   project = var.project_id
   role    = "roles/compute.viewer"
-  member  = "serviceAccount:${google_service_account.istio_gsa.email}"
+  member  = "serviceAccount:${google_service_account.hyperswitch_istio_gsa.email}"
 }
 
 resource "google_project_iam_member" "istio_service_discovery" {
   project = var.project_id
   role    = "roles/servicedirectory.editor"
-  member  = "serviceAccount:${google_service_account.istio_gsa.email}"
+  member  = "serviceAccount:${google_service_account.hyperswitch_istio_gsa.email}"
 }
 
 # For Cloud Logging access (like CloudWatch logs)
 resource "google_project_iam_member" "istio_cloud_logging" {
   project = var.project_id
   role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.istio_gsa.email}"
+  member  = "serviceAccount:${google_service_account.hyperswitch_istio_gsa.email}"
 }
 
 # Google Service Account for Hyperswitch
@@ -113,6 +113,132 @@ resource "google_project_iam_member" "hyperswitch_ssm_access" {
 # ==========================================================
 #                       Helm Releases
 # ==========================================================
+
+# Create namespace with optional Istio injection
+resource "kubernetes_namespace" "hyperswitch" {
+  metadata {
+    name = var.hyperswitch_namespace
+    labels = {
+      "istio-injection" = "enabled"
+    }
+  }
+
+  depends_on = [ null_resource.update_kubeconfig ]
+}
+
+# Helm release for Istio base components
+resource "helm_release" "istio_base" {
+  name             = "istio-base"
+  repository       = "https://istio-release.storage.googleapis.com/charts"
+  chart            = "base"
+  namespace        = "istio-system"
+  version          = "1.25.0"
+  create_namespace = true
+  wait             = true
+  # Force replace CRDs on upgrade to avoid conflicts
+  force_update = true
+  values = [
+    yamlencode({
+      defaultRevision = "default"
+      # Ensure CRDs are managed by this release
+      base = {
+        enableCRDTemplates = true
+      }
+    })
+  ]
+
+  depends_on = [
+    null_resource.update_kubeconfig,
+    google_service_account.hyperswitch_istio_gsa,
+    google_service_account_iam_binding.istio_workload_identity,
+    google_project_iam_member.istio_load_balancer_read,
+    google_project_iam_member.istio_service_discovery,
+    google_project_iam_member.istio_cloud_logging
+  ]
+}
+
+# Helm release for Istio control plane (istiod)
+resource "helm_release" "istiod" {
+  name       = "istiod"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "istiod"
+
+  namespace = "istio-system"
+  version   = "1.25.0"
+  wait      = true
+
+  values = [
+    yamlencode({
+      global = {
+        # hub = "${var.private_ecr_repository}/istio"
+        # tag = "1.25.0"
+        proxy = {
+          # This ensures init containers can access external services
+          holdApplicationUntilProxyStarts = true
+        }
+      }
+      pilot = {
+        nodeSelector = {
+          "node-type" = "memory-optimized"
+        }
+        serviceAccount = {
+          create = true
+          name   = "istiod"
+          annotations = {
+            "iam.gke.io/gcp-service-account" = google_service_account.hyperswitch_istio_gsa.email
+          }
+        }
+      }
+      meshConfig = {
+        defaultConfig = {
+          # Ensures proxy starts before application containers
+          holdApplicationUntilProxyStarts = true
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.istio_base
+  ]
+}
+
+# Helm release for Istio ingress gateway
+resource "helm_release" "istio_gateway" {
+  name       = "istio-ingressgateway"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "gateway"
+  namespace  = "istio-system"
+  version    = "1.25.0"
+  wait       = true
+
+  values = [
+    yamlencode({
+      global = {
+        # hub = "${var.private_ecr_repository}/istio"
+        # tag = "1.25.0"
+      }
+      service = {
+        type = "ClusterIP"
+      }
+      nodeSelector = {
+        "node-type" = "memory-optimized"
+      }
+      serviceAccount = {
+        create = true
+        name   = "istio-ingressgateway"
+        annotations = {
+          "iam.gke.io/gcp-service-account" = google_service_account.hyperswitch_istio_gsa.email
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.istiod
+  ]
+}
+
 
 # Helm release for Istio services
 resource "helm_release" "istio_services" {
@@ -198,89 +324,34 @@ resource "helm_release" "istio_services" {
 
       # Istio Base Configuration
       istio-base = {
-        enabled         = true
-        defaultRevision = "default"
-        # Ensure CRDs are managed by this release
-        base = {
-          enableCRDTemplates = true
-        }
+        enabled = false
       }
 
       # Istiod Configuration
       istiod = {
-        enabled = true
-
-        global = {
-          # hub = "${var.private_ecr_repository}/istio"
-          # tag = "1.25.0"
-          proxy = {
-            # This ensures init containers can access external services
-            holdApplicationUntilProxyStarts = true
-          }
-        }
-        pilot = {
-          nodeSelector = {
-            "node-type" = "memory-optimized"
-          }
-          serviceAccount = {
-            create = true
-            name   = "istiod"
-            annotations = {
-              "iam.gke.io/gcp-service-account" = google_service_account.hyperswitch_istio_gsa.email
-            }
-          }
-        }
-        meshConfig = {
-          defaultConfig = {
-            # Ensures proxy starts before application containers
-            holdApplicationUntilProxyStarts = true
-          }
-        }
+        enabled = false
       }
 
       # Istio Gateway Configuration
       istio-gateway = {
-        enabled = true
-        global = {
-          # hub = "${var.private_ecr_repository}/istio"
-          # tag = "1.25.0"
-        }
-        service = {
-          type = "ClusterIP"
-        }
-        nodeSelector = {
-          "node-type" = "memory-optimized"
-        }
-        serviceAccount = {
-          create = true
-          name   = "istio-ingressgateway"
-          annotations = {
-            "iam.gke.io/gcp-service-account" = google_service_account.hyperswitch_istio_gsa.email
-          }
-        }
+        enabled = false
+      }
+
+      # Disable wait for crds job
+      waitForCrds = {
+        enabled = false
       }
     })
   ]
 
   depends_on = [
     null_resource.update_kubeconfig,
-    google_service_account.hyperswitch_istio_gsa,
-    google_service_account_iam_binding.istio_workload_identity,
-    google_project_iam_member.istio_load_balancer_read,
-    google_project_iam_member.istio_service_discovery,
-    google_project_iam_member.istio_cloud_logging
+    kubernetes_namespace.hyperswitch,
+    helm_release.istio_base,
+    helm_release.istiod,
+    helm_release.istio_gateway
   ]
 
-}
-
-# Create namespace with optional Istio injection
-resource "kubernetes_namespace" "hyperswitch" {
-  metadata {
-    name = var.hyperswitch_namespace
-    labels = {
-      "istio-injection" = "enabled"
-    }
-  }
 }
 
 # Helm release for Hyperswitch services

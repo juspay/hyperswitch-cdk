@@ -30,7 +30,7 @@ provider "google" {
 }
 
 module "helm" {
-  source                   = "../../../modules/gcp/helm"
+  source                   = "../../modules/helm"
   project_id               = var.project_id
   region                   = var.region
   stack_name               = var.stack_name
@@ -39,9 +39,11 @@ module "helm" {
   app_cdn_domain_name      = "http://localhost:8080"
   sdk_cdn_domain_name      = "http://localhost:9050"
   sdk_version              = "0.125.0"
+  enable_external_postgresql = false
   db_primary_host_endpoint = "http://localhost:5432"
   db_reader_host_endpoint  = "http://localhost:5432"
   db_password              = "password"
+  enable_external_redis    = false
   redis_host_endpoint      = "http://localhost:6379"
   redis_port               = 6379
 }

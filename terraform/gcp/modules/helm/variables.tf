@@ -37,19 +37,16 @@ variable "sdk_cdn_domain_name" {
 variable "sdk_version" {
   description = "The version of the SDK to be used."
   type        = string
-  default = "0.125.0"
 }
 
 variable "enable_external_postgresql" {
   description = "Flag to enable or disable the use of an external PostgreSQL database."
   type        = bool
-  default     = false
 }
 
 variable "enable_external_redis" {
   description = "Flag to enable or disable the use of an external Redis instance."
   type        = bool
-  default     = false
 }
 
 variable "locker_enabled" {
