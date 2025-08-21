@@ -233,9 +233,6 @@ resource "helm_release" "istio_services" {
       hyperswitchControlCenter = {
         version = "v1o37o3" # hyperswitch-control-center version
       }
-      image = {
-        version = "v1o107o0"
-      }
       service = {
         type = "ClusterIP"
         port = 80

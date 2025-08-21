@@ -16,10 +16,10 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "vpn_ips" {
-  description = "List of VPN IPs for security group rules"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
+variable "ami_id" {
+  description = "Base AMI ID for image building"
+  type        = string
+  default     = null
 }
 
 variable "az_count" {
