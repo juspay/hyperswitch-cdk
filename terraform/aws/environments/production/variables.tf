@@ -37,7 +37,7 @@ variable "az_count" {
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
-  default     = "1.28"
+  default     = "1.33"  # Latest standard support version
 }
 
 variable "helm_version" {

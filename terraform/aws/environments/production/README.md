@@ -33,13 +33,13 @@ Production-ready Hyperswitch deployment on AWS with EKS, Aurora PostgreSQL, Elas
 
 ### Prerequisites
 ```bash
-# Verify AWS credentials
+# Verify AWS credentials and permissions
 aws sts get-caller-identity
 
-# Check required tools
-terraform --version
-kubectl version --client
-helm version
+# Ensure you have required tools installed
+terraform --version  # >= 1.12.2 required
+kubectl version --client  # For EKS cluster management
+helm version  # For application deployment
 ```
 
 ### Required Variables
