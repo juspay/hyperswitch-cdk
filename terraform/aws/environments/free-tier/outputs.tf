@@ -91,13 +91,9 @@ output "sdk_url" {
 
 output "sdk_loader_url" {
   description = "URL for the SDK loader script"
-  value       = "https://${aws_cloudfront_distribution.sdk.domain_name}/HyperLoader.js"
+  value       = "https://${aws_cloudfront_distribution.sdk.domain_name}/web/0.122.10/v1/HyperLoader.js"
 }
 
-output "demo_app_url" {
-  description = "URL for the demo application"
-  value       = "https://${aws_cloudfront_distribution.demo.domain_name}"
-}
 
 # Direct ALB URLs (for testing)
 output "alb_dns_name" {
@@ -120,10 +116,6 @@ output "alb_sdk_url" {
   value       = "http://${aws_lb.app.dns_name}:9050"
 }
 
-output "alb_demo_url" {
-  description = "Direct ALB URL for Demo App (for testing)"
-  value       = "http://${aws_lb.app.dns_name}:5252"
-}
 
 # Security Group IDs
 output "ec2_security_group_id" {

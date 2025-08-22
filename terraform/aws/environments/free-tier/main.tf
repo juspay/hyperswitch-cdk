@@ -205,14 +205,6 @@ resource "aws_vpc_security_group_ingress_rule" "alb_sdk" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "alb_demo" {
-  security_group_id = aws_security_group.app_alb.id
-  description       = "Allow Demo app traffic"
-  from_port         = 5252
-  to_port           = 5252
-  ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
-}
 
 # ALB Egress Rule
 resource "aws_vpc_security_group_egress_rule" "alb_all" {
@@ -261,14 +253,6 @@ resource "aws_vpc_security_group_ingress_rule" "ec2_sdk_from_alb" {
   referenced_security_group_id = aws_security_group.app_alb.id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "ec2_demo_from_alb" {
-  security_group_id            = aws_security_group.ec2.id
-  description                  = "Allow Demo from ALB"
-  from_port                    = 5252
-  to_port                      = 5252
-  ip_protocol                  = "tcp"
-  referenced_security_group_id = aws_security_group.app_alb.id
-}
 
 resource "aws_vpc_security_group_ingress_rule" "ec2_ssh" {
   security_group_id = aws_security_group.ec2.id
@@ -598,23 +582,6 @@ resource "aws_lb_target_group" "sdk" {
   }
 }
 
-resource "aws_lb_target_group" "demo" {
-  name     = "${var.stack_name}-demo-tg"
-  port     = 5252
-  protocol = "HTTP"
-  vpc_id   = data.aws_vpc.main.id
-
-  health_check {
-    enabled  = true
-    path     = "/"
-    protocol = "HTTP"
-    matcher  = "200"
-  }
-
-  tags = {
-    Name = "${var.stack_name}-demo-tg"
-  }
-}
 
 # Target Group Attachments
 resource "aws_lb_target_group_attachment" "router" {
@@ -635,11 +602,6 @@ resource "aws_lb_target_group_attachment" "sdk" {
   port             = 9050
 }
 
-resource "aws_lb_target_group_attachment" "demo" {
-  target_group_arn = aws_lb_target_group.demo.arn
-  target_id        = aws_instance.sdk.id
-  port             = 5252
-}
 
 # ALB Listeners
 resource "aws_lb_listener" "router" {
@@ -675,16 +637,6 @@ resource "aws_lb_listener" "sdk" {
   }
 }
 
-resource "aws_lb_listener" "demo" {
-  load_balancer_arn = aws_lb.app.arn
-  port              = "5252"
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.demo.arn
-  }
-}
 
 # ==========================================================
 #                CloudFront Distributions
@@ -839,55 +791,6 @@ resource "aws_cloudfront_distribution" "sdk" {
   }
 }
 
-resource "aws_cloudfront_distribution" "demo" {
-  enabled = true
-  comment = "Hyperswitch Demo App Free Tier Distribution"
-  origin {
-    domain_name = aws_lb.app.dns_name
-    origin_id   = "app-alb-5252"
-
-    custom_origin_config {
-      http_port              = 5252
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "app-alb-5252"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "allow-all"
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 0
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
-  tags = {
-    Name = "${var.stack_name}-demo-distribution"
-  }
-}
 
 # ==========================================================
 #                      EC2 Instances
@@ -929,7 +832,7 @@ resource "aws_instance" "backend" {
   ]
 }
 
-# Frontend Instance (SDK + Demo App)
+# Frontend Instance (SDK)
 resource "aws_instance" "sdk" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t2.micro"
@@ -938,12 +841,11 @@ resource "aws_instance" "sdk" {
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
 
   user_data = base64encode(templatefile("${path.module}/userdata/sdk.sh", {
-    app_cloudfront_url  = aws_cloudfront_distribution.app.domain_name
-    sdk_cloudfront_url  = aws_cloudfront_distribution.sdk.domain_name
-    demo_cloudfront_url = aws_cloudfront_distribution.demo.domain_name
-    admin_api_key       = var.admin_api_key
-    sdk_version         = var.sdk_version
-    sdk_sub_version     = var.sdk_sub_version
+    app_cloudfront_url = aws_cloudfront_distribution.app.domain_name
+    sdk_cloudfront_url = aws_cloudfront_distribution.sdk.domain_name
+    admin_api_key      = var.admin_api_key
+    sdk_version        = var.sdk_version
+    sdk_sub_version    = var.sdk_sub_version
   }))
 
   tags = {

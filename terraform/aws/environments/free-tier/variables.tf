@@ -58,7 +58,7 @@ variable "control_center_version" {
 variable "sdk_version" {
   description = "Hyperswitch SDK version to deploy"
   type        = string
-  default     = "0.27.2"
+  default     = "0.122.10"
 }
 
 variable "sdk_sub_version" {

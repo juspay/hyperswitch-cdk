@@ -587,7 +587,7 @@ resource "aws_wafv2_web_acl" "hyperswitch_waf" {
 }
 
 # ==========================================================
-#              S3 Bucket COnfiguration for logs
+#              S3 Bucket Configuration for logs
 # ==========================================================
 
 # S3 Bucket for Server Access Logs

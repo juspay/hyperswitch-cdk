@@ -47,9 +47,6 @@ locals {
     ManagedBy   = "Terraform"
   }
 
-  # Determine if the environment is production
-  is_production = true
-
   # VPC CIDR configuration
   vpc_cidr = var.vpc_cidr
 
@@ -72,7 +69,7 @@ module "vpc" {
   stack_name           = var.stack_name
   common_tags          = local.common_tags
   enable_nat_gateway   = true
-  single_nat_gateway   = !local.is_production
+  single_nat_gateway   = false
   enable_dns_hostnames = true
   enable_dns_support   = true
 }
@@ -82,7 +79,6 @@ module "security" {
 
   stack_name    = var.stack_name
   common_tags   = local.common_tags
-  is_production = local.is_production
   vpc_id        = module.vpc.vpc_id
   vpc_cidr      = local.vpc_cidr
   vpn_ips       = var.vpn_ips

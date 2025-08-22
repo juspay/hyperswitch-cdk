@@ -8,11 +8,6 @@ variable "common_tags" {
   type        = map(string)
 }
 
-variable "is_production" {
-  description = "Boolean indicating if the environment is production"
-  type        = bool
-}
-
 variable "vpc_id" {
   description = "ID of the VPC"
   type        = string
