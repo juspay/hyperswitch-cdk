@@ -88,7 +88,7 @@ static_resources:
                   virtual_hosts:
                     - name: hyperswitch_service
                       domains:
-                        - "{{external_loadbalancer_dns}}"
+                        - "{{hyperswitch_cloudfront_dns}}"
                         - "*"
                       routes:
                         - match:

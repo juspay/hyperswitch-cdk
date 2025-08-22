@@ -8,7 +8,7 @@ locals {
     replace(
       replace(
         file("${path.module}/configurations/envoy/envoy.yaml"),
-        "{{external_loadbalancer_dns}}", var.external_alb_distribution_domain_name
+        "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_distribution_domain_name
       ),
       "{{internal_loadbalancer_dns}}", var.internal_alb_domain_name
     ),
@@ -26,7 +26,7 @@ resource "aws_s3_object" "envoy_config" {
   bucket  = var.proxy_config_bucket_name
   key     = "envoy/envoy.yaml"
   content = local.envoy_config_content
-  
+
   # This ensures the object is recreated when the content changes
   etag = md5(local.envoy_config_content)
 }
@@ -153,7 +153,7 @@ resource "aws_launch_template" "envoy_launch_template" {
       Name = "${var.stack_name}-envoy-proxy-instance"
     })
   }
-  
+
   # Force new version when config changes
   description = "Config hash: ${substr(md5(local.envoy_config_content), 0, 8)}"
 }
@@ -173,7 +173,7 @@ resource "aws_autoscaling_group" "envoy_asg" {
 
   target_group_arns = [var.envoy_target_group_arn]
   health_check_type = "ELB"
-  
+
   # Instance refresh configuration to replace instances when config changes
   instance_refresh {
     strategy = "Rolling"
@@ -191,7 +191,7 @@ resource "aws_autoscaling_group" "envoy_asg" {
     value               = "${var.stack_name}-envoy-asg"
     propagate_at_launch = true
   }
-  
+
   # Tag that changes when configuration changes to trigger instance refresh
   tag {
     key                 = "ConfigVersion"

@@ -126,8 +126,8 @@ variable "sdk_distribution_domain_name" {
   type        = string
 }
 
-variable "external_alb_distribution_domain_name" {
-  description = "Domain name of the external ALB distribution"
+variable "hyperswitch_cloudfront_distribution_domain_name" {
+  description = "Domain name of the Hyperswitch CloudFront distribution"
   type        = string
 }
 

@@ -353,7 +353,7 @@ resource "helm_release" "hyperswitch_services" {
             enabled = true
             image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-router:v1.116.0-standalone"
             version = "v1.116.0"
-            host    = "https://${var.external_alb_distribution_domain_name}/api"
+            host    = "https://${var.hyperswitch_cloudfront_distribution_domain_name}/api"
           }
           producer = {
             enabled = true
@@ -416,7 +416,7 @@ resource "helm_release" "hyperswitch_services" {
             enabled            = true
             http_url           = "http://${var.squid_nlb_dns_name}:3128"
             https_url          = "http://${var.squid_nlb_dns_name}:3128"
-            bypass_proxy_hosts = "\"localhost,127.0.0.1,.svc,.svc.cluster.local,kubernetes.default.svc,169.254.169.254,.amazonaws.com,${var.rds_cluster_endpoint},${var.elasticache_cluster_endpoint_address},${var.external_alb_distribution_domain_name},${var.sdk_distribution_domain_name}\""
+            bypass_proxy_hosts = "\"localhost,127.0.0.1,.svc,.svc.cluster.local,kubernetes.default.svc,169.254.169.254,.amazonaws.com,${var.rds_cluster_endpoint},${var.elasticache_cluster_endpoint_address},${var.hyperswitch_cloudfront_distribution_domain_name},${var.sdk_distribution_domain_name}\""
           }
 
           podAnnotations = {
@@ -498,9 +498,9 @@ resource "helm_release" "hyperswitch_services" {
           multitenancy = {
             tenants = {
               public = {
-                base_url = "https://${var.external_alb_distribution_domain_name}/api"
+                base_url = "https://${var.hyperswitch_cloudfront_distribution_domain_name}/api"
                 user={
-                  control_center_url = "https://${var.external_alb_distribution_domain_name}"
+                  control_center_url = "https://${var.hyperswitch_cloudfront_distribution_domain_name}"
                 }
               }
             }

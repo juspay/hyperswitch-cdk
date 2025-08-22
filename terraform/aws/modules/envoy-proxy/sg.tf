@@ -40,9 +40,9 @@ resource "aws_vpc_security_group_egress_rule" "envoy_dns_tcp" {
   description       = "Allow DNS TCP"
 }
 
-# External LB -> Envoy (egress)
-resource "aws_vpc_security_group_egress_rule" "external_lb_to_envoy_egress" {
-  security_group_id            = var.external_alb_security_group_id
+# Hypwerswitch LB -> Envoy (egress)
+resource "aws_vpc_security_group_egress_rule" "hyperswitch_lb_to_envoy_egress" {
+  security_group_id            = var.hyperswitch_alb_security_group_id
   referenced_security_group_id = aws_security_group.envoy_sg.id
   from_port                    = 80
   to_port                      = 80
@@ -50,14 +50,14 @@ resource "aws_vpc_security_group_egress_rule" "external_lb_to_envoy_egress" {
   description                  = "Allow traffic to Envoy proxy"
 }
 
-# External LB -> Envoy (ingress)
-resource "aws_vpc_security_group_ingress_rule" "envoy_from_external_lb_ingress" {
+# Hyperswitch LB -> Envoy (ingress)
+resource "aws_vpc_security_group_ingress_rule" "envoy_from_hyperswitch_lb_ingress" {
   security_group_id            = aws_security_group.envoy_sg.id
-  referenced_security_group_id = var.external_alb_security_group_id
+  referenced_security_group_id = var.hyperswitch_alb_security_group_id
   from_port                    = 80
   to_port                      = 80
   ip_protocol                  = "tcp"
-  description                  = "Allow traffic from External LB"
+  description                  = "Allow traffic from Hyperswitch LB"
 }
 
 # Envoy -> Internal LB (egress)

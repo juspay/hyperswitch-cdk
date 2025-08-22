@@ -99,7 +99,7 @@ resource "aws_codebuild_project" "hyperswitch_sdk" {
       phases:
         install:
           commands:
-            - 'BACKEND_URL=${var.external_alb_distribution_domain_name}'
+            - 'BACKEND_URL=${var.hyperswitch_cloudfront_distribution_domain_name}'
             - 'export ENV_BACKEND_URL="https://$${BACKEND_URL}/api"'
             - "git clone --branch v${var.sdk_version} https://github.com/juspay/hyperswitch-web"
             - "cd hyperswitch-web"

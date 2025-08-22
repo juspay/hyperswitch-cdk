@@ -29,8 +29,8 @@ variable "internal_alb_security_group_id" {
   type        = string
 }
 
-variable "external_alb_security_group_id" {
-  description = "ID of the External ALB Security Group"
+variable "hyperswitch_alb_security_group_id" {
+  description = "ID of the Hyperswitch ALB Security Group"
   type        = string
 }
 
@@ -39,8 +39,8 @@ variable "internal_alb_domain_name" {
   type        = string
 }
 
-variable "external_alb_distribution_domain_name" {
-  description = "Domain name of the external ALB"
+variable "hyperswitch_cloudfront_distribution_domain_name" {
+  description = "Domain name of the Hyperswitch CloudFront distribution"
   type        = string
 }
 
