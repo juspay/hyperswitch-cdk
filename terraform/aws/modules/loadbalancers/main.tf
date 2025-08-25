@@ -16,7 +16,7 @@ resource "aws_lb" "hyperswitch_alb" {
 
 # Target Group for Envoy
 resource "aws_lb_target_group" "envoy_tg" {
-  name     = "${var.stack_name}-hyperswitch-envoy-tg"
+  name     = "${var.stack_name}-envoy-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -34,7 +34,7 @@ resource "aws_lb_target_group" "envoy_tg" {
   }
 
   tags = merge(var.common_tags, {
-    Name = "${var.stack_name}-hyperswitch-envoy-tg"
+    Name = "${var.stack_name}-envoy-tg"
   })
 }
 

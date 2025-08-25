@@ -134,5 +134,9 @@ variable "hyperswitch_cloudfront_distribution_domain_name" {
 variable "squid_nlb_dns_name" {
   description = "DNS name of the Squid NLB"
   type        = string
+}
 
+variable "subnet_cidr_blocks" {
+  description = "Map of subnet CIDR blocks"
+  type        = map(list(string))
 }

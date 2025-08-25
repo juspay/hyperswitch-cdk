@@ -185,6 +185,11 @@ output "s3_vpc_endpoint_id" {
   value       = aws_vpc_endpoint.s3.id
 }
 
+output "s3_vpc_endpoint_prefix_list_id" {
+  description = "Prefix list ID of the S3 VPC Endpoint"
+  value       = aws_vpc_endpoint.s3.prefix_list_id
+}
+
 output "ssm_vpc_endpoint_id" {
   description = "ID of the SSM VPC Endpoint"
   value       = aws_vpc_endpoint.ssm.id
@@ -213,4 +218,9 @@ output "kms_vpc_endpoint_id" {
 output "rds_vpc_endpoint_id" {
   description = "ID of the RDS VPC Endpoint"
   value       = aws_vpc_endpoint.rds.id
+}
+
+output "vpc_endpoints_security_group_id" {
+  description = "ID of the VPC Endpoints Security Group"
+  value       = aws_security_group.vpc_endpoints.id
 }

@@ -29,6 +29,11 @@ variable "eks_cluster_security_group_id" {
   type        = string
 }
 
+variable "eks_nodegroup_security_group_id" {
+  description = "ID of the EKS node group security group"
+  type        = string
+}
+
 variable "proxy_config_bucket_name" {
   description = "Name of the S3 bucket for proxy configurations"
   type        = string

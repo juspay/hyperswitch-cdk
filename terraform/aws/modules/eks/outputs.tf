@@ -18,6 +18,16 @@ output "eks_cluster_security_group_id" {
   value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }
 
+output "eks_master_security_group_id" {
+  description = "The security group ID of the EKS master (additional security group)"
+  value       = aws_security_group.eks_master_sg.id
+}
+
+output "eks_nodegroup_security_group_id" {
+  description = "The security group ID of the EKS node groups"
+  value       = aws_security_group.eks_nodegroup_sg.id
+}
+
 output "hyperswitch_service_account_role_arn" {
   description = "The ARN of the Hyperswitch service account role"
   value       = aws_iam_role.hyperswitch_service_account.arn

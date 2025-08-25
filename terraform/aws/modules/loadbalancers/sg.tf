@@ -10,6 +10,17 @@ resource "aws_security_group" "hyperswitch_alb_sg" {
   })
 }
 
-# Note: No ingress rules needed for CloudFront VPC origin access
-# CloudFront connects via service-managed ENI using AWS internal routing
-# Only application-specific traffic rules should be added as needed
+# CloudFront IP ranges data source
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
+# CloudFront -> Hyperswitch ALB (HTTP)
+resource "aws_vpc_security_group_ingress_rule" "hyperswitch_alb_from_cloudfront" {
+  security_group_id = aws_security_group.hyperswitch_alb_sg.id
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  description       = "Allow HTTP traffic from CloudFront"
+}

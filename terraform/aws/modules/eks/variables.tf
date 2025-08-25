@@ -61,7 +61,16 @@ variable "rds_security_group_id" {
 }
 
 variable "elasticache_security_group_id" {
-  description = "ID of the ElastiCache Security Group"
+  description = "ID of the ElastiCache Security Group"  
   type        = string
+}
 
+variable "vpc_endpoints_security_group_id" {
+  description = "ID of the VPC Endpoints Security Group"
+  type        = string
+}
+
+variable "s3_vpc_endpoint_prefix_list_id" {
+  description = "Prefix list ID of the S3 VPC Endpoint"
+  type        = string
 }

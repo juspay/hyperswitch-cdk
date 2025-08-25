@@ -77,11 +77,11 @@ module "vpc" {
 module "security" {
   source = "../../modules/security"
 
-  stack_name    = var.stack_name
-  common_tags   = local.common_tags
-  vpc_id        = module.vpc.vpc_id
-  vpc_cidr      = local.vpc_cidr
-  vpn_ips       = var.vpn_ips
+  stack_name  = var.stack_name
+  common_tags = local.common_tags
+  vpc_id      = module.vpc.vpc_id
+  vpc_cidr    = local.vpc_cidr
+  vpn_ips     = var.vpn_ips
 
   db_user            = var.db_user
   db_name            = var.db_name
@@ -141,19 +141,21 @@ module "sdk" {
 module "eks" {
   source = "../../modules/eks"
 
-  stack_name                    = var.stack_name
-  common_tags                   = local.common_tags
-  vpc_id                        = module.vpc.vpc_id
-  vpc_cidr                      = local.vpc_cidr
-  subnet_ids                    = module.vpc.subnet_ids
-  private_subnet_ids            = module.vpc.eks_worker_nodes_subnet_ids
-  control_plane_subnet_ids      = module.vpc.eks_control_plane_zone_subnet_ids
-  kubernetes_version            = var.kubernetes_version
-  vpn_ips                       = var.vpn_ips
-  kms_key_arn                   = module.security.hyperswitch_kms_key_arn
-  log_retention_days            = var.log_retention_days
-  rds_security_group_id         = module.rds.rds_security_group_id
-  elasticache_security_group_id = module.elasticache.elasticache_security_group_id
+  stack_name                      = var.stack_name
+  common_tags                     = local.common_tags
+  vpc_id                          = module.vpc.vpc_id
+  vpc_cidr                        = local.vpc_cidr
+  subnet_ids                      = module.vpc.subnet_ids
+  private_subnet_ids              = module.vpc.eks_worker_nodes_subnet_ids
+  control_plane_subnet_ids        = module.vpc.eks_control_plane_zone_subnet_ids
+  kubernetes_version              = var.kubernetes_version
+  vpn_ips                         = var.vpn_ips
+  kms_key_arn                     = module.security.hyperswitch_kms_key_arn
+  log_retention_days              = var.log_retention_days
+  rds_security_group_id           = module.rds.rds_security_group_id
+  elasticache_security_group_id   = module.elasticache.elasticache_security_group_id
+  vpc_endpoints_security_group_id = module.vpc.vpc_endpoints_security_group_id
+  s3_vpc_endpoint_prefix_list_id  = module.vpc.s3_vpc_endpoint_prefix_list_id
 }
 
 # Proxy Configuration S3 Bucket (shared between Envoy and Squid)
@@ -169,14 +171,15 @@ module "proxy_config" {
 module "squid_proxy" {
   source = "../../modules/squid-proxy"
 
-  stack_name                    = var.stack_name
-  common_tags                   = local.common_tags
-  vpc_id                        = module.vpc.vpc_id
-  subnet_ids                    = module.vpc.subnet_ids
-  squid_image_ami               = var.squid_image_ami
-  eks_cluster_security_group_id = module.eks.eks_cluster_security_group_id
-  proxy_config_bucket_name      = module.proxy_config.proxy_config_bucket_name
-  proxy_config_bucket_arn       = module.proxy_config.proxy_config_bucket_arn
+  stack_name                      = var.stack_name
+  common_tags                     = local.common_tags
+  vpc_id                          = module.vpc.vpc_id
+  subnet_ids                      = module.vpc.subnet_ids
+  squid_image_ami                 = var.squid_image_ami
+  eks_cluster_security_group_id   = module.eks.eks_master_security_group_id
+  eks_nodegroup_security_group_id = module.eks.eks_nodegroup_security_group_id
+  proxy_config_bucket_name        = module.proxy_config.proxy_config_bucket_name
+  proxy_config_bucket_arn         = module.proxy_config.proxy_config_bucket_arn
 }
 
 module "helm" {
@@ -186,13 +189,14 @@ module "helm" {
   common_tags                                     = local.common_tags
   vpc_id                                          = module.vpc.vpc_id
   subnet_ids                                      = module.vpc.subnet_ids
+  subnet_cidr_blocks                              = module.vpc.subnet_cidr_blocks
   vpn_ips                                         = var.vpn_ips
   sdk_version                                     = local.sdk_version
   private_ecr_repository                          = local.private_ecr_repository
   eks_cluster_name                                = module.eks.eks_cluster_name
   eks_cluster_endpoint                            = module.eks.eks_cluster_endpoint
   eks_cluster_ca_certificate                      = module.eks.eks_cluster_ca_certificate
-  eks_cluster_security_group_id                   = module.eks.eks_cluster_security_group_id
+  eks_cluster_security_group_id                   = module.eks.eks_master_security_group_id
   alb_controller_role_arn                         = module.eks.alb_controller_role_arn
   hyperswitch_kms_key_id                          = module.security.hyperswitch_kms_key_id
   hyperswitch_service_account_role_arn            = module.eks.hyperswitch_service_account_role_arn

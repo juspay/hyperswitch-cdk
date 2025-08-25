@@ -16,6 +16,7 @@ resource "aws_eks_cluster" "main" {
     endpoint_private_access = true
     endpoint_public_access  = true
     public_access_cidrs     = length(var.vpn_ips) > 0 ? var.vpn_ips : ["0.0.0.0/0"]
+    security_group_ids      = [aws_security_group.eks_master_sg.id]
   }
 
   encryption_config {
@@ -119,6 +120,29 @@ resource "aws_eks_addon" "ebs_csi_driver" {
 }
 
 # ==========================================================
+#                       Launch Templates
+# ==========================================================
+
+# Launch template for EKS node groups with custom security group
+resource "aws_launch_template" "eks_nodegroup" {
+  name_prefix = "${var.stack_name}-eks-nodegroup-"
+
+  vpc_security_group_ids = [
+    aws_security_group.eks_nodegroup_sg.id,
+    aws_security_group.eks_master_sg.id
+  ]
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = merge(var.common_tags, {
+      Name = "${var.stack_name}-eks-node"
+    })
+  }
+
+  tags = var.common_tags
+}
+
+# ==========================================================
 #                       EKS Node Groups
 # ==========================================================
 
@@ -139,6 +163,11 @@ resource "aws_eks_node_group" "hs_nodegroup" {
 
   labels = {
     "node-type" = "generic-compute"
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {
@@ -166,6 +195,11 @@ resource "aws_eks_node_group" "hs_autopilot_nodegroup" {
     "node-type" : "autopilot-od",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "autopilot-od"
   })
@@ -188,6 +222,11 @@ resource "aws_eks_node_group" "hs_ckh_zookeeper_nodegroup" {
     "node-type" : "ckh-zookeeper-compute",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "ckh-zookeeper-compute"
   })
@@ -208,6 +247,11 @@ resource "aws_eks_node_group" "hs_ckh_compute_nodegroup" {
 
   labels = {
     "node-type" : "clickhouse-compute",
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {
@@ -234,6 +278,11 @@ resource "aws_eks_node_group" "hs_control_center_nodegroup" {
     "node-type" : "control-center",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "control-center"
   })
@@ -254,6 +303,11 @@ resource "aws_eks_node_group" "hs_kafka_compute_nodegroup" {
 
   labels = {
     "node-type" : "kafka-compute",
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {
@@ -280,6 +334,11 @@ resource "aws_eks_node_group" "hs_memory_optimized_nodegroup" {
     "node-type" : "memory-optimized",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "memory-optimized-od"
   })
@@ -302,6 +361,11 @@ resource "aws_eks_node_group" "hs_monitoring_nodegroup" {
 
   labels = {
     "node-type" : "monitoring",
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {
@@ -330,6 +394,11 @@ resource "aws_eks_node_group" "hs_pomerium_nodegroup" {
     "function" : "SSO",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "pomerium"
   })
@@ -352,6 +421,11 @@ resource "aws_eks_node_group" "hs_system_nodegroup" {
 
   labels = {
     "node-type" : "system-nodes",
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {
@@ -378,6 +452,11 @@ resource "aws_eks_node_group" "hs_utils_nodegroup" {
     "node-type" : "elasticsearch",
   }
 
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
+  }
+
   tags = merge(var.common_tags, {
     Name = "utils-compute-od"
   })
@@ -400,6 +479,11 @@ resource "aws_eks_node_group" "hs_zk_compute_nodegroup" {
 
   labels = {
     "node-type" : "zookeeper-compute",
+  }
+
+  launch_template {
+    id      = aws_launch_template.eks_nodegroup.id
+    version = aws_launch_template.eks_nodegroup.latest_version
   }
 
   tags = merge(var.common_tags, {

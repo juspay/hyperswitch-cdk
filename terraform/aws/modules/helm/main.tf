@@ -67,7 +67,7 @@ resource "helm_release" "alb_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.10.0" # Optional: pin chart version if you want
+  version    = "1.7.1" # Downgraded for faster provisioning
   wait       = true
 
   values = [
@@ -105,6 +105,36 @@ resource "kubernetes_namespace" "hyperswitch" {
   }
 }
 
+# Helm release for Istio CNI (must be installed first)
+resource "helm_release" "istio_cni" {
+  name             = "istio-cni"
+  repository       = "https://istio-release.storage.googleapis.com/charts"
+  chart            = "cni"
+  namespace        = "istio-system"
+  version          = "1.25.0"
+  create_namespace = true
+  wait             = true
+
+  values = [
+    yamlencode({
+      global = {
+        hub = "${var.private_ecr_repository}/istio"
+        tag = "1.25.0"
+      }
+      cni = {
+        cniBinDir   = "/opt/cni/bin"
+        cniConfDir  = "/etc/cni/net.d"
+        excludeNamespaces = ["istio-system", "kube-system"]
+        logLevel = "info"
+      }
+    })
+  ]
+
+  depends_on = [
+    kubernetes_service_account.alb_controller
+  ]
+}
+
 # Helm release for Istio base components
 resource "helm_release" "istio_base" {
   name             = "istio-base"
@@ -124,6 +154,10 @@ resource "helm_release" "istio_base" {
         enableCRDTemplates = true
       }
     })
+  ]
+
+  depends_on = [
+    helm_release.istio_cni
   ]
 }
 
@@ -145,9 +179,15 @@ resource "helm_release" "istiod" {
         proxy = {
           # This ensures init containers can access external services
           holdApplicationUntilProxyStarts = true
+          # Only intercept traffic to EKS worker node subnets for service mesh communication
+          # This allows external services (RDS, Redis, internet) to bypass Istio
+          includeIPRanges = join(",", var.subnet_cidr_blocks["eks_worker_nodes"])
         }
       }
       pilot = {
+        cni = {
+          enabled = true
+        }
         nodeSelector = {
           "node-type" = "memory-optimized"
         }
@@ -214,7 +254,7 @@ resource "helm_release" "istio_services" {
   name       = "hs-istio"
   repository = "https://juspay.github.io/hyperswitch-helm/"
   chart      = "hyperswitch-istio"
-  version    = "0.1.3"
+  version    = "0.1.2"
   namespace  = "istio-system"
 
   create_namespace = true
@@ -344,10 +384,6 @@ resource "helm_release" "hyperswitch_services" {
 
       "hyperswitch-app" = {
 
-        redis = {
-          enabled = false
-        }
-
         services = {
           router = {
             enabled = true
@@ -419,9 +455,9 @@ resource "helm_release" "hyperswitch_services" {
             bypass_proxy_hosts = "\"localhost,127.0.0.1,.svc,.svc.cluster.local,kubernetes.default.svc,169.254.169.254,.amazonaws.com,${var.rds_cluster_endpoint},${var.elasticache_cluster_endpoint_address},${var.hyperswitch_cloudfront_distribution_domain_name},${var.sdk_distribution_domain_name}\""
           }
 
-          podAnnotations = {
-            "traffic.sidecar.istio.io/excludeOutboundIPRanges" = "10.23.6.12/32"
-          }
+          # podAnnotations = {
+          #   "traffic.sidecar.istio.io/excludeOutboundIPRanges" = "10.0.23.0/24"
+          # }
 
           secrets = {
             kms_admin_api_key                             = var.kms_secrets["kms_admin_api_key"]
@@ -576,6 +612,15 @@ resource "helm_release" "hyperswitch_services" {
           }
         }
 
+        initDB = {
+          checkPGisUp = {
+            image = "${var.private_ecr_repository}/bitnami/postgresql:16.1.0-debian-11-r18"
+          }
+          migration = {
+            image = "${var.private_ecr_repository}/christophwurst/diesel-cli:latest"
+          }
+        }
+
         postgresql = {
           enabled = false
         }
@@ -600,6 +645,17 @@ resource "helm_release" "hyperswitch_services" {
               plainpassword = var.db_password
             }
           }
+        }
+
+        redisMiscConfig = {
+          checkRedisIsUp = {
+            initContainer = {
+              image  = "${var.private_ecr_repository}/bitnami/redis:7.2.3-debian-11-r2"
+            }
+          }
+        }
+        redis = {
+          enabled = false
         }
 
         externalRedis = {
@@ -639,6 +695,14 @@ resource "helm_release" "hyperswitch_services" {
       }
 
       "hyperswitch-web" = {
+        enabled = false
+      }
+
+      "hyperswitch-monitoring" = {
+        enabled = false
+      }
+
+      "hyperswitch-ucs" = {
         enabled = false
       }
     })

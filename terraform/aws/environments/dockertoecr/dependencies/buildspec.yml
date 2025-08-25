@@ -5,7 +5,7 @@ phases:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
-        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-drainer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot")
+        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-drainer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot" "istio/install-cni" "bitnami/redis" "bitnami/postgresql" "curlimages/curl-base" "christophwurst/diesel-cli")
         PULL_FROM_AWS=("eks/aws-load-balancer-controller" "ebs-csi-driver/aws-ebs-csi-driver" "eks-distro/kubernetes-csi/external-provisioner" "eks-distro/kubernetes-csi/external-attacher" "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" "eks-distro/kubernetes-csi/livenessprobe" "eks-distro/kubernetes-csi/external-resizer" "eks-distro/kubernetes-csi/node-driver-registrar" "ebs-csi-driver/volume-modifier-for-k8s")
 
         repository_exists() {
@@ -44,10 +44,18 @@ phases:
               docker pull "$IMAGE:0.7.2" && \
               docker tag "$IMAGE:0.7.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
-          elif [[ $IMAGE == "istio/proxyv2" || $IMAGE == "istio/pilot" ]]; then
+          elif [[ $IMAGE == "istio/proxyv2" || $IMAGE == "istio/pilot" || $IMAGE == "istio/install-cni" ]]; then
               docker pull "$IMAGE:1.25.0" && \
               docker tag "$IMAGE:1.25.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
+          elif [[ $IMAGE == "bitnami/redis" ]]; then
+              docker pull "$IMAGE:7.2.3-debian-11-r2" && \
+              docker tag "$IMAGE:7.2.3-debian-11-r2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:7.2.3-debian-11-r2"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:7.2.3-debian-11-r2"
+          elif [[ $IMAGE == "bitnami/postgresql" ]]; then
+              docker pull "$IMAGE:16.1.0-debian-11-r18" && \
+              docker tag "$IMAGE:16.1.0-debian-11-r18" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:16.1.0-debian-11-r18"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:16.1.0-debian-11-r18"
           elif [[ $IMAGE == "kiwigrid/k8s-sidecar" ]]; then
               docker pull "$IMAGE:1.30.3" && \
               docker tag "$IMAGE:1.30.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"

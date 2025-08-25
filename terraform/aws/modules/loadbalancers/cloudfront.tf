@@ -20,9 +20,9 @@ resource "aws_cloudfront_vpc_origin" "hyperswitch_alb_vpc_origin" {
 
 resource "aws_cloudfront_distribution" "hyperswitch_cloudfront_distribution" {
   enabled = true
-  comment = "Hyperswitch Internal ALB Distribution with VPC Origin"
+  comment = "Hyperswitch ALB Distribution with VPC Origin"
   origin {
-    domain_name = aws_cloudfront_vpc_origin.hyperswitch_alb_vpc_origin.id
+    domain_name = aws_lb.hyperswitch_alb.dns_name
     origin_id   = "${var.stack_name}-hyperswitch-alb-vpc-origin"
 
     vpc_origin_config {

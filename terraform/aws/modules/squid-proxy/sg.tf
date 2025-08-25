@@ -23,6 +23,16 @@ resource "aws_vpc_security_group_egress_rule" "eks_to_squid_lb" {
   description                  = "Allow outbound traffic to Squid proxy"
 }
 
+# Allow EKS node group security group to connect to Squid ALB
+resource "aws_vpc_security_group_egress_rule" "eks_nodegroup_to_squid_lb" {
+  security_group_id            = var.eks_nodegroup_security_group_id
+  referenced_security_group_id = aws_security_group.squid_internal_lb_sg.id
+  from_port                    = 3128
+  to_port                      = 3128
+  ip_protocol                  = "tcp"
+  description                  = "Allow EKS node group traffic to Squid proxy"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "squid_lb_from_eks" {
   security_group_id            = aws_security_group.squid_internal_lb_sg.id
   referenced_security_group_id = var.eks_cluster_security_group_id
@@ -30,6 +40,15 @@ resource "aws_vpc_security_group_ingress_rule" "squid_lb_from_eks" {
   to_port                      = 3128
   ip_protocol                  = "tcp"
   description                  = "Allow traffic from EKS cluster security group"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "squid_lb_from_eks_nodegroup" {
+  security_group_id            = aws_security_group.squid_internal_lb_sg.id
+  referenced_security_group_id = var.eks_nodegroup_security_group_id
+  from_port                    = 3128
+  to_port                      = 3128
+  ip_protocol                  = "tcp"
+  description                  = "Allow traffic from EKS node group security group"
 }
 
 # Squid ASG Security Group

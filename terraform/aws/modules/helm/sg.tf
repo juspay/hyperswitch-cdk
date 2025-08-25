@@ -49,6 +49,7 @@ resource "aws_vpc_security_group_ingress_rule" "eks_from_internal_alb_health_ing
   description                  = "Allow Istio health checks from Internal LB"
 }
 
+
 resource "aws_security_group" "grafana_ingress_lb_sg" {
   name                   = "${var.stack_name}-grafana-ingress-lb"
   description            = "Security group for Grafana ingress load balancer"
