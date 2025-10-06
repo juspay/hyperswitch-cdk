@@ -374,6 +374,13 @@ resource "helm_release" "hyperswitch_services" {
     yamlencode({
       clusterName = var.eks_cluster_name
 
+      global = {
+        imageRegistry = var.private_ecr_repository
+        image = {
+          registry = var.private_ecr_repository
+        }
+      }
+
       prometheus = {
         enabled = false
       }
@@ -387,34 +394,34 @@ resource "helm_release" "hyperswitch_services" {
         services = {
           router = {
             enabled = true
-            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-router:v1.116.0-standalone"
-            version = "v1.116.0"
+            image   = "juspaydotin/hyperswitch-router:${var.hyperswitch_version}"
+            version = var.hyperswitch_version
             host    = "https://${var.hyperswitch_cloudfront_distribution_domain_name}/api"
           }
           producer = {
             enabled = true
-            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-producer:v1.116.0-standalone"
-            version = "v1.116.0"
+            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-producer:${var.hyperswitch_version}"
+            version = var.hyperswitch_version
           }
           consumer = {
             enabled = true
-            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-consumer:v1.116.0-standalone"
-            version = "v1.116.0"
+            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-consumer:${var.hyperswitch_version}"
+            version = var.hyperswitch_version
           }
           drainer = {
             enabled = true
-            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-drainer:v1.116.0-standalone"
-            version = "v1.116.0"
+            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-drainer:${var.hyperswitch_version}"
+            version = var.hyperswitch_version
           }
           controlCenter = {
             enabled = true
-            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-control-center:v1.37.3"
-            version = "v1.37.3"
+            image   = "${var.private_ecr_repository}/juspaydotin/hyperswitch-control-center:${var.control_center_version}"
+            version = var.control_center_version
           }
           sdk = {
             host       = "https://${var.sdk_distribution_domain_name}"
             version    = var.sdk_version
-            subversion = "v1"
+            subversion = var.sdk_sub_version
           }
         }
 
@@ -614,10 +621,10 @@ resource "helm_release" "hyperswitch_services" {
 
         initDB = {
           checkPGisUp = {
-            image = "${var.private_ecr_repository}/bitnami/postgresql:16.1.0-debian-11-r18"
+            image = "bitnami/postgresql:16.1.0-debian-11-r18"
           }
           migration = {
-            image = "${var.private_ecr_repository}/christophwurst/diesel-cli:latest"
+            image = "christophwurst/diesel-cli:latest"
           }
         }
 

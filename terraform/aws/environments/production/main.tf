@@ -55,9 +55,6 @@ locals {
 
   # Private ECR repository for EKS
   private_ecr_repository = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com"
-
-  # SDK version
-  sdk_version = "0.121.2"
 }
 
 # VPC configuration
@@ -133,7 +130,7 @@ module "sdk" {
   common_tags                                     = local.common_tags
   vpc_id                                          = module.vpc.vpc_id
   subnet_ids                                      = module.vpc.subnet_ids
-  sdk_version                                     = local.sdk_version
+  sdk_version                                     = var.sdk_version
   hyperswitch_cloudfront_distribution_domain_name = module.loadbalancers.hyperswitch_cloudfront_distribution_domain_name
   log_retention_days                              = var.log_retention_days
 }
@@ -191,7 +188,10 @@ module "helm" {
   subnet_ids                                      = module.vpc.subnet_ids
   subnet_cidr_blocks                              = module.vpc.subnet_cidr_blocks
   vpn_ips                                         = var.vpn_ips
-  sdk_version                                     = local.sdk_version
+  hyperswitch_version                             = var.hyperswitch_version
+  control_center_version                          = var.control_center_version
+  sdk_version                                     = var.sdk_version
+  sdk_sub_version                                 = var.sdk_sub_version
   private_ecr_repository                          = local.private_ecr_repository
   eks_cluster_name                                = module.eks.eks_cluster_name
   eks_cluster_endpoint                            = module.eks.eks_cluster_endpoint

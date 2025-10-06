@@ -34,6 +34,30 @@ variable "az_count" {
   default     = 2
 }
 
+variable "hyperswitch_version" {
+  description = "Version of Hyperswitch to deploy"
+  type        = string
+  default     = "v1.117.0"
+}
+
+variable "control_center_version" {
+  description = "Version of Hyperswitch Control Center to deploy"
+  type        = string
+  default     = "v1.37.3"
+}
+
+variable "sdk_version" {
+  description = "Version of the SDK to be used"
+  type        = string
+  default     = "0.126.0"
+}
+
+variable "sdk_sub_version" {
+  description = "Sub-version of the SDK to be used"
+  type        = string
+  default     = "v1"
+}
+
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string

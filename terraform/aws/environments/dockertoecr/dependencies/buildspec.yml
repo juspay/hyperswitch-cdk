@@ -5,7 +5,9 @@ phases:
     commands:
        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
        - |
-        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-drainer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnami/metrics-server" "istio/proxyv2" "istio/pilot" "istio/install-cni" "bitnami/redis" "bitnami/postgresql" "curlimages/curl-base" "christophwurst/diesel-cli")
+        PULL_FROM_DOCKER=("grafana/grafana" "grafana/loki" "grafana/promtail" "kiwigrid/k8s-sidecar" "grafana/fluent-bit-plugin-loki" "nginx" "juspaydotin/hyperswitch-router" "juspaydotin/hyperswitch-producer" "juspaydotin/hyperswitch-consumer" "juspaydotin/hyperswitch-drainer" "juspaydotin/hyperswitch-control-center" "juspaydotin/hyperswitch-web" "bitnamilegacy/metrics-server" "istio/proxyv2" "istio/pilot" "istio/install-cni" "bitnamilegacy/redis" "bitnamilegacy/postgresql" "curlimages/curl-base" "christophwurst/diesel-cli" "juspaydotin/hyperswitch-migration-runner" "bitnamilegacy/clickhouse" "clickhouse/clickhouse-client" "curlimages/curl" "mailhog/mailhog" "otel/opentelemetry-collector-contrib" "juspaydotin/hyperswitch-card-vault" "timberio/vector" "bitnamilegacy/kafka" "bitnamilegacy/zookeeper" "grafana/loki-canary" "nginxinc/nginx-unprivileged" "bats/bats" "busybox" "grafana/loki-helm-test")
+        PULL_FROM_QUAY=("kiwigrid/k8s-sidecar" "prometheus-operator/prometheus-operator" "prometheus/node-exporter" "prometheus/alertmanager" "prometheus/prometheus")
+        PULL_FROM_GHCR=("juspay/connector-service")
         PULL_FROM_AWS=("eks/aws-load-balancer-controller" "ebs-csi-driver/aws-ebs-csi-driver" "eks-distro/kubernetes-csi/external-provisioner" "eks-distro/kubernetes-csi/external-attacher" "eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter" "eks-distro/kubernetes-csi/livenessprobe" "eks-distro/kubernetes-csi/external-resizer" "eks-distro/kubernetes-csi/node-driver-registrar" "ebs-csi-driver/volume-modifier-for-k8s")
 
         repository_exists() {
@@ -27,20 +29,41 @@ phases:
           fi
         done
 
+        for IMAGE in "${PULL_FROM_QUAY[@]}"; do
+          REPO_NAME="$IMAGE"
+          if ! repository_exists "$REPO_NAME"; then
+              aws ecr create-repository --repository-name "$REPO_NAME" --image-scanning-configuration scanOnPush=true
+          fi
+        done
+
+        for IMAGE in "${PULL_FROM_GHCR[@]}"; do
+          REPO_NAME="$IMAGE"
+          if ! repository_exists "$REPO_NAME"; then
+              aws ecr create-repository --repository-name "$REPO_NAME" --image-scanning-configuration scanOnPush=true
+          fi
+        done
+
+        for IMAGE in "${PULL_FROM_K8S_REGISTRY[@]}"; do
+          REPO_NAME="$IMAGE"
+          if ! repository_exists "$REPO_NAME"; then
+              aws ecr create-repository --repository-name "$REPO_NAME" --image-scanning-configuration scanOnPush=true
+          fi
+        done
+
         for IMAGE in "${PULL_FROM_DOCKER[@]}"; do
           if [[ $IMAGE == "juspaydotin/hyperswitch-router" || $IMAGE == "juspaydotin/hyperswitch-producer" || $IMAGE == "juspaydotin/hyperswitch-consumer" || $IMAGE == "juspaydotin/hyperswitch-drainer" ]]; then
-              docker pull "$IMAGE:v1.116.0-standalone" && \
-              docker tag "$IMAGE:v1.116.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.116.0-standalone"
+              docker pull "$IMAGE:v1.117.0-standalone" && \
+              docker tag "$IMAGE:v1.117.0-standalone" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.117.0-standalone" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.117.0-standalone"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-control-center" ]]; then
-              docker pull "$IMAGE:v1.37.3" && \
-              docker tag "$IMAGE:v1.37.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3" && \
-              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.3"
+              docker pull "$IMAGE:v1.37.4" && \
+              docker tag "$IMAGE:v1.37.4" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.4" && \
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v1.37.4"
           elif [[ $IMAGE == "juspaydotin/hyperswitch-web" ]]; then
               docker pull "$IMAGE:v0.121.2" && \
               docker tag "$IMAGE:v0.121.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.121.2" && \
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:v0.121.2"
-          elif [[ $IMAGE == "bitnami/metrics-server" ]]; then
+          elif [[ $IMAGE == "bitnamilegacy/metrics-server" ]]; then
               docker pull "$IMAGE:0.7.2" && \
               docker tag "$IMAGE:0.7.2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.7.2"
@@ -48,11 +71,11 @@ phases:
               docker pull "$IMAGE:1.25.0" && \
               docker tag "$IMAGE:1.25.0" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.25.0"
-          elif [[ $IMAGE == "bitnami/redis" ]]; then
+          elif [[ $IMAGE == "bitnamilegacy/redis" ]]; then
               docker pull "$IMAGE:7.2.3-debian-11-r2" && \
               docker tag "$IMAGE:7.2.3-debian-11-r2" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:7.2.3-debian-11-r2"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:7.2.3-debian-11-r2"
-          elif [[ $IMAGE == "bitnami/postgresql" ]]; then
+          elif [[ $IMAGE == "bitnamilegacy/postgresql" ]]; then
               docker pull "$IMAGE:16.1.0-debian-11-r18" && \
               docker tag "$IMAGE:16.1.0-debian-11-r18" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:16.1.0-debian-11-r18"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:16.1.0-debian-11-r18"
@@ -60,11 +83,35 @@ phases:
               docker pull "$IMAGE:1.30.3" && \
               docker tag "$IMAGE:1.30.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:1.30.3"
+          elif [[ $IMAGE == "curlimages/curl" ]]; then
+              docker pull "$IMAGE:8.7.1" && \
+              docker tag "$IMAGE:8.7.1" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:8.7.1"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:8.7.1"
+          elif [[ $IMAGE == "otel/opentelemetry-collector-contrib" ]]; then
+              docker pull "$IMAGE:0.122.1" && \
+              docker tag "$IMAGE:0.122.1" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.122.1"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:0.122.1"
+          elif [[ $IMAGE == "bitnamilegacy/clickhouse" ]]; then
+              docker pull "$IMAGE:24.3" && \
+              docker tag "$IMAGE:24.3" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:24.3"
+              docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:24.3"
           else
               docker pull "$IMAGE" && \
               docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest" && \
               docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE:latest"
           fi
+        done
+
+        for IMAGE in "${PULL_FROM_QUAY[@]}"; do
+          docker pull "$IMAGE" && \
+          docker tag "$IMAGE" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE" && \
+          docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE"
+        done
+
+        for IMAGE in "${PULL_FROM_GHCR[@]}"; do
+          docker pull ghcr.io/$IMAGE && \
+          docker tag ghcr.io/$IMAGE $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE && \
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE
         done
 
         for IMAGE in "${PULL_FROM_AWS[@]}"; do

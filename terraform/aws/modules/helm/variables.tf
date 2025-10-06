@@ -25,6 +25,30 @@ variable "vpn_ips" {
   default     = []
 }
 
+variable "hyperswitch_version" {
+  description = "Version of Hyperswitch to deploy"
+  type        = string
+  default     = "v1.117.0"
+}
+
+variable "control_center_version" {
+  description = "Version of Hyperswitch Control Center to deploy"
+  type        = string
+  default     = "v1.37.3"
+}
+
+variable "sdk_version" {
+  description = "Version of the SDK to be used"
+  type        = string
+  default     = "0.126.0"
+}
+
+variable "sdk_sub_version" {
+  description = "Sub-version of the SDK to be used"
+  type        = string
+  default     = "v1"
+}
+
 variable "private_ecr_repository" {
   description = "ECR repository for private images"
   type        = string
@@ -113,11 +137,6 @@ variable "rds_cluster_reader_endpoint" {
 
 variable "elasticache_cluster_endpoint_address" {
   description = "ElastiCache Redis endpoint address"
-  type        = string
-}
-
-variable "sdk_version" {
-  description = "Version of the SDK to be used"
   type        = string
 }
 

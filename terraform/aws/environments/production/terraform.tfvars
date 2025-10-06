@@ -5,6 +5,11 @@ environment = "production"
 vpc_cidr = "10.0.0.0/16"
 az_count = 2
 
+hyperswitch_version = "v1.117.0"
+control_center_version = "v1.37.3"
+sdk_version = "0.126.0"
+sdk_sub_version = "v1"
+
 admin_api_key      = "test_admin"
 db_name            = "hyperswitch"
 db_user            = "db_user"
