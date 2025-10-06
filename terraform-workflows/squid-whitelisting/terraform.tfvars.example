@@ -1,0 +1,16 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and modify as needed
+
+# AWS Configuration
+aws_region = "us-east-1"
+
+# S3 Configuration
+s3_bucket = "hyperswitch-outgoing"
+s3_key    = "allowedlist.txt"
+
+# Domains to add to whitelist
+# These will be processed using intelligent hierarchy logic
+new_domains = [
+  ".sandbox.example.com",
+  ".api.newservice.com",
+]
