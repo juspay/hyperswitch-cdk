@@ -34,6 +34,16 @@ import { IstioResources } from './istio_stack';
 import { SecurityGroups } from './security_groups';
 // import { LockerSetup } from "./card-vault/components";
 
+interface AWSlbControllerIAMPolicyJSON {
+  Version: string;
+  Statement: Array<{
+    Effect: string;
+    Action: string | string[];
+    Resource: string | string[];
+    Condition?: Record<string, unknown>;
+  }>;
+}
+
 export class EksStack {
   sg: ec2.ISecurityGroup;
   hyperswitchHost: string;
@@ -223,15 +233,82 @@ export class EksStack {
       );
     }
 
+    const isAWSlbControllerIAMPolicyJSON = (object: unknown): object is AWSlbControllerIAMPolicyJSON => {
+      if (typeof object !== "object" || object === null) return false;
+      const candidate = object as Record<string, unknown>;
+      if (typeof candidate.Version !== "string" || !Array.isArray(candidate.Statement)) {
+        return false;
+      }
+      for (const statement of candidate.Statement) {
+        if (typeof statement !== "object" || statement === null) return false;
+        const s = statement as Record<string, unknown>;
+        if (typeof s.Effect !== "string") return false;
+        const action = s.Action;
+        if (typeof action === "string") {
+          // valid
+        } else if (Array.isArray(action)) {
+          if (!action.every(a => typeof a === "string")) return false;
+        } else {
+          return false;
+        }
+        const resource = s.Resource;
+        if (typeof resource === "string") {
+          // valid
+        } else if (Array.isArray(resource)) {
+          if (!resource.every(r => typeof r === "string")) return false;
+        } else {
+          return false;
+        }
+        if ("Condition" in s && (typeof s.Condition !== "object" || s.Condition === null)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     const fetchAndCreatePolicy = async (
       url: string,
     ): Promise<iam.PolicyDocument> => {
       try {
         const response = await fetch(url);
-        const policyJSON = await response.json();
-        return iam.PolicyDocument.fromJson(policyJSON);
-      } catch (error) {
-        console.error("Error fetching or creating policy document:", error);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch IAM policy from \`${url}\`. ` +
+            `HTTP ${response.status} (${response.statusText}).`,
+          );
+        }
+        let policyJSON: unknown
+        try {
+          policyJSON = await response.json();
+        } catch (parseError: unknown) {
+          const parseErrorMessage = (
+            (parseError instanceof Error)
+              ? parseError.message
+              : String(parseError ?? "Unknown Error")
+          );
+          throw new Error(
+            `Failed to parse JSON response from \`${url}\`: ${parseErrorMessage}.`,
+          );
+        }
+        if (!isAWSlbControllerIAMPolicyJSON(policyJSON)) {
+          throw new Error(
+            `JSON from \`${url}\` does not match AWS IAM policy structure.`,
+          );
+        }
+        try {
+          return iam.PolicyDocument.fromJson(policyJSON);
+        } catch (policyError: unknown) {
+            const policyErrorMessage = (
+              (policyError instanceof Error)
+                ? policyError.message
+                : String(policyError ?? "Unknown Error")
+            );
+            throw new Error(
+              `Failed to create IAM policy from \`${url}\`: ${policyErrorMessage}.`,
+            );
+        }
+      } catch (error: unknown) {
+        console.error(`Failed to fetch and create IAM policy from \`${url}\`: `, error);
         throw error;
       }
     };
@@ -265,7 +342,7 @@ export class EksStack {
         console.error("Error fetching or creating ALB controller policy document:", error);
       });
 
-      const albControllerServiceAccount = cluster.addServiceAccount("ALBControllerSA", {
+    const albControllerServiceAccount = cluster.addServiceAccount("ALBControllerSA", {
       name: albControllerServiceAccountName,
       namespace: albControllerNamespace,
       annotations: {
