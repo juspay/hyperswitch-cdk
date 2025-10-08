@@ -2,7 +2,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import * as eks from "aws-cdk-lib/aws-eks";
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32';
-import * as cp from 'child_process'; 
+import * as cp from 'child_process';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
@@ -254,7 +254,7 @@ export class EksStack {
         "sts:AssumeRoleWithWebIdentity"
       ),
     });
-    
+
     fetchAndCreatePolicy(lbControllerPolicyUrl)
       .then((policy) => {
         albControllerRole.attachInlinePolicy(
@@ -536,7 +536,7 @@ export class EksStack {
     this.sg = cluster.clusterSecurityGroup;
 
     const appProxyEnabled = scope.node.tryGetContext('app_proxy_enabled') === 'true';
-    
+
     securityGroups.addEksClusterRules(securityGroups.clusterSecurityGroup, appProxyEnabled);
     securityGroups.addEksClusterRules(cluster.clusterSecurityGroup, appProxyEnabled);
 
@@ -651,7 +651,7 @@ export class EksStack {
 
     const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
     sdkBucket.grantRead(oai);
- 
+
     this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
       originConfigs: [
@@ -664,7 +664,7 @@ export class EksStack {
         }
       ]
     });
-    
+
     this.sdkDistribution.node.addDependency(sdkBucket);
     new cdk.CfnOutput(scope, 'SdkDistribution', {
       value: this.sdkDistribution.distributionDomainName,
@@ -810,7 +810,7 @@ export class EksStack {
               locker_public_key: locker ? locker.locker_ec2.locker_pair.public_key : "locker-key",
               hyperswitch_private_key: locker ? locker.locker_ec2.tenant.private_key : "locker-key",
             },
-            basilisk: { 
+            basilisk: {
               host: "basilisk-host",
             },
             run_env: "sandbox",
@@ -987,7 +987,7 @@ export class EksStack {
     });
 
     this.sdkBucket = sdkBucket;
-    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption); 
+    hypersChart.node.addDependency(albControllerChart, triggerKMSEncryption);
 
     if (appProxyEnabled) {
       const istioResources = new IstioResources(scope, 'IstioResources', {
@@ -999,7 +999,7 @@ export class EksStack {
 
       const envoyAmiId = scope.node.tryGetContext('envoy_ami');
       const squidAmiId = scope.node.tryGetContext('squid_ami');
-      
+
       if (envoyAmiId || squidAmiId) {
         // Create AppProxiesConstruct with centralized security groups
         const appProxiesConstruct = new AppProxiesConstruct(scope, 'AppProxies', {
@@ -1013,7 +1013,7 @@ export class EksStack {
         });
 
         appProxiesConstruct.node.addDependency(istioResources);
-        
+
       }
     }
 
@@ -1318,7 +1318,7 @@ export class EksStack {
 
 
     lokiChart.node.addDependency(hypersChart);
-    
+
     this.lokiChart = lokiChart;
 
     cluster.addHelmChart("MetricsServer", {
@@ -1516,7 +1516,7 @@ class DockerImagesToEcr {
       statements: [
         new iam.PolicyStatement({
           actions: [
-            "codebuild:StartBuild", 
+            "codebuild:StartBuild",
           ],
           resources: [this.codebuildProject.projectArn],
         }),

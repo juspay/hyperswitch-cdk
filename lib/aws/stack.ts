@@ -69,7 +69,7 @@ export class AWSStack extends cdk.Stack {
         vpc: vpc.vpc,
         internetFacing: true,
         securityGroup: appAlbSg,
-        vpcSubnets: { 
+        vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
           onePerAz: true
         },
@@ -81,7 +81,7 @@ export class AWSStack extends cdk.Stack {
         vpc: vpc.vpc,
         internetFacing: true,
         securityGroup: sdkAlbSg,
-        vpcSubnets: { 
+        vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
           onePerAz: true
         },
@@ -125,7 +125,7 @@ export class AWSStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
         },
       });
-  
+
       const appCloudFrontUrl = appAlb80Distribution.distributionDomainName;
       const controlCenterCloudFrontUrl = appAlb9000Distribution.distributionDomainName;
       const sdkCloudFrontUrl = sdkAlb9090Distribution.distributionDomainName;
@@ -164,7 +164,7 @@ export class AWSStack extends cdk.Stack {
           role: ec2Role
         }
       );
-      
+
       rds.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(hyperswitch_ec2.sg, ec2.Port.tcp(6379));
       hyperswitch_ec2.sg.addEgressRule(rds.sg, ec2.Port.tcp(5432));
@@ -220,9 +220,9 @@ export class AWSStack extends cdk.Stack {
       let allowSdkToApplicationSg = new ec2.SecurityGroup(this, "allowSdkToApplicationSg", {
         vpc: vpc.vpc,
         securityGroupName: "allowSdkToApplicationSg",
-        description: "Allow SDK to access the application", 
+        description: "Allow SDK to access the application",
       });
- 
+
       allowSdkToApplicationSg.addIngressRule(
         ec2.Peer.ipv4(hyperswitch_sdk_ec2.getInstance().instancePublicIp + "/0"),
         ec2.Port.tcp(80)
@@ -327,13 +327,13 @@ export class AWSStack extends cdk.Stack {
       const s3VPCEndpoint = new ec2.GatewayVpcEndpoint(this, "S3VPCEndpoint", {
         vpc: vpc.vpc,
         service: ec2.GatewayVpcEndpointAwsService.S3,
-        subnets: [ 
+        subnets: [
           { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
           { subnetType: ec2.SubnetType.PRIVATE_ISOLATED }
         ]
       });
 
-      let eksStack = new EksStack( 
+      let eksStack = new EksStack(
         this,
         config,
         vpc.vpc,
@@ -353,12 +353,12 @@ export class AWSStack extends cdk.Stack {
             controlCenterHost,
             appHost,
           });
-          let hsSdk = new HyperswitchSDKStack(this, eksStack, distribution); 
+          let hsSdk = new HyperswitchSDKStack(this, eksStack, distribution);
         } else {
           console.warn("Skipping DistributionConstruct creation as context values are missing in stack.ts");
         }
-      
-    
+
+
       if (locker) locker.locker_ec2.addClient(eksStack.sg, ec2.Port.tcp(8080));
       rds.sg.addIngressRule(eksStack.sg, ec2.Port.tcp(5432));
       elasticache.sg.addIngressRule(eksStack.sg, ec2.Port.tcp(6379));
