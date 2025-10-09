@@ -21,6 +21,7 @@ import { DistributionConstruct } from './distribution';
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import { ContextManager, ContextValidationError } from "./context";
 
 export class AWSStack extends cdk.Stack {
   constructor(scope: Construct, config: Config) {
@@ -313,10 +314,25 @@ export class AWSStack extends cdk.Stack {
           elasticache.cluster.attrRedisEndpointAddress,
         );
       }
+
       // Get proxy configuration from context
-      const appProxyEnabled = this.node.tryGetContext('app_proxy_enabled') === 'true';
-      const envoyAmiId = this.node.tryGetContext('envoy_ami');
-      const squidAmiId = this.node.tryGetContext('squid_ami');
+      let appProxyEnabled: boolean;
+      let envoyAmiId: string;
+      let squidAmiId: string;
+      try {
+        const ctx = new ContextManager(this.node);
+        const { app_proxy_enabled, envoy_ami, squid_ami } = ctx.getProxyConfig();
+        appProxyEnabled = app_proxy_enabled;
+        envoyAmiId = envoy_ami;
+        squidAmiId = squid_ami;
+      } catch (error: unknown) {
+        if (error instanceof ContextValidationError) {
+          console.error("Context validation failed: ", error.message);
+          throw error;
+        }
+        console.error("Unknown error: ", error);
+        throw error;
+      }
 
       const securityGroups = new SecurityGroups(this, 'HyperswitchSecurityGroups', {
         vpc: vpc.vpc,

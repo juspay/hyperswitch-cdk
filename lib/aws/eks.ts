@@ -32,6 +32,7 @@ import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import { AppProxiesConstruct } from './app_proxies_construct';
 import { IstioResources } from './istio_stack';
 import { SecurityGroups } from './security_groups';
+import { ContextManager, ContextValidationError } from "./context";
 // import { LockerSetup } from "./card-vault/components";
 
 export class EksStack {
@@ -55,19 +56,18 @@ export class EksStack {
     const ecrTransfer = new DockerImagesToEcr(scope, vpc);
     const privateEcrRepository = `${process.env.CDK_DEFAULT_ACCOUNT}.dkr.ecr.${process.env.CDK_DEFAULT_REGION}.amazonaws.com`
 
-    let vpn_ips: string | string[] = scope.node.tryGetContext("vpn_ips") || [];
-
-    if (typeof vpn_ips === "string") {
-      vpn_ips = vpn_ips.split(",");
-    }
-
-
-    vpn_ips = vpn_ips.map((ip: string) => {
-      if (ip === "0.0.0.0") {
-        return ip + "/0";
+    let vpn_ips: string[];
+    try {
+      const ctx = new ContextManager(scope.node);
+      vpn_ips = ctx.getVpnIps().vpn_ips;
+    } catch (error: unknown) {
+      if (error instanceof ContextValidationError) {
+        console.error("Context validation failed: ", error.message);
+        throw error;
       }
-      return ip + "/32";
-    });
+      console.error("Unknown error: ", error);
+      throw error;
+    }
 
     const cluster = new eks.Cluster(scope, "HSEKSCluster", {
       version: eks.KubernetesVersion.of("1.32"),
