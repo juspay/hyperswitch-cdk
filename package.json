@@ -1,6 +1,7 @@
 {
   "name": "hyperswitch-cdk",
   "version": "0.1.0",
+  "deprecated": true,
   "bin": {
     "hyperswitch-cdk": "bin/hyperswitch-cdk.js"
   },

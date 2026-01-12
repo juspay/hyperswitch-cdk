@@ -1,4 +1,10 @@
-# HyperSwitch Full Stack Deployment Guide
+# ⚠️ DEPRECATED - HyperSwitch Full Stack Deployment Guide
+
+**⚠️ DEPRECATION NOTICE**
+
+This repository is deprecated and is no longer actively maintained. Please do not use this for new deployments.
+
+For current deployment options and support, please refer to the main HyperSwitch repository or contact the maintainers.
 
 This guide outlines the process for deploying a comprehensive HyperSwitch stack on AWS, leveraging the power and flexibility of the AWS Cloud Development Kit (CDK). Follow our step-by-step [installation instructions](#installation) to get HyperSwitch up and running efficiently.
 
