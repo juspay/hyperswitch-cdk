@@ -174,7 +174,7 @@ export class IstioResources extends Construct {
 
     // Create a Lambda function to find the Istio ALB DNS name
     const albLookupFunction = new lambda.Function(this, 'GetIstioAlbDnsFunction', {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'get_istio_alb_dns.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, 'lambda')),
       timeout: cdk.Duration.minutes(2),

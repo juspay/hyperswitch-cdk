@@ -175,7 +175,7 @@ export class LockerEc2 extends Construct {
 
     const kms_encrypt_function = new Function(this, "kms-encrypt", {
       functionName: "KmsEncryptionLambda",
-      runtime: Runtime.PYTHON_3_9,
+      runtime: Runtime.PYTHON_3_12,
       handler: "index.lambda_handler",
       code: Code.fromInline(encryption_code),
       timeout: cdk.Duration.minutes(15),
@@ -257,7 +257,7 @@ export class LockerEc2 extends Construct {
       ),
       // machineImage: new ec2.AmazonLinuxImage(),
       machineImage: new ec2.AmazonLinuxImage({
-        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
       }),
       vpc,
       vpcSubnets,

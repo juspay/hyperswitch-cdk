@@ -87,7 +87,7 @@ export class HyperswitchSDKStack extends Construct {
         },
       },
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2023_5,
       },
     });
 
@@ -139,7 +139,7 @@ export class HyperswitchSDKStack extends Construct {
     );
 
     const triggerCodeBuild = new Function(scope, "SdkAssetsUploadLambda", {
-      runtime: Runtime.PYTHON_3_9,
+      runtime: Runtime.PYTHON_3_12,
       handler: "index.lambda_handler",
       code: Code.fromInline(lambdaStartBuildCode),
       timeout: cdk.Duration.minutes(15),

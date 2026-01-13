@@ -591,7 +591,7 @@ function get_internal_jump_ec2_config(config: Config, id: string) {
 
 function get_external_jump_ec2_config(config: Config, id: string) {
   let props: ec2.AmazonLinuxImageProps = {
-    generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+    generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
   };
 
   let ec2_config: EC2Config = {

@@ -156,7 +156,7 @@ export class Keymanager extends Construct {
 
         const kms_encrypt_function = new Function(scope, "keymanager-kms-encrypt", {
             functionName: "KeymanagerKmsEncryptionLambda",
-            runtime: Runtime.PYTHON_3_9,
+            runtime: Runtime.PYTHON_3_12,
             handler: "index.lambda_handler",
             code: Code.fromInline(encryption_code),
             timeout: cdk.Duration.minutes(15),

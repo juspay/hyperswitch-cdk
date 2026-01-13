@@ -201,7 +201,7 @@ def lambda_handler(event, context):
       );
 
       const initializeUploadFunction = new Function(scope, "initializeUploadFunction", {
-        runtime: Runtime.PYTHON_3_9,
+        runtime: Runtime.PYTHON_3_12,
         handler: "index.lambda_handler",
         code: Code.fromInline(uploadSchemaAndMigrationCode),
         timeout: Duration.minutes(15),
@@ -214,7 +214,7 @@ def lambda_handler(event, context):
       });
 
       const initializeDBFunction = new Function(scope, "InitializeDBFunction", {
-        runtime: Runtime.PYTHON_3_9,
+        runtime: Runtime.PYTHON_3_12,
         handler: "index.db_handler",
         code: Code.fromBucket(schemaBucket, "migration_runner.zip"),
         environment: {

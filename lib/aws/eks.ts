@@ -39,7 +39,7 @@ export class EksStack {
   hyperswitchHost: string;
   lokiChart: eks.HelmChart;
   sdkBucket: s3.Bucket;
-  sdkDistribution: cloudfront.CloudFrontWebDistribution;
+  sdkDistribution: cloudfront.Distribution;
   constructor(
     scope: Construct,
     config: Config,
@@ -279,11 +279,10 @@ export class EksStack {
       nodegroupName: "hs-nodegroup",
       instanceTypes: [
         new ec2.InstanceType("t3.medium"),
-        new ec2.InstanceType("t3.medium"),
       ],
       minSize: 1,
       maxSize: 3,
-      desiredSize: 2,
+      desiredSize: 1,
       labels: {
         "node-type": "generic-compute",
       },
@@ -310,8 +309,11 @@ export class EksStack {
 
     const ckhzookeepernodegroup = cluster.addNodegroupCapacity("HSCkhZookeeperNodegroup", {
       nodegroupName: "ckh-zookeeper-compute",
+      instanceTypes: [
+        new ec2.InstanceType("t3.small"),
+      ],
       minSize: 3,
-      maxSize: 8,
+      maxSize: 3,
       desiredSize: 3,
       labels: {
         "node-type": "ckh-zookeeper-compute",
@@ -323,9 +325,12 @@ export class EksStack {
 
     const ckhcomputenodegroup = cluster.addNodegroupCapacity("HSCkhcomputeNodegroup", {
       nodegroupName: "clickhouse-compute-OD",
-      minSize: 2,
+      instanceTypes: [
+        new ec2.InstanceType("r5.large"),
+      ],
+      minSize: 1,
       maxSize: 3,
-      desiredSize: 2,
+      desiredSize: 1,
       labels: {
         "node-type": "clickhouse-compute",
       },
@@ -337,10 +342,10 @@ export class EksStack {
     const controlcenternodegroup = cluster.addNodegroupCapacity("HSControlcentreNodegroup", {
       nodegroupName: "control-center",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
       minSize: 1,
-      maxSize: 5,
+      maxSize: 2,
       desiredSize: 1,
       labels: {
         "node-type": "control-center",
@@ -352,8 +357,11 @@ export class EksStack {
 
     const kafkacomputenodegroup = cluster.addNodegroupCapacity("HSKafkacomputeNodegroup", {
       nodegroupName: "kafka-compute-OD",
+      instanceTypes: [
+        new ec2.InstanceType("t3.medium"),
+      ],
       minSize: 3,
-      maxSize: 6,
+      maxSize: 5,
       desiredSize: 3,
       labels: {
         "node-type": "kafka-compute",
@@ -366,11 +374,11 @@ export class EksStack {
     const memoryoptimizenodegroup = cluster.addNodegroupCapacity("HSMemoryoptimizeNodegroup", {
       nodegroupName: "memory-optimized-od",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
       minSize: 1,
-      maxSize: 5,
-      desiredSize: 2,
+      maxSize: 3,
+      desiredSize: 1,
       labels: {
         "node-type": "memory-optimized",
       },
@@ -380,11 +388,11 @@ export class EksStack {
     const monitoringnodegroup = cluster.addNodegroupCapacity("HSMonitoringNodegroup", {
       nodegroupName: "monitoring-od",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
-      minSize: 3,
-      maxSize: 63,
-      desiredSize: 6,
+      minSize: 2,
+      maxSize: 6,
+      desiredSize: 2,
       labels: {
         "node-type": "monitoring",
       },
@@ -396,7 +404,7 @@ export class EksStack {
     const pomeriumnodegroup = cluster.addNodegroupCapacity("HSPomeriumNodegroup", {
       nodegroupName: "pomerium",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
       minSize: 2,
       maxSize: 2,
@@ -414,10 +422,10 @@ export class EksStack {
     const systemnodegroup = cluster.addNodegroupCapacity("HSSystemNodegroup", {
       nodegroupName: "system-nodes-od",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
       minSize: 1,
-      maxSize: 5,
+      maxSize: 2,
       desiredSize: 1,
       labels: {
         "node-type": "system-nodes",
@@ -430,11 +438,11 @@ export class EksStack {
     const utilsnodegroup = cluster.addNodegroupCapacity("HSUtilsNodegroup", {
       nodegroupName: "utils-compute-od",
       instanceTypes: [
-        new ec2.InstanceType("t3.medium"),
+        new ec2.InstanceType("t3.small"),
       ],
-      minSize: 5,
-      maxSize: 8,
-      desiredSize: 5,
+      minSize: 2,
+      maxSize: 5,
+      desiredSize: 2,
       labels: {
         "node-type": "elasticsearch",
       },
@@ -445,8 +453,11 @@ export class EksStack {
 
     const zookeepernodegroup = cluster.addNodegroupCapacity("HSZkcomputeNodegroup", {
       nodegroupName: "zookeeper-compute",
+      instanceTypes: [
+        new ec2.InstanceType("t3.small"),
+      ],
       minSize: 3,
-      maxSize: 10,
+      maxSize: 3,
       desiredSize: 3,
       labels: {
         "node-type": "zookeeper-compute",
@@ -485,7 +496,7 @@ export class EksStack {
 
     const kms_encrypt_function = new Function(scope, "hyperswitch-kms-encrypt", {
       functionName: "HyperswitchKmsEncryptionLambda",
-      runtime: Runtime.PYTHON_3_9,
+      runtime: Runtime.PYTHON_3_12,
       handler: "index.lambda_handler",
       code: Code.fromInline(encryption_code),
       timeout: cdk.Duration.minutes(15),
@@ -651,18 +662,15 @@ export class EksStack {
 
     const oai = new cloudfront.OriginAccessIdentity(scope, 'SdkOAI');
     sdkBucket.grantRead(oai);
- 
-    this.sdkDistribution = new cloudfront.CloudFrontWebDistribution(scope, 'sdkDistribution', {
-      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
-      originConfigs: [
-        {
-          s3OriginSource: {
-            s3BucketSource: sdkBucket,
-            originAccessIdentity: oai,
-          },
-          behaviors: [{ isDefaultBehavior: true }, { pathPattern: '/*', allowedMethods: cloudfront.CloudFrontAllowedMethods.GET_HEAD }]
-        }
-      ]
+
+    this.sdkDistribution = new cloudfront.Distribution(scope, 'sdkDistribution', {
+      defaultBehavior: {
+        origin: new origins.S3Origin(sdkBucket, {
+          originAccessIdentity: oai,
+        }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+      },
     });
     
     this.sdkDistribution.node.addDependency(sdkBucket);
@@ -679,11 +687,16 @@ export class EksStack {
     const hypersChart = cluster.addHelmChart("HyperswitchServices", {
       chart: "hyperswitch-stack",
       repository: "https://juspay.github.io/hyperswitch-helm/",
-      version: "0.2.12",
+      version: "0.2.19",
       namespace: "hyperswitch",
       release: "hypers-v1",
       wait: false,
+      timeout: cdk.Duration.minutes(15),  // Timeout for initial image pulls
       values: {
+        global: {
+          imageRegistry: "",  // Empty to prevent prefix on ECR URLs
+          imagePullPolicy: "IfNotPresent",
+        },
         clusterName: cluster.clusterName,
         loadBalancer: {
           targetSecurityGroup: lbSecurityGroup.securityGroupId,
@@ -704,15 +717,19 @@ export class EksStack {
           services: {
             router: {
               image: `${privateEcrRepository}/juspaydotin/hyperswitch-router:v1.116.0-standalone`,
+              imagePullPolicy: "IfNotPresent",
             },
             producer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.116.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-producer:v1.116.0-standalone`,
+              imagePullPolicy: "IfNotPresent",
             },
             consumer: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.116.0-standalone`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-consumer:v1.116.0-standalone`,
+              imagePullPolicy: "IfNotPresent",
             },
             controlCenter: {
-              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.37.3`
+              image: `${privateEcrRepository}/juspaydotin/hyperswitch-control-center:v1.37.3`,
+              imagePullPolicy: "IfNotPresent",
             },
             sdk: {
               host: "https://${this.sdkDistribution.distributionDomainName}",
@@ -1144,7 +1161,8 @@ export class EksStack {
       values: {
         grafana: {
           global: {
-            imageRegisrty: `${privateEcrRepository}`,
+            imageRegistry: "",  // Empty to prevent prefix on ECR URLs
+            imagePullPolicy: "IfNotPresent",
           },
           image: {
             repository: `${privateEcrRepository}/grafana/grafana`
@@ -1218,7 +1236,8 @@ export class EksStack {
         loki: {
           enabled: true,
           global: {
-            imageRegisrty: `${privateEcrRepository}`,
+            imageRegistry: "",  // Empty to prevent prefix on ECR URLs
+            imagePullPolicy: "IfNotPresent",
           },
           serviceAccount: {
             annotations: {
@@ -1295,11 +1314,11 @@ export class EksStack {
         promtail: {
           enabled: true,
           global: {
-            imageRegisrty: `${privateEcrRepository}`,
+            imageRegistry: "",  // Empty to prevent prefix on ECR URLs
+            imagePullPolicy: "IfNotPresent",
           },
           image: {
-            registry: `${privateEcrRepository}`,
-            repository: "grafana/promtail",
+            repository: `${privateEcrRepository}/grafana/promtail`,
           },
           config: {
             snippets: {
@@ -1330,6 +1349,7 @@ export class EksStack {
         image: {
           repository: `${privateEcrRepository}/bitnami/metrics-server`,
           tag: "0.7.2",
+          pullPolicy: "IfNotPresent",
         },
       }
     });
@@ -1500,7 +1520,7 @@ class DockerImagesToEcr {
         },
       },
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2023_5,
       },
       role: ecrRole,
       buildSpec: codebuild.BuildSpec.fromAsset("./dependencies/code_builder/buildspec.yml"),
@@ -1568,10 +1588,10 @@ class DockerImagesToEcr {
     );
 
     const triggerCodeBuild = new Function(scope, "ECRImageTransferLambda", {
-      runtime: Runtime.PYTHON_3_9,
+      runtime: Runtime.PYTHON_3_12,
       handler: "index.lambda_handler",
       code: Code.fromInline(lambdaStartBuildCode),
-      timeout: cdk.Duration.minutes(15),
+      timeout: cdk.Duration.minutes(15),  // Maximum Lambda timeout
       role: triggerCodeBuildRole,
       environment: {
         PROJECT_NAME: this.codebuildProject.projectName,

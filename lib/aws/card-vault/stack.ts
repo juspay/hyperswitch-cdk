@@ -92,7 +92,7 @@ export class JusVault extends cdk.Stack {
           ec2.InstanceSize.MEDIUM,
         ),
         machineImage: new ec2.AmazonLinuxImage({
-          generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+          generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
         }),
         vpc: this.vpc,
         vpcSubnets: {

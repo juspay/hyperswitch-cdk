@@ -211,7 +211,7 @@ export class ImageBuilderStack extends cdk.Stack {
 
         const ib_lambda = new Function(this, "hyperswitch-ib-lambda", {
             functionName: "HyperswitchIbStartLambda",
-            runtime: Runtime.PYTHON_3_9,
+            runtime: Runtime.PYTHON_3_12,
             handler: "index.lambda_handler",
             code: Code.fromInline(start_ib_code),
             timeout: cdk.Duration.minutes(15),
