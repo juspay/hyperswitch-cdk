@@ -20,16 +20,17 @@ if [ "$version" -lt 18 ]; then
 fi
 echo "Node.js version is valid."
 
-# Install AWS CDK
-echo "Installing AWS CDK..."
-npm install -g aws-cdk &
-show_loader "Installing AWS CDK..."
-echo "AWS CDK is installed successfully."
-
-# Check for AWS CDK
 if ! command -v cdk &>/dev/null; then
-    echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
-    exit 1
+    # Install AWS CDK
+    echo "Installing AWS CDK..."
+    npm install -g aws-cdk &
+    show_loader "Installing AWS CDK..."
+    echo "AWS CDK is installed successfully."
+
+    if ! command -v cdk &>/dev/null; then
+        echo "AWS CDK could not be found. Please rerun 'bash install.sh' with Sudo access and ensure the command is available within the \$PATH"
+        exit 1
+    fi
 fi
 
 # Determine OS and run respective dependency script
