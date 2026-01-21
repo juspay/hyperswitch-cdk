@@ -1,0 +1,189 @@
+name: Squid Domain Whitelist Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to update'
+        required: true
+        type: choice
+        options:
+          - production
+          - sandbox
+        default: 'sandbox'
+
+      domains:
+        description: 'Domains to whitelist (comma-separated, e.g., .api.example.com,.dev.test.com)'
+        required: true
+        type: string
+        default: '.example.com'
+
+      dry_run:
+        description: 'Dry run (skip S3 upload and cleanup)'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  # Production environment configuration
+  PROD_AWS_REGION: "us-east-1"
+  PROD_S3_BUCKET: "hyperswitch-outgoing-prod"
+  PROD_S3_KEY: "allowedlist.txt"
+
+  # Sandbox environment configuration
+  SANDBOX_AWS_REGION: "eu-central-1"
+  SANDBOX_S3_BUCKET: "hyperswitch-outgoing"
+  SANDBOX_S3_KEY: "allowedlist.txt"
+
+jobs:
+  domain-whitelist:
+    name: Update Domain Whitelist
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        id: env-config
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "aws_region=${{ env.PROD_AWS_REGION }}" >> $GITHUB_OUTPUT
+            echo "s3_bucket=${{ env.PROD_S3_BUCKET }}" >> $GITHUB_OUTPUT
+            echo "s3_key=${{ env.PROD_S3_KEY }}" >> $GITHUB_OUTPUT
+          else
+            echo "aws_region=${{ env.SANDBOX_AWS_REGION }}" >> $GITHUB_OUTPUT
+            echo "s3_bucket=${{ env.SANDBOX_S3_BUCKET }}" >> $GITHUB_OUTPUT
+            echo "s3_key=${{ env.SANDBOX_S3_KEY }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Process domains input (remove spaces, convert to array format)
+          domains_input="${{ github.event.inputs.domains }}"
+          # Convert comma-separated to space-separated for Terraform
+          domains_clean=$(echo "$domains_input" | sed 's/,/ /g' | sed 's/  */ /g')
+          echo "domains_list=$domains_clean" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ steps.env-config.outputs.aws_region }}
+          role-session-name: GitHubActions-DomainWhitelist
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.0"
+          terraform_wrapper: false
+
+      - name: Validate Domain Input
+        run: |
+          echo "🔍 Validating input domains..."
+          domains="${{ steps.env-config.outputs.domains_list }}"
+
+          if [ -z "$domains" ] || [ "$domains" = " " ]; then
+            echo "❌ Error: No domains provided"
+            exit 1
+          fi
+
+          echo "✅ Domains to process: $domains"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "📍 AWS Region: ${{ steps.env-config.outputs.aws_region }}"
+          echo "🪣 S3 Bucket: ${{ steps.env-config.outputs.s3_bucket }}"
+          echo "🔑 S3 Key: ${{ steps.env-config.outputs.s3_key }}"
+          echo "🧪 Dry Run: ${{ github.event.inputs.dry_run }}"
+
+      - name: Modify Script for Dry Run
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "🧪 Configuring dry run mode..."
+          cd terraform-workflows/squid-whitelisting/scripts
+
+          # Comment out S3 upload and cleanup for dry run
+          sed -i 's/^aws s3 cp squid\/allowedlist\.txt/# aws s3 cp squid\/allowedlist.txt/' process_whitelist.sh
+          sed -i 's/^rm -rf squid\//# rm -rf squid\//' process_whitelist.sh
+
+          # Add dry run indicator
+          sed -i '/# aws s3 cp squid\/allowedlist\.txt/a echo "⚠️  DRY RUN: S3 upload skipped"' process_whitelist.sh
+
+      - name: Initialize Terraform
+        run: |
+          cd terraform-workflows/squid-whitelisting
+          terraform init
+
+      - name: Create Terraform Variables
+        run: |
+          cd terraform-workflows/squid-whitelisting
+
+          # Create terraform.tfvars with dynamic values
+          cat > terraform.tfvars << EOF
+          aws_region = "${{ steps.env-config.outputs.aws_region }}"
+          s3_bucket = "${{ steps.env-config.outputs.s3_bucket }}"
+          s3_key = "${{ steps.env-config.outputs.s3_key }}"
+          new_domains = [$(echo "${{ steps.env-config.outputs.domains_list }}" | sed 's/[^ ][^ ]*/"&"/g' | sed 's/ /, /g')]
+          EOF
+
+          echo "📝 Generated terraform.tfvars:"
+          cat terraform.tfvars
+
+      - name: Terraform Plan
+        run: |
+          cd terraform-workflows/squid-whitelisting
+          terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd terraform-workflows/squid-whitelisting
+          terraform apply -auto-approve tfplan
+
+      - name: Show Results
+        if: always()
+        run: |
+          cd terraform-workflows/squid-whitelisting
+
+          echo "📊 Terraform Outputs:"
+          terraform output -json
+
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ] && [ -f "squid/allowedlist.txt" ]; then
+            echo ""
+            echo "🔍 Dry Run Results :"
+            cat squid/allowedlist.txt
+            echo ""
+            echo "📈 Total domains in updated whitelist: $(wc -l < squid/allowedlist.txt)"
+          fi
+
+
+      - name: Cleanup
+        if: always()
+        run: |
+          cd terraform-workflows/squid-whitelisting
+
+          # Clean up Terraform files
+          rm -f terraform.tfvars tfplan
+
+          # Clean up squid folder for dry runs (script skips cleanup in dry run mode)
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            rm -rf squid/
+          fi
+
+  summary:
+    name: Workflow Summary
+    runs-on: ubuntu-latest
+    needs: domain-whitelist
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🌐 Domain Whitelist Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Domains:** ${{ github.event.inputs.domains }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dry Run:** ${{ github.event.inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ needs.domain-whitelist.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
