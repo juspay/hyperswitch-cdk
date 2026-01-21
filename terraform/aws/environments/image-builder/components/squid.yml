@@ -1,0 +1,101 @@
+name: InstallSquid
+description: This document installs Squid, Vector, and Wazuh on top of Amazon Linux 2023
+schemaVersion: 1.0
+
+phases:
+    - name: build
+      steps:
+        - name: InstallSquidAndDependencies
+          action: ExecuteBash
+          inputs:
+            commands:
+                - echo "=== Installing Wazuh Agent on Amazon Linux 2023 ==="
+                - sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+                - echo -e "[wazuh]\ngpgcheck=1\ngpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-\$releasever - Wazuh\nbaseurl=https://packages.wazuh.com/4.x/yum/\nprotect=1" | sudo tee /etc/yum.repos.d/wazuh.repo > /dev/null
+                - sudo dnf install -y wazuh-agent
+                - sudo sed -i 's|<address>MANAGER_IP</address>|<address>10.0.0.2</address>|' /var/ossec/etc/ossec.conf
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable wazuh-agent
+                - sudo systemctl start wazuh-agent || echo "Wazuh agent failed to start, continuing..."
+                - sudo sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/wazuh.repo
+                
+                - echo "=== Installing Vector for log shipping ==="
+                - |
+                  # Install Vector system-wide
+                  VECTOR_VERSION="0.47.0"
+                  curl -L "https://github.com/vectordotdev/vector/releases/download/v${VECTOR_VERSION}/vector-${VECTOR_VERSION}-1.x86_64.rpm" -o /tmp/vector.rpm
+                  sudo dnf install -y /tmp/vector.rpm
+                  rm /tmp/vector.rpm
+                - |
+                  # Create vector user if it doesn't exist
+                  if ! id vector &>/dev/null; then
+                    sudo useradd --system --home /var/lib/vector --shell /bin/false vector
+                  fi
+                - sudo mkdir -p /etc/vector /var/lib/vector /var/log/vector
+                - sudo chown vector:vector /var/lib/vector /var/log/vector
+                - sudo chmod 755 /var/lib/vector /var/log/vector
+                
+                - echo "=== Creating Vector systemd service ==="
+                - |
+                  sudo tee /etc/systemd/system/vector.service > /dev/null <<'EOF'
+                  [Unit]
+                  Description=Vector
+                  Documentation=https://vector.dev
+                  After=network-online.target
+                  Wants=network-online.target
+                  
+                  [Service]
+                  User=vector
+                  Group=vector
+                  ExecStartPre=/usr/bin/vector validate --no-environment --config-dir /etc/vector
+                  ExecStart=/usr/bin/vector --config-dir /etc/vector
+                  ExecReload=/bin/kill -HUP $MAINPID
+                  Restart=no
+                  AmbientCapabilities=CAP_NET_BIND_SERVICE
+                  EnvironmentFile=-/etc/default/vector
+                  
+                  [Install]
+                  WantedBy=multi-user.target
+                  EOF
+                
+                - sudo systemctl daemon-reload
+                - sudo systemctl enable vector
+                - sudo systemctl start vector
+                
+                - echo "=== Installing Squid Proxy ==="
+                - sudo dnf update -y
+                - sudo dnf install -y squid openssl
+                
+                - echo "=== Creating Squid directories with proper permissions ==="
+                - sudo mkdir -p /var/spool/squid /var/log/squid /etc/squid/ssl_cert /var/lib/squid
+                - sudo chown -R squid:squid /var/spool/squid /var/log/squid /etc/squid/ssl_cert /var/lib/squid
+                - sudo chmod -R 755 /var/spool/squid /var/log/squid /etc/squid/ssl_cert
+                - sudo chmod 750 /var/lib/squid
+                
+                - echo "=== Setting up SSL certificates for Squid ==="
+                - |
+                  sudo openssl req -new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 \
+                    -extensions v3_ca \
+                    -keyout /etc/squid/ssl_cert/squid.key \
+                    -out /etc/squid/ssl_cert/squid.pem \
+                    -subj "/C=US/ST=CA/L=San Francisco/O=Organization/OU=IT Department/CN=squid-proxy"
+                - sudo chown squid:squid /etc/squid/ssl_cert/squid.key /etc/squid/ssl_cert/squid.pem
+                - sudo chmod 600 /etc/squid/ssl_cert/squid.key
+                - sudo chmod 644 /etc/squid/ssl_cert/squid.pem
+                
+                - echo "=== Initializing SSL certificate database ==="
+                - sudo rm -rf /var/lib/squid/ssl_db
+                - sudo -u squid /usr/lib64/squid/security_file_certgen -c -s /var/lib/squid/ssl_db -M 20MB
+                
+                - echo "=== Verifying SSL database initialization ==="
+                - sudo ls -la /var/lib/squid/ssl_db/
+                - sudo chown -R squid:squid /var/lib/squid/ssl_db
+                
+                - echo "=== Creating initial whitelist file ==="
+                - sudo touch /etc/squid/squid.allowed.sites.txt
+                - sudo chown squid:squid /etc/squid/squid.allowed.sites.txt
+                - sudo chmod 644 /etc/squid/squid.allowed.sites.txt
+                
+                - echo "=== Enabling and starting services ==="
+                - sudo systemctl enable squid
+                - sudo systemctl start squid
