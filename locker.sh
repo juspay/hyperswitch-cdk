@@ -32,15 +32,15 @@ cat << EOF > locker-inner.sh
  echo "Please enter the keys that are created during the locker master key generation"   
  echo "Enter the key1"
  read -s KEY1
- curl -X 'POST' 'localhost:8080/custodian/key1' -H 'Content-Type: application/json' -d '{ "key": "'\\\\\\\$KEY1'" }'
+ curl -X 'POST' 'localhost:8080/custodian/key1' -H "x-tenant-id: public" -H 'Content-Type: application/json' -d '{ "key": "'\\\\\\\$KEY1'" }'
 
  echo 
  echo "Enter the key2"
  read -s KEY2
- curl -X 'POST' 'localhost:8080/custodian/key2' -H 'Content-Type: application/json' -d '{ "key": "'\\\\\\\$KEY2'" }'
+ curl -X 'POST' 'localhost:8080/custodian/key2' -H "x-tenant-id: public" -H 'Content-Type: application/json' -d '{ "key": "'\\\\\\\$KEY2'" }'
 
  echo 
- curl -X 'POST' 'localhost:8080/custodian/decrypt'
+ curl -X 'POST' 'localhost:8080/custodian/decrypt -H "x-tenant-id: public"'
  echo 
 EOF
 
